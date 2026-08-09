@@ -1,0 +1,245 @@
+package com.example.data.repositories
+
+import com.example.data.local.BibleMetadata
+import com.example.data.local.dao.*
+import com.example.data.local.entities.*
+import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.UUID
+
+data class DailyProgressStats(
+    val completedDomainsCount: Int,
+    val totalActiveDomainsCount: Int,
+    val progressPercentage: Int
+)
+
+data class BibleStats(
+    val totalChaptersRead: Int,
+    val completionPercentage: Float,
+    val biblesReadCount: Float,
+    val booksCompletedCount: Int
+)
+
+data class StreakStats(
+    val currentStreakDays: Int,
+    val longestStreakDays: Int
+)
+
+data class SoulWinningStats(
+    val totalPreachedTo: Int,
+    val totalConverted: Int,
+    val totalWaterBaptized: Int,
+    val totalHolySpiritBaptized: Int
+)
+
+class AccountabilityRepository(
+    private val entryDao: EntryDao,
+    private val goalDao: GoalDao,
+    private val customDomainDao: CustomDomainDao,
+    private val reminderDao: ReminderDao,
+    private val reportDao: ReportDao
+) {
+    val allEntriesFlow: Flow<List<AccountabilityEntryEntity>> = entryDao.getAllEntriesFlow()
+    val allGoalsFlow: Flow<List<GoalEntity>> = goalDao.getAllGoalsFlow()
+    val customDomainsFlow: Flow<List<CustomDomainEntity>> = customDomainDao.getAllCustomDomainsFlow()
+    val remindersFlow: Flow<List<ReminderEntity>> = reminderDao.getAllRemindersFlow()
+    val reportsFlow: Flow<List<ReportRecordEntity>> = reportDao.getAllReportsFlow()
+
+    fun getEntriesByDateFlow(dateIso: String): Flow<List<AccountabilityEntryEntity>> {
+        return entryDao.getEntriesByDateFlow(dateIso)
+    }
+
+    fun getEntriesByDomainFlow(domainId: String): Flow<List<AccountabilityEntryEntity>> {
+        return entryDao.getEntriesByDomainFlow(domainId)
+    }
+
+    fun searchEntriesFlow(query: String): Flow<List<AccountabilityEntryEntity>> {
+        return entryDao.searchEntriesFlow(query)
+    }
+
+    suspend fun saveEntry(entry: AccountabilityEntryEntity) {
+        entryDao.insertOrUpdateEntry(entry)
+    }
+
+    suspend fun deleteEntry(id: String) {
+        entryDao.deleteEntryById(id)
+    }
+
+    suspend fun saveGoal(goal: GoalEntity) {
+        goalDao.insertOrUpdateGoal(goal)
+    }
+
+    suspend fun deleteGoal(id: String) {
+        goalDao.deleteGoalById(id)
+    }
+
+    suspend fun saveCustomDomain(domain: CustomDomainEntity) {
+        customDomainDao.insertCustomDomain(domain)
+    }
+
+    suspend fun deleteCustomDomain(id: String) {
+        customDomainDao.deleteCustomDomainById(id)
+    }
+
+    suspend fun saveReminder(reminder: ReminderEntity) {
+        reminderDao.insertOrUpdateReminder(reminder)
+    }
+
+    suspend fun deleteReminder(id: String) {
+        reminderDao.deleteReminderById(id)
+    }
+
+    suspend fun saveReportRecord(report: ReportRecordEntity) {
+        reportDao.insertReport(report)
+    }
+
+    suspend fun clearAllData() {
+        entryDao.clearAllEntries()
+        goalDao.clearAllGoals()
+    }
+
+    suspend fun migrateGuestDataToAccount(newUserId: String) {
+        entryDao.migrateUserEntries(newUserId)
+        goalDao.migrateUserGoals(newUserId)
+    }
+
+    // Calculators using real database entries
+
+    fun calculateBibleStats(entries: List<AccountabilityEntryEntity>): BibleStats {
+        val bibleEntries = entries.filter { it.domainId == "bible_reading" }
+        val totalChapters = bibleEntries.sumOf { it.chaptersCount }
+        val completionPercentage = (totalChapters.toFloat() / BibleMetadata.TOTAL_BIBLE_CHAPTERS) * 100f
+        val biblesReadCount = totalChapters.toFloat() / BibleMetadata.TOTAL_BIBLE_CHAPTERS
+
+        val booksReadMap = bibleEntries.groupBy { it.bibleBook }
+            .mapValues { (_, bookEntries) -> bookEntries.sumOf { it.chaptersCount } }
+        
+        var completedBooks = 0
+        for ((bookName, chaptersRead) in booksReadMap) {
+            val book = BibleMetadata.getBook(bookName)
+            if (book != null && chaptersRead >= book.totalChapters) {
+                completedBooks++
+            }
+        }
+
+        return BibleStats(
+            totalChaptersRead = totalChapters,
+            completionPercentage = completionPercentage.coerceAtMost(1000f),
+            biblesReadCount = biblesReadCount,
+            booksCompletedCount = completedBooks
+        )
+    }
+
+    fun calculateStreakStats(entries: List<AccountabilityEntryEntity>): StreakStats {
+        if (entries.isEmpty()) return StreakStats(0, 0)
+
+        val uniqueDates = entries.map { it.dateIso }.distinct().sortedDescending()
+        if (uniqueDates.isEmpty()) return StreakStats(0, 0)
+
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val todayIso = today.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val yesterdayIso = yesterday.format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+        var currentStreak = 0
+        var checkDate = if (uniqueDates.contains(todayIso)) today else if (uniqueDates.contains(yesterdayIso)) yesterday else null
+
+        if (checkDate != null) {
+            while (true) {
+                val iso = checkDate?.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                if (iso != null && uniqueDates.contains(iso)) {
+                    currentStreak++
+                    checkDate = checkDate?.minusDays(1)
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Calculate longest streak
+        var longestStreak = 0
+        var tempStreak = 0
+        val sortedAsc = uniqueDates.map { LocalDate.parse(it) }.sorted()
+        
+        if (sortedAsc.isNotEmpty()) {
+            tempStreak = 1
+            longestStreak = 1
+            for (i in 1 until sortedAsc.size) {
+                if (sortedAsc[i] == sortedAsc[i - 1].plusDays(1)) {
+                    tempStreak++
+                } else if (sortedAsc[i] != sortedAsc[i - 1]) {
+                    tempStreak = 1
+                }
+                if (tempStreak > longestStreak) {
+                    longestStreak = tempStreak
+                }
+            }
+        }
+
+        return StreakStats(
+            currentStreakDays = currentStreak,
+            longestStreakDays = maxOf(currentStreak, longestStreak)
+        )
+    }
+
+    fun calculateSoulWinningStats(entries: List<AccountabilityEntryEntity>): SoulWinningStats {
+        val soulEntries = entries.filter { it.domainId == "soul_winning" }
+        return SoulWinningStats(
+            totalPreachedTo = soulEntries.sumOf { it.preachedToCount },
+            totalConverted = soulEntries.sumOf { it.convertedCount },
+            totalWaterBaptized = soulEntries.sumOf { it.waterBaptizedCount },
+            totalHolySpiritBaptized = soulEntries.sumOf { it.holySpiritBaptizedCount }
+        )
+    }
+
+    fun calculateDailyProgress(todayEntries: List<AccountabilityEntryEntity>): DailyProgressStats {
+        val uniqueDomainsToday = todayEntries.map { it.domainId }.distinct().size
+        val totalActiveDomains = 11 // standard CMFI domains
+        val percentage = ((uniqueDomainsToday.toFloat() / totalActiveDomains) * 100).toInt().coerceIn(0, 100)
+        return DailyProgressStats(
+            completedDomainsCount = uniqueDomainsToday,
+            totalActiveDomainsCount = totalActiveDomains,
+            progressPercentage = percentage
+        )
+    }
+
+    fun calculateGoalProgress(goal: GoalEntity, entries: List<AccountabilityEntryEntity>): Double {
+        val domainEntries = entries.filter { it.domainId == goal.domainId }
+        val now = LocalDate.now()
+        val relevantEntries = when (goal.frequency) {
+            "DAILY" -> {
+                val todayIso = now.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                domainEntries.filter { it.dateIso == todayIso }
+            }
+            "WEEKLY" -> {
+                val startOfWeek = now.minusDays(now.dayOfWeek.value.toLong() - 1)
+                val endOfWeek = startOfWeek.plusDays(6)
+                domainEntries.filter { 
+                    val date = LocalDate.parse(it.dateIso)
+                    !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
+                }
+            }
+            "MONTHLY" -> {
+                val currentMonth = now.month
+                val currentYear = now.year
+                domainEntries.filter {
+                    val date = LocalDate.parse(it.dateIso)
+                    date.month == currentMonth && date.year == currentYear
+                }
+            }
+            else -> domainEntries
+        }
+
+        val totalAchieved = when (goal.domainId) {
+            "bible_reading" -> relevantEntries.sumOf { it.chaptersCount }.toDouble()
+            "ddewg", "prayer_alone", "prayer_with_others" -> relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
+            "christian_lit" -> relevantEntries.sumOf { it.pagesRead }.toDouble()
+            "fasting" -> relevantEntries.sumOf { it.fastingDaysCount }.toDouble()
+            "soul_winning" -> relevantEntries.sumOf { it.preachedToCount }.toDouble()
+            else -> relevantEntries.size.toDouble()
+        }
+
+        return totalAchieved
+    }
+}

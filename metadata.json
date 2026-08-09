@@ -1,0 +1,6 @@
+{
+  "name": "CMFI Accountability",
+  "description": "Digital accountability book for CMFI disciples to record spiritual disciplines, track goals, and generate reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

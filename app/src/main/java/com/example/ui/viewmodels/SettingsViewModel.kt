@@ -1,0 +1,86 @@
+package com.example.ui.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.core.localization.AppLanguage
+import com.example.data.local.entities.ReminderEntity
+import com.example.data.local.entities.UserEntity
+import com.example.data.repositories.AccountabilityRepository
+import com.example.data.repositories.UserRepository
+import com.example.ui.theme.ThemeMode
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+class SettingsViewModel(
+    private val userRepository: UserRepository,
+    private val accountabilityRepository: AccountabilityRepository
+) : ViewModel() {
+
+    val currentUser: StateFlow<UserEntity?> = userRepository.currentUserFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val currentLanguage: StateFlow<AppLanguage> = userRepository.currentLanguageFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.ENGLISH)
+
+    val currentTheme: StateFlow<ThemeMode> = userRepository.currentThemeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
+
+    val reminders: StateFlow<List<ReminderEntity>> = accountabilityRepository.remindersFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun updateLanguage(language: AppLanguage) {
+        viewModelScope.launch {
+            userRepository.updateLanguage(language)
+        }
+    }
+
+    fun updateThemeMode(themeMode: ThemeMode) {
+        viewModelScope.launch {
+            userRepository.updateThemeMode(themeMode)
+        }
+    }
+
+    fun updateProfile(
+        fullName: String,
+        email: String,
+        localAssembly: String,
+        discipleMaker: String,
+        phone: String,
+        conversionDate: String = "",
+        accountabilityDays: String = "MON,TUE,WED,THU,FRI,SAT,SUN"
+    ) {
+        viewModelScope.launch {
+            userRepository.updateProfile(fullName, email, localAssembly, discipleMaker, phone, conversionDate, accountabilityDays)
+        }
+    }
+
+    fun addOrUpdateReminder(domainId: String, title: String, message: String, hour: Int, minute: Int) {
+        viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            val reminder = ReminderEntity(
+                id = UUID.randomUUID().toString(),
+                userId = user.id,
+                domainId = domainId,
+                title = title,
+                message = message,
+                hour = hour,
+                minute = minute,
+                isEnabled = true
+            )
+            accountabilityRepository.saveReminder(reminder)
+        }
+    }
+
+    fun deleteReminder(id: String) {
+        viewModelScope.launch {
+            accountabilityRepository.deleteReminder(id)
+        }
+    }
+
+    fun clearAllData() {
+        viewModelScope.launch {
+            accountabilityRepository.clearAllData()
+        }
+    }
+}
