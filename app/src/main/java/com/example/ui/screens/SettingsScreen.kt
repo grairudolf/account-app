@@ -71,14 +71,29 @@ fun SettingsScreen(
         } else "Not specified"
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.05f),
+                radius = w * 0.55f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.15f)
+            )
+            drawCircle(
+                color = AccentPurple.copy(alpha = 0.04f),
+                radius = w * 0.6f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.85f)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         item {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -379,14 +394,27 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ThemeMode.entries.forEach { mode ->
+                            val (icon, label) = when (mode) {
+                                ThemeMode.LIGHT -> Icons.Default.LightMode to "Light"
+                                ThemeMode.DARK -> Icons.Default.DarkMode to "Dark"
+                                ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto to "System"
+                            }
                             FilterChip(
                                 selected = currentTheme == mode,
                                 onClick = { onUpdateTheme(mode) },
-                                label = { Text(mode.name) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                label = { Text(label, fontWeight = FontWeight.SemiBold) },
                                 shape = RoundedCornerShape(20.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
                                 ),
                                 modifier = Modifier.testTag("theme_chip_${mode.name}")
                             )
@@ -520,6 +548,7 @@ fun SettingsScreen(
             }
         }
     }
+}
 
     if (showProfileDialog) {
         EditProfileDialog(

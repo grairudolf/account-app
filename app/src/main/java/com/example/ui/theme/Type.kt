@@ -4,11 +4,35 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
+import com.example.R
 
-// Poppins for Headings and Montserrat for Body text
-val HeadingFontFamily = FontFamily.SansSerif
-val BodyFontFamily = FontFamily.SansSerif
+val googleFontProvider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+
+val poppinsFont = GoogleFont("Poppins")
+val montserratFont = GoogleFont("Montserrat")
+
+// Poppins for Headings
+val HeadingFontFamily = FontFamily(
+    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
+    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
+    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+)
+
+// Montserrat for Body text
+val BodyFontFamily = FontFamily(
+    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
+    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
+    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+)
 
 val Typography = Typography(
     displayLarge = TextStyle(

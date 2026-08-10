@@ -34,12 +34,27 @@ fun DomainsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedGoalDomain by remember { mutableStateOf<AccountabilityDomainModel?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.05f),
+                radius = w * 0.5f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.15f)
+            )
+            drawCircle(
+                color = AccentPurple.copy(alpha = 0.04f),
+                radius = w * 0.6f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.75f)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         // Search Field with sleek 28.dp rounded background
@@ -125,6 +140,7 @@ fun DomainsScreen(
             }
         )
     }
+}
 }
 
 @Composable

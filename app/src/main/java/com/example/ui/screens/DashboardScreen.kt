@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,11 +18,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,6 +50,48 @@ fun DashboardScreen(
 ) {
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
     val discipleName = uiState.user?.fullName?.ifBlank { "Disciple" } ?: "Disciple"
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    val matchingDisciplines = remember(searchQuery, strings) {
+        if (searchQuery.isBlank()) emptyList()
+        else PredefinedDomains.ALL.filter { domain ->
+            val title = strings.getDomainTitle(domain.titleKey)
+            val desc = strings.getDomainDesc(domain.descKey)
+            domain.id.contains(searchQuery, ignoreCase = true) ||
+            title.contains(searchQuery, ignoreCase = true) ||
+            desc.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    val matchingActivities = remember(searchQuery, uiState.allEntries) {
+        if (searchQuery.isBlank()) emptyList()
+        else uiState.allEntries.filter { entry ->
+            entry.domainId.contains(searchQuery, ignoreCase = true) ||
+            entry.notes.contains(searchQuery, ignoreCase = true) ||
+            entry.reflection.contains(searchQuery, ignoreCase = true) ||
+            entry.bibleBook.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    // Infinite transition for pulsing streak flame & graphics
+    val infiniteTransition = rememberInfiniteTransition(label = "streak_pulse")
+    val flameScale by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "flame_scale"
+    )
+
+    // Animated Progress for Hero Banner
+    val animatedProgress by animateFloatAsState(
+        targetValue = (uiState.dailyProgress.progressPercentage / 100f).coerceIn(0f, 1f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "hero_progress"
+    )
 
     LazyColumn(
         modifier = Modifier
@@ -68,41 +119,236 @@ fun DashboardScreen(
                     Text(
                         text = "Hello, $discipleName",
                         style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
-                        .background(PurpleContainer)
-                        .border(1.dp, DividerColor, CircleShape),
+                        .background(
+                            Brush.linearGradient(
+                                listOf(PrimaryBlue, AccentPurple)
+                            )
+                        )
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = PrimaryBlueDark,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(LightBlueContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
         }
 
-        // Feature Highlight Hero Banner - Sleek 28.dp rounded card
+        // Functional Home Screen Search Field
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text(strings.searchDomains, style = MaterialTheme.typography.bodyMedium) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = strings.search,
+                        tint = PrimaryBlue
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("dashboard_search_input"),
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = PrimaryBlue,
+                    unfocusedBorderColor = DividerColor
+                ),
+                singleLine = true
+            )
+        }
+
+        if (searchQuery.isNotBlank()) {
+            item {
+                Text(
+                    text = "Search Results for “$searchQuery”",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            if (matchingDisciplines.isNotEmpty()) {
+                item {
+                    Text(
+                        text = strings.spiritualDisciplines,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PrimaryBlue
+                    )
+                }
+
+                items(matchingDisciplines) { domain ->
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, DividerColor),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToDomain(domain.id) }
+                            .testTag("search_result_domain_${domain.id}")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(LightBlueContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = strings.getDomainTitle(domain.titleKey),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = strings.getDomainDesc(domain.descKey),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2
+                                )
+                            }
+                            Button(
+                                onClick = { onNavigateToDomain(domain.id) },
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text(strings.save)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (matchingActivities.isNotEmpty()) {
+                item {
+                    Text(
+                        text = strings.recentActivities,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PrimaryBlue
+                    )
+                }
+
+                items(matchingActivities) { entry ->
+                    RecentActivityCard(
+                        entry = entry,
+                        strings = strings,
+                        onClick = { onNavigateToDomain(entry.domainId) }
+                    )
+                }
+            }
+
+            if (matchingDisciplines.isEmpty() && matchingActivities.isEmpty()) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, DividerColor),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "No spiritual disciplines or records found matching “$searchQuery”.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(20.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+
+        // Feature Highlight Hero Banner with Vector Graphic Elements
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(185.dp)
                     .clip(RoundedCornerShape(28.dp))
-                    .background(LightBlueContainer)
-                    .padding(20.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(LightBlueContainer, LightBlueContainer.copy(alpha = 0.8f))
+                        )
+                    )
+                    .border(1.dp, PrimaryBlue.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
                     .testTag("dashboard_hero_card")
             ) {
+                // Background Vector Graphic Overlay (Spiritual Light Waves)
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+
+                    drawCircle(
+                        color = PrimaryBlue.copy(alpha = 0.08f),
+                        radius = h * 0.9f,
+                        center = androidx.compose.ui.geometry.Offset(w * 0.9f, h * 0.2f)
+                    )
+                    drawCircle(
+                        color = AccentPurple.copy(alpha = 0.06f),
+                        radius = h * 0.6f,
+                        center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.9f)
+                    )
+
+                    val path = Path().apply {
+                        moveTo(0f, h * 0.7f)
+                        cubicTo(w * 0.3f, h * 0.5f, w * 0.6f, h * 0.9f, w, h * 0.6f)
+                        lineTo(w, h)
+                        lineTo(0f, h)
+                        close()
+                    }
+                    drawPath(path, color = PrimaryBlue.copy(alpha = 0.04f))
+                }
+
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
@@ -114,20 +360,39 @@ fun DashboardScreen(
                             shape = RoundedCornerShape(20.dp),
                             color = PrimaryBlue
                         ) {
-                            Text(
-                                text = strings.todaysProgress,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                            Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontWeight = FontWeight.Bold
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = strings.todaysProgress,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.8f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${uiState.dailyProgress.progressPercentage}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlue
                             )
                         }
-                        Icon(
-                            imageVector = Icons.Default.AutoStories,
-                            contentDescription = null,
-                            tint = PrimaryBlueDark,
-                            modifier = Modifier.size(24.dp)
-                        )
                     }
 
                     Column {
@@ -135,24 +400,24 @@ fun DashboardScreen(
                             text = "${uiState.dailyProgress.completedDomainsCount} of ${uiState.dailyProgress.totalActiveDomainsCount} Disciplines Completed",
                             style = MaterialTheme.typography.titleLarge,
                             color = PrimaryBlueDark,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         LinearProgressIndicator(
-                            progress = { uiState.dailyProgress.progressPercentage / 100f },
+                            progress = { animatedProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(8.dp)
+                                .height(10.dp)
                                 .clip(CircleShape),
                             color = PrimaryBlue,
-                            trackColor = Color.White.copy(alpha = 0.6f)
+                            trackColor = Color.White.copy(alpha = 0.7f)
                         )
                     }
                 }
             }
         }
 
-        // Daily Spiritual Encouragement / Promise ("Nice Things to Say")
+        // Daily Spiritual Encouragement Card
         item {
             Surface(
                 shape = RoundedCornerShape(28.dp),
@@ -169,9 +434,11 @@ fun DashboardScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(46.dp)
                             .clip(CircleShape)
-                            .background(AccentPurple),
+                            .background(
+                                Brush.linearGradient(listOf(AccentPurple, PrimaryBlue))
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -188,6 +455,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold,
                             color = AccentPurple
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "“Thy word is a lamp unto my feet, and a light unto my path.” — Psalm 119:105\nKeep walking in faithfulness today!",
                             style = MaterialTheme.typography.bodyMedium,
@@ -261,13 +529,13 @@ fun DashboardScreen(
             }
         }
 
-        // Stats Grid Cards - Sleek rounded 28.dp cards with Streak Gold
+        // Stats Grid Cards - Sleek rounded 28.dp cards with Pulsing Streak Gold Flame
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Streak Card (Yellow Gold Color)
+                // Streak Card (Yellow Gold Color with Animated Pulsing Flame Graphic)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -280,7 +548,8 @@ fun DashboardScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(42.dp)
+                                .scale(flameScale)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(StreakGold),
                             contentAlignment = Alignment.Center
@@ -289,7 +558,7 @@ fun DashboardScreen(
                                 imageVector = Icons.Default.LocalFireDepartment,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                         Text(
@@ -320,7 +589,7 @@ fun DashboardScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(42.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(LightBlueContainer),
                             contentAlignment = Alignment.Center
@@ -329,7 +598,7 @@ fun DashboardScreen(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = PrimaryBlue,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                         Text(
@@ -394,7 +663,7 @@ fun DashboardScreen(
             }
         }
 
-        // Recent Activities Section
+        // Recent Activities Section with Animated Items
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -428,10 +697,16 @@ fun DashboardScreen(
             }
         } else {
             items(uiState.recentActivities) { entry ->
-                RecentActivityCard(entry = entry, strings = strings, onClick = { onNavigateToDomain(entry.domainId) })
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(tween(400)) + slideInVertically(initialOffsetY = { 40 })
+                ) {
+                    RecentActivityCard(entry = entry, strings = strings, onClick = { onNavigateToDomain(entry.domainId) })
+                }
             }
         }
     }
+}
 }
 
 @Composable

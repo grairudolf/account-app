@@ -65,14 +65,29 @@ fun ReportsScreen(
         context.startActivity(chooser)
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.05f),
+                radius = w * 0.5f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.15f)
+            )
+            drawCircle(
+                color = AccentPurple.copy(alpha = 0.04f),
+                radius = w * 0.55f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.8f)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         item {
             Text(
                 text = strings.accountabilityReports,
@@ -329,4 +344,5 @@ fun ReportsScreen(
             }
         }
     }
+}
 }

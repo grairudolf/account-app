@@ -20,9 +20,9 @@ class UserRepository(private val userDao: UserDao) {
 
     val currentThemeFlow: Flow<ThemeMode> = userDao.getCurrentUserFlow().map { user ->
         when (user?.themeMode) {
-            "LIGHT" -> ThemeMode.LIGHT
             "DARK" -> ThemeMode.DARK
-            else -> ThemeMode.SYSTEM
+            "SYSTEM" -> ThemeMode.SYSTEM
+            else -> ThemeMode.LIGHT
         }
     }
 
@@ -36,7 +36,7 @@ class UserRepository(private val userDao: UserDao) {
             email = "",
             isGuest = true,
             language = "en",
-            themeMode = "SYSTEM"
+            themeMode = "LIGHT"
         )
         userDao.insertOrUpdateUser(defaultGuest)
         return defaultGuest

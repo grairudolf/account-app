@@ -1,5 +1,7 @@
 package com.example.ui.navigation
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
@@ -91,10 +93,14 @@ fun MainApp() {
 
         Scaffold(
             topBar = {
-                if (isMainBottomBarVisible && currentUser != null) {
+                if (isMainBottomBarVisible) {
                     CmfiTopBar(
                         title = strings.appName,
                         userName = currentUser?.fullName?.ifBlank { "Disciple" } ?: "Disciple",
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { newLang ->
+                            settingsViewModel.updateLanguage(newLang)
+                        },
                         onProfileClick = { navController.navigate(NavRoutes.SETTINGS) },
                         onNotificationClick = { navController.navigate(NavRoutes.SETTINGS) },
                         onSearchClick = { navController.navigate(NavRoutes.SEARCH) }
@@ -102,7 +108,7 @@ fun MainApp() {
                 }
             },
             bottomBar = {
-                if (isMainBottomBarVisible && currentUser != null) {
+                if (isMainBottomBarVisible) {
                     CmfiBottomBar(
                         currentRoute = currentRoute,
                         strings = strings,
@@ -121,8 +127,12 @@ fun MainApp() {
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = if (currentUser == null) NavRoutes.AUTH else NavRoutes.DASHBOARD,
-                modifier = Modifier.padding(innerPadding)
+                startDestination = NavRoutes.DASHBOARD,
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { 60 }) },
+                exitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { -60 }) },
+                popEnterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { -60 }) },
+                popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { 60 }) }
             ) {
                 composable(NavRoutes.AUTH) {
                     AuthScreen(
@@ -277,7 +287,10 @@ fun MainApp() {
                 composable(NavRoutes.SEARCH) {
                     SearchScreen(
                         strings = strings,
-                        allEntries = dashboardUiState.recentActivities,
+                        allEntries = dashboardUiState.allEntries,
+                        onNavigateToDomain = { domainId ->
+                            navController.navigate(NavRoutes.domainDetail(domainId))
+                        },
                         onBack = { navController.popBackStack() }
                     )
                 }

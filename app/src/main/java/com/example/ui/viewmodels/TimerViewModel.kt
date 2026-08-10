@@ -8,7 +8,9 @@ import com.example.data.repositories.AccountabilityRepository
 import com.example.services.timer.TimerServiceManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -26,13 +28,16 @@ class TimerViewModel(
 
     init {
         viewModelScope.launch {
-            activeSession.collect { session ->
-                if (session != null) {
-                    while (session.isRunning) {
+            activeSession.collectLatest { session ->
+                if (session != null && session.isRunning && !session.isPaused) {
+                    while (coroutineContext.isActive) {
                         val durationMs = timerServiceManager.calculateCurrentDurationMs(session)
                         _elapsedSeconds.value = durationMs / 1000L
                         delay(500)
                     }
+                } else if (session != null) {
+                    val durationMs = timerServiceManager.calculateCurrentDurationMs(session)
+                    _elapsedSeconds.value = durationMs / 1000L
                 } else {
                     _elapsedSeconds.value = 0L
                 }

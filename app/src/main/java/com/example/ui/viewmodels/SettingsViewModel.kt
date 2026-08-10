@@ -24,7 +24,7 @@ class SettingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.ENGLISH)
 
     val currentTheme: StateFlow<ThemeMode> = userRepository.currentThemeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.LIGHT)
 
     val reminders: StateFlow<List<ReminderEntity>> = accountabilityRepository.remindersFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

@@ -20,6 +20,7 @@ data class DashboardUiState(
     val streakStats: StreakStats = StreakStats(0, 0),
     val goalsWithProgress: List<GoalWithProgress> = emptyList(),
     val recentActivities: List<AccountabilityEntryEntity> = emptyList(),
+    val allEntries: List<AccountabilityEntryEntity> = emptyList(),
     val upcomingReminders: List<ReminderEntity> = emptyList()
 )
 
@@ -58,6 +59,7 @@ class DashboardViewModel(
             streakStats = streakStats,
             goalsWithProgress = goalsProgress,
             recentActivities = entries.take(5),
+            allEntries = entries,
             upcomingReminders = reminders.filter { it.isEnabled }.take(3)
         )
     }.stateIn(

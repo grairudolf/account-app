@@ -15,6 +15,12 @@ class AuthViewModel(
     private val accountabilityRepository: AccountabilityRepository
 ) : ViewModel() {
 
+    init {
+        viewModelScope.launch {
+            userRepository.getOrCreateGuestUser()
+        }
+    }
+
     val currentUser: StateFlow<UserEntity?> = userRepository.currentUserFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 

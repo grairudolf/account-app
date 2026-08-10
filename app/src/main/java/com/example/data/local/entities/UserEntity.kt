@@ -13,7 +13,7 @@ data class UserEntity(
     val discipleMaker: String = "",
     val phoneNumber: String = "",
     val language: String = "en", // "en" or "fr"
-    val themeMode: String = "SYSTEM", // "LIGHT", "DARK", "SYSTEM"
+    val themeMode: String = "LIGHT", // "LIGHT", "DARK", "SYSTEM"
     val conversionDate: String = "", // e.g. "2021-03-15"
     val accountabilityDays: String = "MON,TUE,WED,THU,FRI,SAT,SUN", // comma separated days
     val isGuest: Boolean = true,

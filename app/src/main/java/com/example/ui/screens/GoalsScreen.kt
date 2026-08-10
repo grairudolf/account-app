@@ -37,12 +37,27 @@ fun GoalsScreen(
 ) {
     var showAddGoalDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = AccentPurple.copy(alpha = 0.05f),
+                radius = w * 0.55f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.2f)
+            )
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.04f),
+                radius = w * 0.5f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.8f)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         // Frequency Selector Filter Chips
@@ -122,6 +137,7 @@ fun GoalsScreen(
             }
         }
     }
+}
 
     if (showAddGoalDialog) {
         AddGoalDialog(

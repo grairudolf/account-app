@@ -47,14 +47,29 @@ fun CalendarScreen(
     val monthTitle = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val activeStreakDays = monthDaysCompletion.count { it.entriesCount > 0 }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = StreakGold.copy(alpha = 0.05f),
+                radius = w * 0.45f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.9f, h * 0.2f)
+            )
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.04f),
+                radius = w * 0.5f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.8f)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Streak Summary Banner in Calendar
         item {
             Surface(
@@ -274,4 +289,5 @@ fun CalendarScreen(
             }
         }
     }
+}
 }

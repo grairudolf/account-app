@@ -38,6 +38,7 @@ data class AccountabilityEntryEntity(
     val givingAmount: Double = 0.0,
     val givingType: String = "", // Tithe, Offering, Missions, Other
     val givingIncomeReference: Double = 0.0,
+    val givingPercentage: Double = 0.0,
 
     // Disciple Maker Accountability
     val accountabilityFrequency: String = "",
@@ -48,6 +49,8 @@ data class AccountabilityEntryEntity(
     val bookAuthor: String = "",
     val totalPages: Int = 0,
     val pagesRead: Int = 0,
+    val bookTimesRead: Int = 1,
+    val pagesMemorized: Int = 0,
     val litMemChapter: String = "",
     val litMemPassage: String = "",
     val litMemStatus: String = "", // Learning, Memorized, Reviewing

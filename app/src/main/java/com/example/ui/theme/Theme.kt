@@ -50,13 +50,12 @@ enum class ThemeMode {
 
 @Composable
 fun CmfiTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    themeMode: ThemeMode = ThemeMode.LIGHT,
     content: @Composable () -> Unit
 ) {
     val darkTheme = when (themeMode) {
-        ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        else -> false // Light theme by default unless explicitly set to DARK
     }
 
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

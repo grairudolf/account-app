@@ -24,14 +24,29 @@ fun StatisticsScreen(
     strings: AppStrings,
     uiState: OverallStatisticsUiState
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = StreakGold.copy(alpha = 0.05f),
+                radius = w * 0.5f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.15f)
+            )
+            drawCircle(
+                color = PrimaryBlue.copy(alpha = 0.04f),
+                radius = w * 0.55f,
+                center = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.85f)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         item {
             Text(
                 text = strings.spiritualAnalytics,
@@ -115,8 +130,8 @@ fun StatisticsScreen(
                     }
 
                     // Bar Chart
-                    val weekDays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-                    val sampleData = listOf(3, 5, 2, 6, 4, 7, 5) // Visual activity representative values
+                    val maxVal = maxOf(uiState.weeklyActivity.maxOfOrNull { it.count } ?: 1, 1)
+                    val todayIso = java.time.LocalDate.now().toString()
 
                     Row(
                         modifier = Modifier
@@ -125,10 +140,10 @@ fun StatisticsScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        weekDays.forEachIndexed { idx, day ->
-                            val value = sampleData[idx]
-                            val maxVal = 7
-                            val heightRatio = value.toFloat() / maxVal.toFloat()
+                        uiState.weeklyActivity.forEach { dayActivity ->
+                            val value = dayActivity.count
+                            val isToday = dayActivity.dateIso == todayIso
+                            val heightRatio = if (maxVal > 0) value.toFloat() / maxVal.toFloat() else 0f
 
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -139,20 +154,21 @@ fun StatisticsScreen(
                                     text = "$value",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlue
+                                    color = if (isToday) StreakGold else PrimaryBlue
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Box(
                                     modifier = Modifier
                                         .width(22.dp)
-                                        .fillMaxHeight(heightRatio.coerceAtLeast(0.1f))
+                                        .fillMaxHeight(heightRatio.coerceAtLeast(0.08f))
                                         .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                        .background(if (idx == 6) StreakGold else PrimaryBlue)
+                                        .background(if (isToday) StreakGold else PrimaryBlue)
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = day,
+                                    text = dayActivity.dayLabel.take(3),
                                     style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -299,6 +315,7 @@ fun StatisticsScreen(
             }
         }
     }
+}
 }
 
 @Composable
