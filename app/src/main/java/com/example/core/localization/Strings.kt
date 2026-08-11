@@ -250,7 +250,7 @@ data class AppStrings(
 
 val EnglishStrings = AppStrings(
     appName = "CMFI Accountability",
-    dashboard = "Dashboard",
+    dashboard = "Home",
     domains = "Domains",
     calendar = "Calendar",
     statistics = "Statistics",
@@ -434,7 +434,7 @@ val EnglishStrings = AppStrings(
 
 val FrenchStrings = AppStrings(
     appName = "CMFI Accountability",
-    dashboard = "Tableau de Bord",
+    dashboard = "Accueil",
     domains = "Domaines",
     calendar = "Calendrier",
     statistics = "Statistiques",

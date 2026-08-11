@@ -42,12 +42,23 @@ class ReportsViewModel(
     private val _targetDate = MutableStateFlow(LocalDate.now())
     val targetDate: StateFlow<LocalDate> = _targetDate.asStateFlow()
 
+    private val _startDate = MutableStateFlow(LocalDate.now().minusDays(7))
+    val startDate: StateFlow<LocalDate> = _startDate.asStateFlow()
+
+    private val _endDate = MutableStateFlow(LocalDate.now())
+    val endDate: StateFlow<LocalDate> = _endDate.asStateFlow()
+
     fun selectReportType(type: String) {
         _selectedReportType.value = type
     }
 
     fun setTargetDate(date: LocalDate) {
         _targetDate.value = date
+    }
+
+    fun setDateRange(start: LocalDate, end: LocalDate) {
+        _startDate.value = start
+        _endDate.value = end
     }
 
     fun toggleDomainFilter(domainId: String) {
@@ -77,10 +88,14 @@ class ReportsViewModel(
             val activeDomains = _selectedDomains.value
             val refDate = _targetDate.value
 
+            val startD = _startDate.value
+            val endD = _endDate.value
+
             val dateRangeLabel = when (reportType) {
                 "DAILY" -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 "WEEKLY" -> "Week of ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
                 "MONTHLY" -> "${refDate.month} ${refDate.year}"
+                "CUSTOM" -> "${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
                 else -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
             }
 
@@ -103,6 +118,14 @@ class ReportsViewModel(
                         try {
                             val d = LocalDate.parse(it.dateIso)
                             d.month == refDate.month && d.year == refDate.year
+                        } catch (e: Exception) { false }
+                    }
+                }
+                "CUSTOM" -> {
+                    entries.filter {
+                        try {
+                            val d = LocalDate.parse(it.dateIso)
+                            !d.isBefore(startD) && !d.isAfter(endD)
                         } catch (e: Exception) { false }
                     }
                 }

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.PredefinedDomains
+import com.example.ui.components.DuolingoFlame
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.DashboardUiState
 import com.example.ui.viewmodels.GoalWithProgress
@@ -568,13 +569,13 @@ fun DashboardScreen(
             }
         }
 
-        // Stats Grid Cards - Sleek rounded 28.dp cards with Pulsing Streak Gold Flame
+        // Stats Grid Cards - Sleek rounded 28.dp cards with Duolingo Burning Fire Flame
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Streak Card (Yellow Gold Color with Animated Pulsing Flame Graphic)
+                // Streak Card (Yellow Gold Color with Duolingo Animated Fire Flame)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -585,20 +586,28 @@ fun DashboardScreen(
                         .testTag("dashboard_streak_card")
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .scale(flameScale)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(StreakGold),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                            DuolingoFlame(
+                                size = 48.dp,
+                                isActive = uiState.streakStats.currentStreakDays > 0
                             )
+                            if (uiState.streakStats.currentStreakDays > 0) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = StreakGold
+                                ) {
+                                    Text(
+                                        text = "ON FIRE!",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                         }
                         Text(
                             text = strings.currentStreak,
@@ -615,6 +624,11 @@ fun DashboardScreen(
                 }
 
                 // Goal Completion Card
+                val hasGoals = uiState.goalsWithProgress.isNotEmpty()
+                val avgGoalProgress = if (hasGoals) {
+                    uiState.goalsWithProgress.map { it.progressPercentage }.average().toInt()
+                } else 0
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -645,12 +659,27 @@ fun DashboardScreen(
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            text = "${uiState.dailyProgress.progressPercentage}%",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        if (hasGoals) {
+                            Text(
+                                text = "$avgGoalProgress%",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        } else {
+                            Text(
+                                text = "No Goals Set",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Tap to set goals →",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -40,16 +41,20 @@ fun ReportsScreen(
     selectedReportType: String,
     selectedDomains: Set<String> = emptySet(),
     targetDate: java.time.LocalDate = java.time.LocalDate.now(),
+    startDate: java.time.LocalDate = java.time.LocalDate.now().minusDays(7),
+    endDate: java.time.LocalDate = java.time.LocalDate.now(),
     reportHistory: List<ReportRecordEntity>,
     onSelectReportType: (String) -> Unit,
     onToggleDomainFilter: (String) -> Unit = {},
     onSelectAllDomains: () -> Unit = {},
     onSetTargetDate: (java.time.LocalDate) -> Unit = {},
+    onSetDateRange: (java.time.LocalDate, java.time.LocalDate) -> Unit = { _, _ -> },
     onGeneratePdfReport: (Context, (File) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     var lastGeneratedFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
+    var showCalendarDatePicker by remember { mutableStateOf(false) }
 
     fun sharePdfFile(file: File) {
         try {
@@ -168,7 +173,7 @@ fun ReportsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf("DAILY", "WEEKLY", "MONTHLY").forEach { type ->
+                        listOf("DAILY", "WEEKLY", "MONTHLY", "CUSTOM").forEach { type ->
                             FilterChip(
                                 selected = selectedReportType == type,
                                 onClick = { onSelectReportType(type) },
@@ -180,6 +185,55 @@ fun ReportsScreen(
                                 ),
                                 modifier = Modifier.testTag("report_type_chip_$type")
                             )
+                        }
+                    }
+
+                    // Exact Date / Date Range Selector
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.background,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Exact Date / Date Range Selection:",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlue
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val dateText = when (selectedReportType) {
+                                    "DAILY" -> "Target Day: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "WEEKLY" -> "Week Ending: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "MONTHLY" -> "Month: ${targetDate.month.name} ${targetDate.year}"
+                                    else -> "Range: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                }
+                                Text(
+                                    text = dateText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                OutlinedButton(
+                                    onClick = { showCalendarDatePicker = true },
+                                    shape = RoundedCornerShape(16.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Change Date", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
                         }
                     }
 
@@ -467,5 +521,136 @@ fun ReportsScreen(
             }
         }
     }
+
+    if (showCalendarDatePicker) {
+        ReportDatePickerDialog(
+            currentReportType = selectedReportType,
+            currentTargetDate = targetDate,
+            currentStartDate = startDate,
+            currentEndDate = endDate,
+            onDismiss = { showCalendarDatePicker = false },
+            onConfirmDate = { date ->
+                onSetTargetDate(date)
+                showCalendarDatePicker = false
+            },
+            onConfirmRange = { start, end ->
+                onSetDateRange(start, end)
+                showCalendarDatePicker = false
+            }
+        )
+    }
 }
+}
+
+@Composable
+fun ReportDatePickerDialog(
+    currentReportType: String,
+    currentTargetDate: java.time.LocalDate,
+    currentStartDate: java.time.LocalDate,
+    currentEndDate: java.time.LocalDate,
+    onDismiss: () -> Unit,
+    onConfirmDate: (java.time.LocalDate) -> Unit,
+    onConfirmRange: (java.time.LocalDate, java.time.LocalDate) -> Unit
+) {
+    var targetDateText by remember { mutableStateOf(currentTargetDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var startDateText by remember { mutableStateOf(currentStartDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var endDateText by remember { mutableStateOf(currentEndDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
+
+    val today = java.time.LocalDate.now()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = if (currentReportType == "CUSTOM") "Select Custom Date Range" else "Select Report Date",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Quick Presets
+                Text("Quick Preset Selection:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            targetDateText = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            startDateText = today.minusDays(7).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            endDateText = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                        },
+                        label = { Text("Today") },
+                        shape = CircleShape
+                    )
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            val yest = today.minusDays(1)
+                            targetDateText = yest.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            startDateText = today.minusDays(14).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            endDateText = yest.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                        },
+                        label = { Text("Yesterday") },
+                        shape = CircleShape
+                    )
+                }
+
+                HorizontalDivider(color = DividerColor)
+
+                if (currentReportType == "CUSTOM") {
+                    OutlinedTextField(
+                        value = startDateText,
+                        onValueChange = { startDateText = it },
+                        label = { Text("Start Date (YYYY-MM-DD)") },
+                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    OutlinedTextField(
+                        value = endDateText,
+                        onValueChange = { endDateText = it },
+                        label = { Text("End Date (YYYY-MM-DD)") },
+                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = targetDateText,
+                        onValueChange = { targetDateText = it },
+                        label = { Text("Target Date (YYYY-MM-DD)") },
+                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    try {
+                        if (currentReportType == "CUSTOM") {
+                            val s = java.time.LocalDate.parse(startDateText)
+                            val e = java.time.LocalDate.parse(endDateText)
+                            onConfirmRange(s, e)
+                        } else {
+                            val d = java.time.LocalDate.parse(targetDateText)
+                            onConfirmDate(d)
+                        }
+                    } catch (ex: Exception) {
+                        onDismiss()
+                    }
+                },
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Apply Date")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
 }

@@ -4,7 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
@@ -22,7 +22,7 @@ enum class BottomTab(
     val icon: ImageVector,
     val getTitle: (AppStrings) -> String
 ) {
-    DASHBOARD("dashboard", Icons.Default.Dashboard, { it.dashboard }),
+    DASHBOARD("dashboard", Icons.Default.Home, { it.dashboard }),
     DOMAINS("domains", Icons.Default.List, { it.domains }),
     GOALS("goals", Icons.Default.Flag, { it.goals }),
     STATISTICS("statistics", Icons.Default.BarChart, { it.statistics }),

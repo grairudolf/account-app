@@ -3,10 +3,14 @@ package com.example.ui.navigation
 import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,19 +68,45 @@ fun MainApp() {
             NavRoutes.STATISTICS, NavRoutes.REPORTS
         )
 
+        val isTopBarVisible = currentRoute != NavRoutes.AUTH
+
+        val topBarTitle = when (currentRoute) {
+            NavRoutes.DASHBOARD -> strings.appName
+            NavRoutes.DOMAINS -> strings.domains
+            NavRoutes.GOALS -> strings.goals
+            NavRoutes.STATISTICS -> strings.statistics
+            NavRoutes.REPORTS -> strings.reports
+            NavRoutes.SETTINGS -> strings.settings
+            NavRoutes.SEARCH -> strings.search
+            NavRoutes.CALENDAR -> "Spiritual Calendar"
+            else -> strings.appName
+        }
+
         Scaffold(
             topBar = {
-                if (isMainBottomBarVisible) {
+                if (isTopBarVisible) {
                     CmfiTopBar(
-                        title = strings.appName,
+                        title = topBarTitle,
                         userName = currentUser?.fullName?.ifBlank { "Disciple" } ?: "Disciple",
                         currentLanguage = currentLanguage,
                         onLanguageSelected = { newLang ->
                             settingsViewModel.updateLanguage(newLang)
                         },
-                        onProfileClick = { navController.navigate(NavRoutes.SETTINGS) },
-                        onNotificationClick = { navController.navigate(NavRoutes.SETTINGS) },
-                        onSearchClick = { navController.navigate(NavRoutes.SEARCH) }
+                        onProfileClick = {
+                            if (currentRoute != NavRoutes.SETTINGS) {
+                                navController.navigate(NavRoutes.SETTINGS)
+                            }
+                        },
+                        onNotificationClick = {
+                            if (currentRoute != NavRoutes.SETTINGS) {
+                                navController.navigate(NavRoutes.SETTINGS)
+                            }
+                        },
+                        onSearchClick = {
+                            if (currentRoute != NavRoutes.SEARCH) {
+                                navController.navigate(NavRoutes.SEARCH)
+                            }
+                        }
                     )
                 }
             },
@@ -98,15 +128,54 @@ fun MainApp() {
                 }
             }
         ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = NavRoutes.DASHBOARD,
-                modifier = Modifier.padding(innerPadding),
-                enterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { 60 }) },
-                exitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { -60 }) },
-                popEnterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { -60 }) },
-                popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { 60 }) }
+            val mainTabsList = remember {
+                listOf(
+                    NavRoutes.DASHBOARD,
+                    NavRoutes.DOMAINS,
+                    NavRoutes.GOALS,
+                    NavRoutes.STATISTICS,
+                    NavRoutes.REPORTS
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .pointerInput(currentRoute) {
+                        if (isMainBottomBarVisible) {
+                            var totalDrag = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { totalDrag = 0f },
+                                onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
+                                onDragEnd = {
+                                    val idx = mainTabsList.indexOf(currentRoute)
+                                    if (totalDrag < -90f && idx in 0 until mainTabsList.size - 1) {
+                                        navController.navigate(mainTabsList[idx + 1]) {
+                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    } else if (totalDrag > 90f && idx > 0) {
+                                        navController.navigate(mainTabsList[idx - 1]) {
+                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
             ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = NavRoutes.DASHBOARD,
+                    enterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { 60 }) },
+                    exitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { -60 }) },
+                    popEnterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { -60 }) },
+                    popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { 60 }) }
+                ) {
                 composable(NavRoutes.AUTH) {
                     AuthScreen(
                         strings = strings,
@@ -246,6 +315,8 @@ fun MainApp() {
                     val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
                     val selectedDomains by reportsViewModel.selectedDomains.collectAsStateWithLifecycle()
                     val targetDate by reportsViewModel.targetDate.collectAsStateWithLifecycle()
+                    val startDate by reportsViewModel.startDate.collectAsStateWithLifecycle()
+                    val endDate by reportsViewModel.endDate.collectAsStateWithLifecycle()
                     val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
                     ReportsScreen(
                         strings = strings,
@@ -253,11 +324,14 @@ fun MainApp() {
                         selectedReportType = selectedReportType,
                         selectedDomains = selectedDomains,
                         targetDate = targetDate,
+                        startDate = startDate,
+                        endDate = endDate,
                         reportHistory = reportHistory,
                         onSelectReportType = { reportsViewModel.selectReportType(it) },
                         onToggleDomainFilter = { reportsViewModel.toggleDomainFilter(it) },
                         onSelectAllDomains = { reportsViewModel.selectAllDomains() },
                         onSetTargetDate = { reportsViewModel.setTargetDate(it) },
+                        onSetDateRange = { start, end -> reportsViewModel.setDateRange(start, end) },
                         onGeneratePdfReport = { ctx, onFile ->
                             reportsViewModel.generatePdfReport(ctx, onFile)
                         }
@@ -327,6 +401,7 @@ fun MainApp() {
                         onDiscardTimer = { timerViewModel.discardTimer() },
                         onBack = { navController.popBackStack() }
                     )
+                }
                 }
             }
         }
