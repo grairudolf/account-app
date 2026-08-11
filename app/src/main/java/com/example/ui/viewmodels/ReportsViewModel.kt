@@ -55,14 +55,18 @@ class ReportsViewModel(
                 "WEEKLY" -> {
                     val startOfWeek = today.minusDays(6)
                     entries.filter {
-                        val d = LocalDate.parse(it.dateIso)
-                        !d.isBefore(startOfWeek) && !d.isAfter(today)
+                        try {
+                            val d = LocalDate.parse(it.dateIso)
+                            !d.isBefore(startOfWeek) && !d.isAfter(today)
+                        } catch (e: Exception) { false }
                     }
                 }
                 "MONTHLY" -> {
                     entries.filter {
-                        val d = LocalDate.parse(it.dateIso)
-                        d.month == today.month && d.year == today.year
+                        try {
+                            val d = LocalDate.parse(it.dateIso)
+                            d.month == today.month && d.year == today.year
+                        } catch (e: Exception) { false }
                     }
                 }
                 else -> entries

@@ -33,7 +33,7 @@ class TimerViewModel(
                     while (coroutineContext.isActive) {
                         val durationMs = timerServiceManager.calculateCurrentDurationMs(session)
                         _elapsedSeconds.value = durationMs / 1000L
-                        delay(500)
+                        delay(1000)
                     }
                 } else if (session != null) {
                     val durationMs = timerServiceManager.calculateCurrentDurationMs(session)

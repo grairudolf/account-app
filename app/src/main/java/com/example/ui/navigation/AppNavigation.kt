@@ -45,14 +45,6 @@ fun MainApp() {
     val factory = remember { ViewModelFactory.getInstance(context) }
 
     val authViewModel: AuthViewModel = viewModel(factory = factory)
-    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
-    val domainsViewModel: DomainsViewModel = viewModel(factory = factory)
-    val timerViewModel: TimerViewModel = viewModel(factory = factory)
-    val entryViewModel: EntryViewModel = viewModel(factory = factory)
-    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
-    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
-    val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
-    val reportsViewModel: ReportsViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
 
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
@@ -65,26 +57,6 @@ fun MainApp() {
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route ?: NavRoutes.DASHBOARD
-
-        val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-        val searchDomainQuery by domainsViewModel.searchQuery.collectAsStateWithLifecycle()
-        val domainsList by domainsViewModel.allDomainsFlow.collectAsStateWithLifecycle()
-
-        val activeTimerSession by timerViewModel.activeSession.collectAsStateWithLifecycle()
-        val timerElapsedSeconds by timerViewModel.elapsedSeconds.collectAsStateWithLifecycle()
-
-        val goalsWithProgress by goalsViewModel.goalsWithProgressFlow.collectAsStateWithLifecycle()
-        val selectedGoalFreq by goalsViewModel.selectedFrequency.collectAsStateWithLifecycle()
-
-        val calSelectedDate by calendarViewModel.selectedDate.collectAsStateWithLifecycle()
-        val calCurrentMonth by calendarViewModel.currentMonth.collectAsStateWithLifecycle()
-        val calMonthCompletion by calendarViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
-        val calDateEntries by calendarViewModel.selectedDateEntries.collectAsStateWithLifecycle()
-
-        val statsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
-        val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
-        val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
-        val settingsReminders by settingsViewModel.reminders.collectAsStateWithLifecycle()
 
         val isMainBottomBarVisible = currentRoute in listOf(
             NavRoutes.DASHBOARD, NavRoutes.DOMAINS, NavRoutes.CALENDAR,
@@ -153,6 +125,8 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.DASHBOARD) {
+                    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
+                    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                     DashboardScreen(
                         strings = strings,
                         uiState = dashboardUiState,
@@ -169,6 +143,10 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.DOMAINS) {
+                    val domainsViewModel: DomainsViewModel = viewModel(factory = factory)
+                    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
+                    val searchDomainQuery by domainsViewModel.searchQuery.collectAsStateWithLifecycle()
+                    val domainsList by domainsViewModel.allDomainsFlow.collectAsStateWithLifecycle()
                     DomainsScreen(
                         strings = strings,
                         domains = domainsList,
@@ -199,6 +177,7 @@ fun MainApp() {
                     arguments = listOf(navArgument("domainId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val domainId = backStackEntry.arguments?.getString("domainId") ?: "ddewg"
+                    val entryViewModel: EntryViewModel = viewModel(factory = factory)
                     DomainDetailScreen(
                         domainId = domainId,
                         strings = strings,
@@ -213,6 +192,9 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.GOALS) {
+                    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
+                    val goalsWithProgress by goalsViewModel.goalsWithProgressFlow.collectAsStateWithLifecycle()
+                    val selectedGoalFreq by goalsViewModel.selectedFrequency.collectAsStateWithLifecycle()
                     GoalsScreen(
                         strings = strings,
                         goalsWithProgress = goalsWithProgress,
@@ -226,6 +208,11 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.CALENDAR) {
+                    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
+                    val calSelectedDate by calendarViewModel.selectedDate.collectAsStateWithLifecycle()
+                    val calCurrentMonth by calendarViewModel.currentMonth.collectAsStateWithLifecycle()
+                    val calMonthCompletion by calendarViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
+                    val calDateEntries by calendarViewModel.selectedDateEntries.collectAsStateWithLifecycle()
                     CalendarScreen(
                         strings = strings,
                         selectedDate = calSelectedDate,
@@ -240,6 +227,8 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.STATISTICS) {
+                    val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
+                    val statsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
                     StatisticsScreen(
                         strings = strings,
                         uiState = statsUiState
@@ -247,6 +236,9 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.REPORTS) {
+                    val reportsViewModel: ReportsViewModel = viewModel(factory = factory)
+                    val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
+                    val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
                     ReportsScreen(
                         strings = strings,
                         user = currentUser,
@@ -260,6 +252,7 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.SETTINGS) {
+                    val settingsReminders by settingsViewModel.reminders.collectAsStateWithLifecycle()
                     SettingsScreen(
                         strings = strings,
                         user = currentUser,
@@ -285,6 +278,8 @@ fun MainApp() {
                 }
 
                 composable(NavRoutes.SEARCH) {
+                    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
+                    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                     SearchScreen(
                         strings = strings,
                         allEntries = dashboardUiState.allEntries,
@@ -300,6 +295,9 @@ fun MainApp() {
                     arguments = listOf(navArgument("domainId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val domainId = backStackEntry.arguments?.getString("domainId") ?: "ddewg"
+                    val timerViewModel: TimerViewModel = viewModel(factory = factory)
+                    val activeTimerSession by timerViewModel.activeSession.collectAsStateWithLifecycle()
+                    val timerElapsedSeconds by timerViewModel.elapsedSeconds.collectAsStateWithLifecycle()
                     TimerScreen(
                         domainId = domainId,
                         strings = strings,

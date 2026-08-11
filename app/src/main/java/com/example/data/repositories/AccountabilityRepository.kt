@@ -160,7 +160,9 @@ class AccountabilityRepository(
         // Calculate longest streak
         var longestStreak = 0
         var tempStreak = 0
-        val sortedAsc = uniqueDates.map { LocalDate.parse(it) }.sorted()
+        val sortedAsc = uniqueDates.mapNotNull {
+            try { LocalDate.parse(it) } catch (e: Exception) { null }
+        }.sorted()
         
         if (sortedAsc.isNotEmpty()) {
             tempStreak = 1
@@ -216,16 +218,20 @@ class AccountabilityRepository(
                 val startOfWeek = now.minusDays(now.dayOfWeek.value.toLong() - 1)
                 val endOfWeek = startOfWeek.plusDays(6)
                 domainEntries.filter { 
-                    val date = LocalDate.parse(it.dateIso)
-                    !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
+                    try {
+                        val date = LocalDate.parse(it.dateIso)
+                        !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
+                    } catch (e: Exception) { false }
                 }
             }
             "MONTHLY" -> {
                 val currentMonth = now.month
                 val currentYear = now.year
                 domainEntries.filter {
-                    val date = LocalDate.parse(it.dateIso)
-                    date.month == currentMonth && date.year == currentYear
+                    try {
+                        val date = LocalDate.parse(it.dateIso)
+                        date.month == currentMonth && date.year == currentYear
+                    } catch (e: Exception) { false }
                 }
             }
             else -> domainEntries
