@@ -1,5 +1,6 @@
 package com.example.ui.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.core.localization.AppLanguage
@@ -7,6 +8,7 @@ import com.example.data.local.entities.ReminderEntity
 import com.example.data.local.entities.UserEntity
 import com.example.data.repositories.AccountabilityRepository
 import com.example.data.repositories.UserRepository
+import com.example.services.notifications.ReminderManager
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -55,7 +57,7 @@ class SettingsViewModel(
         }
     }
 
-    fun addOrUpdateReminder(domainId: String, title: String, message: String, hour: Int, minute: Int) {
+    fun addOrUpdateReminder(context: Context, domainId: String, title: String, message: String, hour: Int, minute: Int) {
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
             val reminder = ReminderEntity(
@@ -69,12 +71,14 @@ class SettingsViewModel(
                 isEnabled = true
             )
             accountabilityRepository.saveReminder(reminder)
+            ReminderManager.scheduleReminder(context, reminder)
         }
     }
 
-    fun deleteReminder(id: String) {
+    fun deleteReminder(context: Context, id: String) {
         viewModelScope.launch {
             accountabilityRepository.deleteReminder(id)
+            ReminderManager.cancelReminder(context, id)
         }
     }
 

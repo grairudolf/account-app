@@ -417,8 +417,21 @@ fun DashboardScreen(
             }
         }
 
-        // Daily Spiritual Encouragement Card
+        // Daily Spiritual Encouragement Card (3B Prophetic Messages Quotes)
         item {
+            var quoteIndex by remember { mutableStateOf((0..6).random()) }
+            val quotes = remember {
+                listOf(
+                    "“Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness.” — The Bertoua Message (Z.T. Fomum)",
+                    "“Faithfulness in becoming and being a disciple includes praying alone, daily dynamic encounters with God (DDEWG), Bible reading, reading Christian literature, retreats, fasting, and soul-winning.” — The Pathway to Revival (Z.T. Fomum)",
+                    "“Son, write on your heart that what a person IS before God is of far greater importance than what he DOES. Seek to be filled with the Holy Spirit in all fullness.” — The Beijing Prophecy (Z.T. Fomum)",
+                    "“The power released in prayer and fasting depends primarily on WHO is praying and fasting, and secondarily on the duration.” — The Beijing Prophecy (Z.T. Fomum)",
+                    "“Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call upon your life.” — The Congo Brazzaville Message (Z.T. Fomum)",
+                    "“During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through.” — Pr. Zacharias Tanee Fomum",
+                    "“When a Spirit-filled believer prays and fasts in total surrender, heaven moves and hell is brought to naught for the glory of Christ!” — 3B Prophetic Messages (Z.T. Fomum)"
+                )
+            }
+
             Surface(
                 shape = RoundedCornerShape(28.dp),
                 color = AccentPurpleContainer,
@@ -427,41 +440,48 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .testTag("dashboard_encouragement_card")
             ) {
-                Row(
-                    modifier = Modifier.padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(listOf(AccentPurple, PrimaryBlue))
-                            ),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.FormatQuote,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Brush.linearGradient(listOf(AccentPurple, PrimaryBlue))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FormatQuote,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = "Daily Word of Encouragement (3B Messages)",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentPurple
+                            )
+                        }
+                        TextButton(onClick = { quoteIndex = (quoteIndex + 1) % quotes.size }) {
+                            Text("Next Quote", style = MaterialTheme.typography.labelSmall, color = PrimaryBlue)
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Daily Word of Encouragement",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AccentPurple
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "“Thy word is a lamp unto my feet, and a light unto my path.” — Psalm 119:105\nKeep walking in faithfulness today!",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = quotes[quoteIndex],
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

@@ -2,6 +2,8 @@ package com.example.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,13 +38,53 @@ fun ReportsScreen(
     strings: AppStrings,
     user: UserEntity?,
     selectedReportType: String,
+    selectedDomains: Set<String> = emptySet(),
+    targetDate: java.time.LocalDate = java.time.LocalDate.now(),
     reportHistory: List<ReportRecordEntity>,
     onSelectReportType: (String) -> Unit,
+    onToggleDomainFilter: (String) -> Unit = {},
+    onSelectAllDomains: () -> Unit = {},
+    onSetTargetDate: (java.time.LocalDate) -> Unit = {},
     onGeneratePdfReport: (Context, (File) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     var lastGeneratedFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
+
+    fun sharePdfFile(file: File) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share PDF Report via:"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "Unable to share PDF: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openPdfFile(file: File) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Open PDF Report with:"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "No PDF viewer app available", Toast.LENGTH_LONG).show()
+        }
+    }
 
     fun shareTextReport(platform: String?) {
         val userName = user?.fullName?.ifBlank { "A Disciple" } ?: "A Disciple"
@@ -141,6 +183,64 @@ fun ReportsScreen(
                         }
                     }
 
+                    // Domain Checkboxes Selection
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.background,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Select Exact Domains to Include:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                TextButton(onClick = onSelectAllDomains) {
+                                    Text("Select All", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+
+                            val availableDomains = listOf(
+                                "ddewg" to "DDEWG (Daily Encounter)",
+                                "bible_reading" to "Bible Reading",
+                                "prayer_alone" to "Prayer Alone",
+                                "prayer_with_others" to "Prayer With Others",
+                                "fasting" to "Fasting",
+                                "giving" to "Giving & Tithes",
+                                "christian_lit" to "Christian Literature",
+                                "soul_winning" to "Soul Winning & Evangelism"
+                            )
+
+                            availableDomains.forEach { (id, title) ->
+                                val checked = selectedDomains.contains(id)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onToggleDomainFilter(id) }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = checked,
+                                        onCheckedChange = { onToggleDomainFilter(id) },
+                                        colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (checked) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     Button(
                         onClick = {
                             isGenerating = true
@@ -171,6 +271,7 @@ fun ReportsScreen(
                     }
 
                     if (lastGeneratedFile != null) {
+                        val file = lastGeneratedFile!!
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = LightBlueContainer,
@@ -189,18 +290,28 @@ fun ReportsScreen(
                                         color = StatusSuccess
                                     )
                                     Text(
-                                        text = lastGeneratedFile?.name ?: "",
+                                        text = file.name,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = PrimaryBlueDark
                                     )
                                 }
-                                IconButton(onClick = { shareTextReport(null) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = "Share PDF",
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    IconButton(onClick = { openPdfFile(file) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.PictureAsPdf,
+                                            contentDescription = "Open PDF",
+                                            tint = PrimaryBlue,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    IconButton(onClick = { sharePdfFile(file) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share PDF File",
+                                            tint = PrimaryBlue,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -302,6 +413,7 @@ fun ReportsScreen(
             }
         } else {
             items(reportHistory) { record ->
+                val savedFile = record.generatedFilePath?.let { File(it) }
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -336,8 +448,19 @@ fun ReportsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = { shareTextReport(null) }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share", tint = PrimaryBlue)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (savedFile != null && savedFile.exists()) {
+                                IconButton(onClick = { openPdfFile(savedFile) }) {
+                                    Icon(Icons.Default.PictureAsPdf, contentDescription = "Open PDF", tint = PrimaryBlue)
+                                }
+                                IconButton(onClick = { sharePdfFile(savedFile) }) {
+                                    Icon(Icons.Default.Share, contentDescription = "Share PDF", tint = PrimaryBlue)
+                                }
+                            } else {
+                                IconButton(onClick = { shareTextReport(null) }) {
+                                    Icon(Icons.Default.Share, contentDescription = "Share Summary", tint = PrimaryBlue)
+                                }
+                            }
                         }
                     }
                 }

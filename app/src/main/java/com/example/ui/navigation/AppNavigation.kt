@@ -1,5 +1,6 @@
 package com.example.ui.navigation
 
+import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
@@ -59,7 +60,7 @@ fun MainApp() {
         val currentRoute = navBackStackEntry?.destination?.route ?: NavRoutes.DASHBOARD
 
         val isMainBottomBarVisible = currentRoute in listOf(
-            NavRoutes.DASHBOARD, NavRoutes.DOMAINS, NavRoutes.CALENDAR,
+            NavRoutes.DASHBOARD, NavRoutes.DOMAINS, NavRoutes.GOALS,
             NavRoutes.STATISTICS, NavRoutes.REPORTS
         )
 
@@ -229,22 +230,46 @@ fun MainApp() {
                 composable(NavRoutes.STATISTICS) {
                     val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
                     val statsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
+                    val selectedDate by statisticsViewModel.selectedDate.collectAsStateWithLifecycle()
+                    val currentMonth by statisticsViewModel.currentMonth.collectAsStateWithLifecycle()
+                    val monthDaysCompletion by statisticsViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
+                    val selectedDateEntries by statisticsViewModel.selectedDateEntries.collectAsStateWithLifecycle()
+                    val allEntries by statisticsViewModel.allEntries.collectAsStateWithLifecycle()
+
                     StatisticsScreen(
                         strings = strings,
-                        uiState = statsUiState
+                        uiState = statsUiState,
+                        selectedDate = selectedDate,
+                        currentMonth = currentMonth,
+                        monthDaysCompletion = monthDaysCompletion,
+                        selectedDateEntries = selectedDateEntries,
+                        allEntries = allEntries,
+                        onSelectDate = { statisticsViewModel.selectDate(it) },
+                        onNextMonth = { statisticsViewModel.nextMonth() },
+                        onPreviousMonth = { statisticsViewModel.previousMonth() },
+                        onGoToToday = { statisticsViewModel.goToToday() },
+                        onUpdateEntry = { statisticsViewModel.updateEntry(it) },
+                        onDeleteEntry = { statisticsViewModel.deleteEntry(it) }
                     )
                 }
 
                 composable(NavRoutes.REPORTS) {
                     val reportsViewModel: ReportsViewModel = viewModel(factory = factory)
                     val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
+                    val selectedDomains by reportsViewModel.selectedDomains.collectAsStateWithLifecycle()
+                    val targetDate by reportsViewModel.targetDate.collectAsStateWithLifecycle()
                     val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
                     ReportsScreen(
                         strings = strings,
                         user = currentUser,
                         selectedReportType = selectedReportType,
+                        selectedDomains = selectedDomains,
+                        targetDate = targetDate,
                         reportHistory = reportHistory,
                         onSelectReportType = { reportsViewModel.selectReportType(it) },
+                        onToggleDomainFilter = { reportsViewModel.toggleDomainFilter(it) },
+                        onSelectAllDomains = { reportsViewModel.selectAllDomains() },
+                        onSetTargetDate = { reportsViewModel.setTargetDate(it) },
                         onGeneratePdfReport = { ctx, onFile ->
                             reportsViewModel.generatePdfReport(ctx, onFile)
                         }
@@ -264,10 +289,10 @@ fun MainApp() {
                         onUpdateProfile = { name, email, assembly, maker, phone, convDate, accDays ->
                             settingsViewModel.updateProfile(name, email, assembly, maker, phone, convDate, accDays)
                         },
-                        onAddReminder = { dId, title, msg, h, m ->
-                            settingsViewModel.addOrUpdateReminder(dId, title, msg, h, m)
+                        onAddReminder = { ctx, dId, title, msg, h, m ->
+                            settingsViewModel.addOrUpdateReminder(ctx, dId, title, msg, h, m)
                         },
-                        onDeleteReminder = { settingsViewModel.deleteReminder(it) },
+                        onDeleteReminder = { ctx, id -> settingsViewModel.deleteReminder(ctx, id) },
                         onSignOut = {
                             authViewModel.signOut()
                             navController.navigate(NavRoutes.AUTH) {

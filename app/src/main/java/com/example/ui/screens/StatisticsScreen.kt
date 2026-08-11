@@ -2,28 +2,52 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.core.localization.AppStrings
+import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.ui.theme.*
+import com.example.ui.viewmodels.DayCompletionInfo
 import com.example.ui.viewmodels.OverallStatisticsUiState
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun StatisticsScreen(
     strings: AppStrings,
-    uiState: OverallStatisticsUiState
+    uiState: OverallStatisticsUiState,
+    selectedDate: LocalDate = LocalDate.now(),
+    currentMonth: YearMonth = YearMonth.now(),
+    monthDaysCompletion: List<DayCompletionInfo> = emptyList(),
+    selectedDateEntries: List<AccountabilityEntryEntity> = emptyList(),
+    allEntries: List<AccountabilityEntryEntity> = emptyList(),
+    onSelectDate: (LocalDate) -> Unit = {},
+    onNextMonth: () -> Unit = {},
+    onPreviousMonth: () -> Unit = {},
+    onGoToToday: () -> Unit = {},
+    onUpdateEntry: (AccountabilityEntryEntity) -> Unit = {},
+    onDeleteEntry: (String) -> Unit = {}
 ) {
+    var selectedTab by remember { mutableStateOf(0) } // 0: Analytics Overview, 1: History Calendar & Logs
+    var editingEntry by remember { mutableStateOf<AccountabilityEntryEntity?>(null) }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
@@ -40,282 +64,390 @@ fun StatisticsScreen(
             )
         }
 
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
-        item {
-            Text(
-                text = strings.spiritualAnalytics,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Row 1: Streak & Total Activities
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Section Tabs: Overview vs History Calendar
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = PrimaryBlue,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .testTag("statistics_tab_row")
             ) {
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    title = strings.currentStreak,
-                    value = "${uiState.streakStats.currentStreakDays} Days",
-                    subtitle = "Longest: ${uiState.streakStats.longestStreakDays} Days",
-                    icon = Icons.Default.LocalFireDepartment,
-                    iconBg = StreakGoldContainer,
-                    testTag = "stat_card_streak"
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Overview Analytics", fontWeight = FontWeight.Bold) },
+                    icon = { Icon(Icons.Default.BarChart, contentDescription = null) }
                 )
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Total Records",
-                    value = "${uiState.totalEntriesCount}",
-                    subtitle = "Logged Discipline Activities",
-                    icon = Icons.Default.List,
-                    iconBg = LightBlueContainer,
-                    testTag = "stat_card_total"
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("History & Calendar", fontWeight = FontWeight.Bold) },
+                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }
                 )
             }
-        }
 
-        // Weekly Discipline Activity Chart
-        item {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("stat_card_chart")
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (selectedTab == 0) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    item {
+                        Text(
+                            text = strings.spiritualAnalytics,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    item {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(LightBlueContainer),
-                                contentAlignment = Alignment.Center
+                            MetricCard(
+                                modifier = Modifier.weight(1f),
+                                title = strings.currentStreak,
+                                value = "${uiState.streakStats.currentStreakDays} Days",
+                                subtitle = "Longest: ${uiState.streakStats.longestStreakDays} Days",
+                                icon = Icons.Default.LocalFireDepartment,
+                                iconBg = StreakGoldContainer,
+                                testTag = "stat_card_streak"
+                            )
+                            MetricCard(
+                                modifier = Modifier.weight(1f),
+                                title = "Total Records",
+                                value = "${uiState.totalEntriesCount}",
+                                subtitle = "Logged Discipline Activities",
+                                icon = Icons.Default.List,
+                                iconBg = LightBlueContainer,
+                                testTag = "stat_card_total"
+                            )
+                        }
+                    }
+
+                    // Weekly Activity Chart
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth().testTag("stat_card_chart")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                Icon(Icons.Default.BarChart, contentDescription = null, tint = PrimaryBlue)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Weekly Activity Trend",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Disciplines completed per day",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                val maxVal = maxOf(uiState.weeklyActivity.maxOfOrNull { it.count } ?: 1, 1)
+                                val todayIso = LocalDate.now().toString()
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    uiState.weeklyActivity.forEach { dayActivity ->
+                                        val value = dayActivity.count
+                                        val isToday = dayActivity.dateIso == todayIso
+                                        val heightRatio = if (maxVal > 0) value.toFloat() / maxVal.toFloat() else 0f
+
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Bottom,
+                                            modifier = Modifier.fillMaxHeight()
+                                        ) {
+                                            Text(
+                                                text = "$value",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isToday) StreakGold else PrimaryBlue
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(22.dp)
+                                                    .fillMaxHeight(heightRatio.coerceAtLeast(0.08f))
+                                                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                                                    .background(if (isToday) StreakGold else PrimaryBlue)
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = dayActivity.dayLabel.take(3),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
                             }
-                            Column {
+                        }
+                    }
+
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth().testTag("stat_card_bible")
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(text = strings.bibleReading, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column {
+                                        Text("Total Chapters", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("${uiState.bibleStats.totalChaptersRead}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                    }
+                                    Column {
+                                        Text("Bibles Read", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(String.format("%.1f", uiState.bibleStats.biblesReadCount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                    }
+                                    Column {
+                                        Text("Completion", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(String.format("%.1f%%", uiState.bibleStats.completionPercentage), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Tab 1: History Calendar & Editable Activity Logs
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    item {
+                        // Month Selector Controls
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = onPreviousMonth) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                                }
                                 Text(
-                                    text = "Weekly Activity Trend",
+                                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Text(
-                                    text = "Disciplines completed per day",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row {
+                                    IconButton(onClick = onGoToToday) {
+                                        Icon(Icons.Default.Today, contentDescription = "Today", tint = PrimaryBlue)
+                                    }
+                                    IconButton(onClick = onNextMonth) {
+                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                                    }
+                                }
                             }
                         }
                     }
 
-                    // Bar Chart
-                    val maxVal = maxOf(uiState.weeklyActivity.maxOfOrNull { it.count } ?: 1, 1)
-                    val todayIso = java.time.LocalDate.now().toString()
+                    item {
+                        Text(
+                            text = "Selected Date: ${selectedDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        uiState.weeklyActivity.forEach { dayActivity ->
-                            val value = dayActivity.count
-                            val isToday = dayActivity.dateIso == todayIso
-                            val heightRatio = if (maxVal > 0) value.toFloat() / maxVal.toFloat() else 0f
-
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Bottom,
-                                modifier = Modifier.fillMaxHeight()
+                    if (selectedDateEntries.isEmpty()) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, DividerColor),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = "$value",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isToday) StreakGold else PrimaryBlue
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(22.dp)
-                                        .fillMaxHeight(heightRatio.coerceAtLeast(0.08f))
-                                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                        .background(if (isToday) StreakGold else PrimaryBlue)
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = dayActivity.dayLabel.take(3),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "No recorded discipline entries for this date. Pick another date or tap on any past entry below to edit.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(20.dp)
                                 )
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        // Bible Reading Analytics Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("stat_card_bible")
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(LightBlueContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.AutoStories, contentDescription = null, tint = PrimaryBlue)
+                    } else {
+                        items(selectedDateEntries) { entry ->
+                            EntryLogCard(
+                                entry = entry,
+                                onEdit = { editingEntry = entry },
+                                onDelete = { onDeleteEntry(entry.id) }
+                            )
                         }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = strings.bibleReading,
-                            style = MaterialTheme.typography.titleMedium,
+                            text = "All Past Accountability Records (${allEntries.size})",
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Total Chapters", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${uiState.bibleStats.totalChaptersRead}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                        Column {
-                            Text("Bibles Read", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(String.format("%.1f", uiState.bibleStats.biblesReadCount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                        Column {
-                            Text("Completion", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(String.format("%.1f%%", uiState.bibleStats.completionPercentage), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Soul Winning Analytics Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("stat_card_soul")
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PurpleContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Groups, contentDescription = null, tint = PrimaryBlueDark)
-                        }
-                        Text(
-                            text = strings.soulWinning,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                    items(allEntries) { entry ->
+                        EntryLogCard(
+                            entry = entry,
+                            onEdit = { editingEntry = entry },
+                            onDelete = { onDeleteEntry(entry.id) }
                         )
                     }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Preached To", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${uiState.soulWinningStats.totalPreachedTo}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                        Column {
-                            Text("Converts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${uiState.soulWinningStats.totalConverted}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                        Column {
-                            Text("Baptized", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${uiState.soulWinningStats.totalWaterBaptized}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
         }
+    }
 
-        // Prayer & Fasting Row
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Prayer & DDEWG",
-                    value = "${uiState.totalPrayerMinutes} Mins",
-                    subtitle = "${uiState.totalPrayerMinutes / 60} Total Hours",
-                    icon = Icons.Default.SelfImprovement,
-                    iconBg = LightBlueContainer,
-                    testTag = "stat_card_prayer"
+    if (editingEntry != null) {
+        EditEntryDialog(
+            entry = editingEntry!!,
+            onDismiss = { editingEntry = null },
+            onConfirm = { updated ->
+                onUpdateEntry(updated)
+                editingEntry = null
+            }
+        )
+    }
+}
+
+@Composable
+fun EntryLogCard(
+    entry: AccountabilityEntryEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, DividerColor),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = entry.domainId.replace("_", " ").uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue
                 )
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Fasting",
-                    value = "${uiState.totalFastingDays} Days",
-                    subtitle = "Consecutive & Dry Fasting",
-                    icon = Icons.Default.Restaurant,
-                    iconBg = PurpleContainer,
-                    testTag = "stat_card_fasting"
+                Text(
+                    text = "Date: ${entry.dateIso}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (entry.notes.isNotBlank()) {
+                    Text(
+                        text = "Notes: ${entry.notes}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2
+                    )
+                }
+            }
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Entry", tint = PrimaryBlue)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete Entry", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
 }
+
+@Composable
+fun EditEntryDialog(
+    entry: AccountabilityEntryEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (AccountabilityEntryEntity) -> Unit
+) {
+    var notes by remember { mutableStateOf(entry.notes) }
+    var chapters by remember { mutableStateOf(entry.chaptersCount.toString()) }
+    var prayerMins by remember { mutableStateOf((entry.durationSeconds / 60).toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Past Discipline Record") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Activity Notes / Reflection") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = chapters,
+                    onValueChange = { chapters = it },
+                    label = { Text("Chapters Read / Count") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = prayerMins,
+                    onValueChange = { prayerMins = it },
+                    label = { Text("Duration (Minutes)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val updated = entry.copy(
+                    notes = notes,
+                    chaptersCount = chapters.toIntOrNull() ?: entry.chaptersCount,
+                    durationSeconds = (prayerMins.toLongOrNull() ?: (entry.durationSeconds / 60)) * 60,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                onConfirm(updated)
+            }) {
+                Text("Save Changes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -325,7 +457,7 @@ fun MetricCard(
     value: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconBg: androidx.compose.ui.graphics.Color,
+    iconBg: Color,
     testTag: String
 ) {
     Surface(
@@ -353,3 +485,4 @@ fun MetricCard(
         }
     }
 }
+

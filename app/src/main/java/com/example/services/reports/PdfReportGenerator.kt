@@ -99,46 +99,122 @@ object PdfReportGenerator {
         canvas.drawText("• Soul Winning: Preached to $preachedTo, Converts $converts", 300f, y, paint)
         y += 30f
 
-        // Entries Table Header
-        paint.color = Color.parseColor("#E9F0FB")
-        canvas.drawRect(30f, y, 565f, y + 25f, paint)
+        // Entries Table Header with Full Grid Borders
+        fun drawTableHeader(c: Canvas, startY: Float) {
+            // Table Header Background
+            paint.style = Paint.Style.FILL
+            paint.color = Color.parseColor("#0D47A1")
+            c.drawRect(30f, startY, 565f, startY + 24f, paint)
 
-        paint.color = Color.parseColor("#0D47A1")
-        paint.textSize = 11f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        canvas.drawText("Date", 40f, y + 17f, paint)
-        canvas.drawText("Domain", 120f, y + 17f, paint)
-        canvas.drawText("Details / Measurements", 260f, y + 17f, paint)
-        y += 32f
+            // Header Text
+            paint.color = Color.WHITE
+            paint.textSize = 10f
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            c.drawText("Date", 38f, startY + 16f, paint)
+            c.drawText("Domain", 115f, startY + 16f, paint)
+            c.drawText("Measurements & Details", 230f, startY + 16f, paint)
+            c.drawText("Notes / Reflections", 420f, startY + 16f, paint)
+
+            // Table Outer Border
+            paint.style = Paint.Style.STROKE
+            paint.color = Color.parseColor("#0D47A1")
+            paint.strokeWidth = 1.5f
+            c.drawRect(30f, startY, 565f, startY + 24f, paint)
+        }
+
+        drawTableHeader(canvas, y)
+        y += 24f
 
         // Itemized Entries
         paint.typeface = Typeface.DEFAULT
-        paint.textSize = 10f
-        paint.color = Color.BLACK
+        paint.textSize = 9f
 
-        val maxDisplayEntries = entries.take(20)
-        for (entry in maxDisplayEntries) {
-            if (y > 780f) break
+        var currentPageNum = 1
+        var activePage = page
+        var activeCanvas = canvas
+        var rowIndex = 0
 
-            canvas.drawText(entry.dateIso, 40f, y, paint)
-            val domainTitle = getDomainDisplayName(entry.domainId)
-            canvas.drawText(domainTitle.take(20), 120f, y, paint)
+        fun drawFooter(c: Canvas, pNum: Int) {
+            paint.style = Paint.Style.STROKE
+            paint.color = Color.LTGRAY
+            paint.strokeWidth = 0.8f
+            c.drawLine(30f, 780f, 565f, 780f, paint)
 
-            val details = getEntrySummaryDetails(entry)
-            canvas.drawText(details.take(45), 260f, y, paint)
+            paint.style = Paint.Style.FILL
+            paint.color = Color.GRAY
+            paint.textSize = 8.5f
+            c.drawText("Generated on ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accountability App  •  Page $pNum", 30f, 795f, paint)
 
-            y += 18f
-            paint.color = Color.parseColor("#EEF0F3")
-            canvas.drawLine(30f, y - 5f, 565f, y - 5f, paint)
-            paint.color = Color.BLACK
+            // Disciple Maker Signature Line
+            paint.color = Color.DKGRAY
+            c.drawText("Disciple Maker Signature: _______________________", 320f, 795f, paint)
         }
 
-        // Footer
-        paint.color = Color.GRAY
-        paint.textSize = 9f
-        canvas.drawText("Generated on ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accountability App", 30f, 820f, paint)
+        if (entries.isEmpty()) {
+            paint.style = Paint.Style.FILL
+            paint.color = Color.DKGRAY
+            paint.textSize = 10f
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+            activeCanvas.drawText("No activities recorded for the selected domain filters and period.", 40f, y + 18f, paint)
+            y += 30f
+        } else {
+            for (entry in entries) {
+                if (y > 750f) {
+                    drawFooter(activeCanvas, currentPageNum)
+                    document.finishPage(activePage)
 
-        document.finishPage(page)
+                    currentPageNum++
+                    val newPageInfo = PdfDocument.PageInfo.Builder(595, 842, currentPageNum).create()
+                    activePage = document.startPage(newPageInfo)
+                    activeCanvas = activePage.canvas
+
+                    y = 40f
+                    drawTableHeader(activeCanvas, y)
+                    y += 24f
+                }
+
+                val rowHeight = 22f
+
+                // Alternating Row Background
+                paint.style = Paint.Style.FILL
+                paint.color = if (rowIndex % 2 == 0) Color.parseColor("#F5F7FA") else Color.WHITE
+                activeCanvas.drawRect(30f, y, 565f, y + rowHeight, paint)
+
+                // Row Grid Box Line
+                paint.style = Paint.Style.STROKE
+                paint.color = Color.parseColor("#D1D5DB")
+                paint.strokeWidth = 0.8f
+                activeCanvas.drawRect(30f, y, 565f, y + rowHeight, paint)
+
+                // Vertical Column Dividers
+                activeCanvas.drawLine(110f, y, 110f, y + rowHeight, paint)
+                activeCanvas.drawLine(225f, y, 225f, y + rowHeight, paint)
+                activeCanvas.drawLine(415f, y, 415f, y + rowHeight, paint)
+
+                // Text Content
+                paint.style = Paint.Style.FILL
+                paint.typeface = Typeface.DEFAULT
+                paint.textSize = 8.5f
+                paint.color = Color.BLACK
+
+                activeCanvas.drawText(entry.dateIso, 35f, y + 14f, paint)
+                val domainTitle = getDomainDisplayName(entry.domainId)
+                activeCanvas.drawText(domainTitle.take(18), 115f, y + 14f, paint)
+
+                val details = getEntrySummaryDetails(entry)
+                activeCanvas.drawText(details.take(32), 230f, y + 14f, paint)
+
+                val notesText = entry.notes.ifBlank { "-" }
+                activeCanvas.drawText(notesText.take(28), 420f, y + 14f, paint)
+
+                y += rowHeight
+                rowIndex++
+            }
+        }
+
+        // Footer for last page
+        drawFooter(activeCanvas, currentPageNum)
+        document.finishPage(activePage)
 
         val reportDir = File(context.filesDir, "reports")
         if (!reportDir.exists()) reportDir.mkdirs()

@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -260,15 +261,58 @@ fun AddGoalDialog(
     var unit by remember { mutableStateOf("Minutes") }
     var frequency by remember { mutableStateOf("DAILY") }
 
+    val domainOptions = listOf(
+        "ddewg" to "DDEWG (Daily Encounter)",
+        "bible_reading" to "Bible Reading",
+        "prayer_alone" to "Prayer Alone",
+        "prayer_with_others" to "Prayer With Others",
+        "fasting" to "Fasting",
+        "giving" to "Giving & Tithes",
+        "christian_lit" to "Christian Literature",
+        "soul_winning" to "Soul Winning"
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(strings.addGoal) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Select Domain:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                
+                // Domain radio/chip list
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                ) {
+                    items(domainOptions) { (id, label) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedDomain = id
+                                    if (title.isBlank()) title = "Goal: $label"
+                                }
+                                .padding(vertical = 2.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedDomain == id,
+                                onClick = {
+                                    selectedDomain = id
+                                    if (title.isBlank()) title = "Goal: $label"
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = label, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Goal Title (e.g. 1 Hour Daily DDEWG)") },
+                    label = { Text("Goal Title") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("add_goal_title_input"),
@@ -286,18 +330,19 @@ fun AddGoalDialog(
                 OutlinedTextField(
                     value = unit,
                     onValueChange = { unit = it },
-                    label = { Text("Unit (Minutes, Chapters, Souls)") },
+                    label = { Text("Unit (Minutes, Chapters, Souls, USD)") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("add_goal_unit_input"),
                     singleLine = true
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Target Period:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("DAILY", "WEEKLY", "MONTHLY").forEach { freq ->
                         FilterChip(
                             selected = frequency == freq,
                             onClick = { frequency = freq },
-                            label = { Text(freq) }
+                            label = { Text(freq, style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -307,9 +352,8 @@ fun AddGoalDialog(
             Button(
                 onClick = {
                     val tVal = target.toDoubleOrNull() ?: 1.0
-                    if (title.isNotBlank()) {
-                        onConfirm(selectedDomain, title, tVal, unit, frequency)
-                    }
+                    val finalTitle = title.ifBlank { "Spiritual Goal" }
+                    onConfirm(selectedDomain, finalTitle, tVal, unit, frequency)
                 },
                 modifier = Modifier.testTag("confirm_add_goal_button")
             ) {

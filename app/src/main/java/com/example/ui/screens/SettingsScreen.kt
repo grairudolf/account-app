@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,14 +41,16 @@ fun SettingsScreen(
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateTheme: (ThemeMode) -> Unit,
     onUpdateProfile: (fullName: String, email: String, assembly: String, maker: String, phone: String, conversionDate: String, accountabilityDays: String) -> Unit,
-    onAddReminder: (domainId: String, title: String, msg: String, h: Int, m: Int) -> Unit,
-    onDeleteReminder: (String) -> Unit,
+    onAddReminder: (context: Context, domainId: String, title: String, msg: String, h: Int, m: Int) -> Unit,
+    onDeleteReminder: (context: Context, String) -> Unit,
     onSignOut: () -> Unit
 ) {
     var showProfileDialog by remember { mutableStateOf(false) }
     var showReminderDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     val daysOfWeek = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
     val selectedDaysList = remember(user?.accountabilityDays) {
@@ -493,7 +497,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = { onDeleteReminder(rem.id) }) {
+                        IconButton(onClick = { onDeleteReminder(context, rem.id) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -565,7 +569,7 @@ fun SettingsScreen(
         AddReminderDialog(
             onDismiss = { showReminderDialog = false },
             onConfirm = { domainId, title, msg, h, m ->
-                onAddReminder(domainId, title, msg, h, m)
+                onAddReminder(context, domainId, title, msg, h, m)
                 showReminderDialog = false
             }
         )
