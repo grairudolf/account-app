@@ -28,11 +28,9 @@ fun DomainsScreen(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onDomainClick: (String) -> Unit,
-    onAddCustomDomain: (name: String, desc: String, icon: String, unit: String) -> Unit,
-    onSetDomainGoal: (domainId: String, title: String, target: Double, unit: String, freq: String) -> Unit = { _, _, _, _, _ -> }
+    onAddCustomDomain: (name: String, desc: String, icon: String, unit: String) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
-    var selectedGoalDomain by remember { mutableStateOf<AccountabilityDomainModel?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
@@ -111,8 +109,7 @@ fun DomainsScreen(
                 DomainCard(
                     domain = domain,
                     strings = strings,
-                    onClick = { onDomainClick(domain.id) },
-                    onConfigureGoal = { selectedGoalDomain = domain }
+                    onClick = { onDomainClick(domain.id) }
                 )
             }
         }
@@ -128,18 +125,6 @@ fun DomainsScreen(
             }
         )
     }
-
-    selectedGoalDomain?.let { dom ->
-        SetDomainGoalDialog(
-            domain = dom,
-            strings = strings,
-            onDismiss = { selectedGoalDomain = null },
-            onConfirm = { title, target, unit, freq ->
-                onSetDomainGoal(dom.id, title, target, unit, freq)
-                selectedGoalDomain = null
-            }
-        )
-    }
 }
 }
 
@@ -147,8 +132,7 @@ fun DomainsScreen(
 fun DomainCard(
     domain: AccountabilityDomainModel,
     strings: AppStrings,
-    onClick: () -> Unit,
-    onConfigureGoal: () -> Unit
+    onClick: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(28.dp),
@@ -202,14 +186,6 @@ fun DomainCard(
                 )
             }
 
-            IconButton(onClick = onConfigureGoal) {
-                Icon(
-                    imageVector = Icons.Default.Flag,
-                    contentDescription = "Set Goal",
-                    tint = PrimaryBlue
-                )
-            }
-
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
@@ -217,67 +193,6 @@ fun DomainCard(
             )
         }
     }
-}
-
-@Composable
-fun SetDomainGoalDialog(
-    domain: AccountabilityDomainModel,
-    strings: AppStrings,
-    onDismiss: () -> Unit,
-    onConfirm: (title: String, target: Double, unit: String, freq: String) -> Unit
-) {
-    val defaultTitle = strings.getDomainTitle(domain.titleKey)
-    val unitLabel = domain.measurementUnit.ifBlank { "Count" }
-    var title by remember { mutableStateOf("Target $defaultTitle Goal") }
-    var targetText by remember { mutableStateOf("1") }
-    var selectedFreq by remember { mutableStateOf("DAILY") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Set Discipline Goal: $defaultTitle", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Goal Title") },
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = targetText,
-                    onValueChange = { targetText = it },
-                    label = { Text("Target Quantity ($unitLabel)") },
-                    singleLine = true
-                )
-                Text("Target Frequency:", style = MaterialTheme.typography.labelMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("DAILY", "WEEKLY", "MONTHLY").forEach { freq ->
-                        FilterChip(
-                            selected = selectedFreq == freq,
-                            onClick = { selectedFreq = freq },
-                            label = { Text(freq) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val target = targetText.toDoubleOrNull() ?: 1.0
-                    onConfirm(title, target, unitLabel, selectedFreq)
-                }
-            ) {
-                Text("Save Goal")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        shape = RoundedCornerShape(28.dp)
-    )
 }
 
 @Composable

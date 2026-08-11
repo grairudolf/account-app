@@ -224,26 +224,52 @@ fun GoalCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Progress: ${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "Current: ${goalItem.currentProgress.toInt()} ${goalItem.goal.unit}  •  Target: ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = "${goalItem.progressPercentage}%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
+                
+                val isAchieved = goalItem.currentProgress >= goalItem.goal.targetValue
+                val statusText = if (isAchieved) "Achieved" else if (goalItem.progressPercentage >= 50) "On Track" else "Needs Focus"
+                val statusBg = if (isAchieved) AccentMintContainer else if (goalItem.progressPercentage >= 50) LightBlueContainer else StreakGoldContainer
+                val statusColor = if (isAchieved) StatusSuccess else if (goalItem.progressPercentage >= 50) PrimaryBlue else StreakGoldDark
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = statusBg
+                ) {
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
 
             LinearProgressIndicator(
-                progress = { goalItem.progressPercentage / 100f },
+                progress = { (goalItem.progressPercentage / 100f).coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
+                    .height(10.dp)
                     .clip(CircleShape),
-                color = PrimaryBlue,
+                color = if (goalItem.currentProgress >= goalItem.goal.targetValue) StatusSuccess else PrimaryBlue,
                 trackColor = LightBlueContainer
+            )
+
+            // Goal vs Progress Comparison Text Delta
+            val diff = (goalItem.goal.targetValue - goalItem.currentProgress).toInt()
+            val comparisonNote = if (diff <= 0) {
+                "Goal achieved! Exceeded target by ${-diff} ${goalItem.goal.unit}."
+            } else {
+                "$diff ${goalItem.goal.unit} remaining to reach your target for this ${goalItem.goal.frequency.lowercase()} period."
+            }
+
+            Text(
+                text = comparisonNote,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

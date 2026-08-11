@@ -38,8 +38,16 @@ fun DomainDetailScreen(
     onSaveEntry: (AccountabilityEntryEntity) -> Unit,
     onBack: () -> Unit
 ) {
+    var selectedDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var notes by remember { mutableStateOf("") }
-    var reflection by remember { mutableStateOf("") }
+
+    // Start Time & Stop Time
+    var startTimeText by remember { mutableStateOf("06:00") }
+    var stopTimeText by remember { mutableStateOf("07:00") }
+
+    // Prayer Domain Fields
+    var selectedPrayerType by remember { mutableStateOf("Intercession") } // Thanksgiving, Request, 15-Minute Retreat, Bertoua Message, Intercession, Worship
+    var prayerTopicsCountText by remember { mutableStateOf("1") }
 
     // Bible Reading / Bible Mem Dropdowns
     var selectedBibleBook by remember { mutableStateOf("Genesis") }
@@ -74,7 +82,6 @@ fun DomainDetailScreen(
     var waterBaptizedText by remember { mutableStateOf("0") }
     var holySpiritBaptizedText by remember { mutableStateOf("0") }
 
-    var durationMins by remember { mutableStateOf("30") }
     var isSaved by remember { mutableStateOf(false) }
 
     val currentBookInfo = remember(selectedBibleBook) {
@@ -82,6 +89,22 @@ fun DomainDetailScreen(
             ?: BibleMetadata.BOOKS.first()
     }
     val maxChapters = currentBookInfo.chapters
+
+    // Automatic Duration Calculation from Start & Stop Times
+    val calculatedDurationMinutes = remember(startTimeText, stopTimeText) {
+        try {
+            val startParts = startTimeText.split(":").map { it.trim().toInt() }
+            val stopParts = stopTimeText.split(":").map { it.trim().toInt() }
+            if (startParts.size == 2 && stopParts.size == 2) {
+                val startTotalMin = startParts[0] * 60 + startParts[1]
+                val stopTotalMin = stopParts[0] * 60 + stopParts[1]
+                val diff = if (stopTotalMin >= startTotalMin) stopTotalMin - startTotalMin else (stopTotalMin + 1440) - startTotalMin
+                diff.coerceAtLeast(1)
+            } else 60
+        } catch (e: Exception) {
+            60
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Subtle Background Vector Graphic
@@ -204,6 +227,127 @@ fun DomainDetailScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
+
+                            // Date Selector Bar
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Date of Activity:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
+                                            selectedDateIso = current.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                        },
+                                        shape = RoundedCornerShape(20.dp)
+                                    ) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
+                                        Text("Prev Day")
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = LightBlueContainer,
+                                        modifier = Modifier.testTag("entry_date_selector")
+                                    ) {
+                                        Text(
+                                            text = selectedDateIso,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryBlueDark,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        )
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
+                                            selectedDateIso = current.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                        },
+                                        shape = RoundedCornerShape(20.dp)
+                                    ) {
+                                        Text("Next Day")
+                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
+                                    }
+                                }
+                            }
+
+                            // Start Time & Stop Time Duration Input
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Time & Duration:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    OutlinedTextField(
+                                        value = startTimeText,
+                                        onValueChange = { startTimeText = it },
+                                        label = { Text("Start Time (e.g. 06:00)") },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("entry_start_time"),
+                                        singleLine = true
+                                    )
+                                    OutlinedTextField(
+                                        value = stopTimeText,
+                                        onValueChange = { stopTimeText = it },
+                                        label = { Text("Stop Time (e.g. 07:15)") },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("entry_stop_time"),
+                                        singleLine = true
+                                    )
+                                }
+                                Text(
+                                    text = "Calculated Duration: $calculatedDurationMinutes Minutes",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = PrimaryBlue,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Prayer Domain Specific Fields
+                            if (domainId.startsWith("prayer") || domainId == "ddewg") {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Type of Prayer / Focus:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    val prayerTypes = listOf("Thanksgiving", "Request", "15-Min Retreat", "Bertoua Message", "Intercession", "Worship")
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        prayerTypes.take(3).forEach { pType ->
+                                            FilterChip(
+                                                selected = selectedPrayerType == pType,
+                                                onClick = { selectedPrayerType = pType },
+                                                label = { Text(pType, style = MaterialTheme.typography.labelSmall) }
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        prayerTypes.drop(3).forEach { pType ->
+                                            FilterChip(
+                                                selected = selectedPrayerType == pType,
+                                                onClick = { selectedPrayerType = pType },
+                                                label = { Text(pType, style = MaterialTheme.typography.labelSmall) }
+                                            )
+                                        }
+                                    }
+
+                                    if (selectedPrayerType == "Thanksgiving" || selectedPrayerType == "Request") {
+                                        OutlinedTextField(
+                                            value = prayerTopicsCountText,
+                                            onValueChange = { prayerTopicsCountText = it },
+                                            label = { Text("Number of Topics Recorded") },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .testTag("entry_prayer_topics_count"),
+                                            singleLine = true
+                                        )
+                                    }
+                                }
+                            }
 
                             when (domainId) {
                                 "bible_reading", "bible_mem" -> {
@@ -531,39 +675,20 @@ fun DomainDetailScreen(
                                 }
 
                                 else -> {
-                                    OutlinedTextField(
-                                        value = durationMins,
-                                        onValueChange = { durationMins = it },
-                                        label = { Text("Duration (Minutes)") },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_duration_mins"),
-                                        singleLine = true
-                                    )
+                                    // General Activity Details
                                 }
                             }
 
-                            // Common Notes Field
+                            // Expanded Activity Notes Field
                             OutlinedTextField(
                                 value = notes,
                                 onValueChange = { notes = it },
-                                label = { Text("Notes / Observations") },
+                                label = { Text("Activity Notes / Observations") },
+                                minLines = 3,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("entry_notes")
                             )
-
-                            // Show Spiritual Reflection for prayer, reading & spiritual disciplines
-                            if (domainId != "soul_winning") {
-                                OutlinedTextField(
-                                    value = reflection,
-                                    onValueChange = { reflection = it },
-                                    label = { Text("Spiritual Reflection") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("entry_reflection")
-                                )
-                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -572,16 +697,20 @@ fun DomainDetailScreen(
                                     val sCh = selectedStartChapter.toIntOrNull() ?: 1
                                     val eCh = selectedEndChapter.toIntOrNull() ?: 1
                                     val chCount = (eCh - sCh + 1).coerceAtLeast(1)
-                                    val durSecs = (durationMins.toLongOrNull() ?: 30L) * 60L
+                                    val durSecs = (calculatedDurationMinutes * 60).toLong()
 
                                     val entry = AccountabilityEntryEntity(
                                         id = UUID.randomUUID().toString(),
                                         userId = "guest_user",
                                         domainId = domainId,
-                                        dateIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                                        dateIso = selectedDateIso,
                                         timestampMs = System.currentTimeMillis(),
                                         timezoneId = java.time.ZoneId.systemDefault().id,
                                         durationSeconds = durSecs,
+                                        startTimeIso = startTimeText,
+                                        endTimeIso = stopTimeText,
+                                        prayerType = selectedPrayerType,
+                                        prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
                                         bibleBook = selectedBibleBook,
                                         startChapter = sCh,
                                         endChapter = eCh,
@@ -605,7 +734,7 @@ fun DomainDetailScreen(
                                         fastingDaysCount = fastingDaysText.toIntOrNull() ?: 1,
                                         fastingType = selectedFastingType,
                                         notes = notes,
-                                        reflection = reflection
+                                        reflection = ""
                                     )
                                     onSaveEntry(entry)
                                     isSaved = true

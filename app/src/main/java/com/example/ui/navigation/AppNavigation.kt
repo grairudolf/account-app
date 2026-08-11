@@ -145,7 +145,6 @@ fun MainApp() {
 
                 composable(NavRoutes.DOMAINS) {
                     val domainsViewModel: DomainsViewModel = viewModel(factory = factory)
-                    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
                     val searchDomainQuery by domainsViewModel.searchQuery.collectAsStateWithLifecycle()
                     val domainsList by domainsViewModel.allDomainsFlow.collectAsStateWithLifecycle()
                     DomainsScreen(
@@ -158,17 +157,6 @@ fun MainApp() {
                         },
                         onAddCustomDomain = { name, desc, icon, unit ->
                             domainsViewModel.addCustomDomain(name, desc, icon, unit)
-                        },
-                        onSetDomainGoal = { domainId, title, target, unit, freq ->
-                            goalsViewModel.addGoal(
-                                userId = currentUser?.id ?: "guest_user",
-                                domainId = domainId,
-                                title = title,
-                                targetValue = target,
-                                unit = unit,
-                                frequency = freq,
-                                startDateIso = java.time.LocalDate.now().toString()
-                            )
                         }
                     )
                 }

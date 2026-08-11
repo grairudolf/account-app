@@ -246,32 +246,113 @@ fun StatisticsScreen(
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     item {
-                        // Month Selector Controls
+                        // Interactive Full Month Grid Calendar Card
                         Surface(
-                            shape = RoundedCornerShape(24.dp),
+                            shape = RoundedCornerShape(28.dp),
                             color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, DividerColor),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().testTag("statistics_calendar_card")
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = onPreviousMonth) {
-                                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
-                                }
-                                Text(
-                                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Row {
-                                    IconButton(onClick = onGoToToday) {
-                                        Icon(Icons.Default.Today, contentDescription = "Today", tint = PrimaryBlue)
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(onClick = onPreviousMonth) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
                                     }
-                                    IconButton(onClick = onNextMonth) {
-                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                                    Text(
+                                        text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Row {
+                                        IconButton(onClick = onGoToToday) {
+                                            Icon(Icons.Default.Today, contentDescription = "Today", tint = PrimaryBlue)
+                                        }
+                                        IconButton(onClick = onNextMonth) {
+                                            Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                                        }
+                                    }
+                                }
+
+                                // Day headers
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { day ->
+                                        Text(
+                                            text = day,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+
+                                // Calendar Month Days Grid
+                                val firstDayOfMonth = currentMonth.atDay(1)
+                                val dayOfWeekOffset = (firstDayOfMonth.dayOfWeek.value - 1) % 7
+                                val daysInMonth = currentMonth.lengthOfMonth()
+                                val totalCells = dayOfWeekOffset + daysInMonth
+
+                                val completionMap = remember(monthDaysCompletion) {
+                                    monthDaysCompletion.associateBy { it.dateIso }
+                                }
+
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    for (weekRow in 0 until (totalCells + 6) / 7) {
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                            for (col in 0..6) {
+                                                val dayNum = weekRow * 7 + col - dayOfWeekOffset + 1
+                                                if (dayNum in 1..daysInMonth) {
+                                                    val cellDate = currentMonth.atDay(dayNum)
+                                                    val cellDateIso = cellDate.toString()
+                                                    val isSelected = cellDate == selectedDate
+                                                    val isToday = cellDate == LocalDate.now()
+                                                    val dayInfo = completionMap[cellDateIso]
+                                                    val hasEntries = dayInfo != null && dayInfo.entriesCount > 0
+
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .aspectRatio(1f)
+                                                            .padding(2.dp)
+                                                            .clip(CircleShape)
+                                                            .background(
+                                                                when {
+                                                                    isSelected -> PrimaryBlue
+                                                                    hasEntries -> LightBlueContainer
+                                                                    isToday -> StreakGoldContainer
+                                                                    else -> Color.Transparent
+                                                                }
+                                                            )
+                                                            .clickable { onSelectDate(cellDate) },
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Text(
+                                                                text = "$dayNum",
+                                                                style = MaterialTheme.typography.labelMedium,
+                                                                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
+                                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                                            )
+                                                            if (hasEntries) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(4.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(if (isSelected) Color.White else PrimaryBlue)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    Spacer(modifier = Modifier.weight(1f))
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -355,14 +436,14 @@ fun EntryLogCard(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, DividerColor),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag("entry_log_card_${entry.id}")
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = entry.domainId.replace("_", " ").uppercase(),
                     style = MaterialTheme.typography.titleMedium,
@@ -370,15 +451,28 @@ fun EntryLogCard(
                     color = PrimaryBlue
                 )
                 Text(
-                    text = "Date: ${entry.dateIso}",
+                    text = "Date: ${entry.dateIso}" + if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) " (${entry.startTimeIso} - ${entry.endTimeIso})" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(
+                    text = "Duration: ${entry.durationSeconds / 60} mins",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentPurple
+                )
+                if (entry.prayerType.isNotBlank()) {
+                    Text(
+                        text = "Prayer Focus: ${entry.prayerType}" + if (entry.prayerTopicsCount > 0) " (${entry.prayerTopicsCount} Topics)" else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PrimaryBlueDark
+                    )
+                }
                 if (entry.notes.isNotBlank()) {
                     Text(
                         text = "Notes: ${entry.notes}",
                         style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2
+                        maxLines = 3
                     )
                 }
             }

@@ -419,7 +419,6 @@ fun DashboardScreen(
 
         // Daily Spiritual Encouragement Card (3B Prophetic Messages Quotes)
         item {
-            var quoteIndex by remember { mutableStateOf((0..6).random()) }
             val quotes = remember {
                 listOf(
                     "“Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness.” — The Bertoua Message (Z.T. Fomum)",
@@ -431,6 +430,7 @@ fun DashboardScreen(
                     "“When a Spirit-filled believer prays and fasts in total surrender, heaven moves and hell is brought to naught for the glory of Christ!” — 3B Prophetic Messages (Z.T. Fomum)"
                 )
             }
+            var quoteIndex by remember { mutableStateOf(LocalDate.now().dayOfYear % quotes.size) }
 
             Surface(
                 shape = RoundedCornerShape(28.dp),
@@ -486,63 +486,82 @@ fun DashboardScreen(
             }
         }
 
-        // Interactive Spiritual Check-In Prompt ("Have you prayed today?")
+        // Sliding Check-In Notification Banner for Incomplete Disciplines (One aspect at a time)
         item {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = AccentMintContainer,
-                border = BorderStroke(1.dp, AccentMint),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("dashboard_checkin_card")
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            val todayIso = remember { LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) }
+            val completedTodayDomains = remember(uiState.recentActivities) {
+                uiState.recentActivities.filter { it.dateIso == todayIso }.map { it.domainId }.toSet()
+            }
+            val incompleteDisciplines = remember(completedTodayDomains) {
+                PredefinedDomains.ALL.filter { !completedTodayDomains.contains(it.id) }
+            }
+            var activeCheckinIndex by remember { mutableStateOf(0) }
+
+            if (incompleteDisciplines.isNotEmpty() && activeCheckinIndex < incompleteDisciplines.size) {
+                val currentIncomplete = incompleteDisciplines[activeCheckinIndex]
+                val currentTitle = strings.getDomainTitle(currentIncomplete.titleKey)
+
+                AnimatedVisibility(
+                    visible = true,
+                    enter = slideInVertically(initialOffsetY = { -50 }) + fadeIn()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = AccentMintContainer,
+                        border = BorderStroke(1.dp, AccentMint),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dashboard_checkin_card")
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = AccentMint,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = "Daily Check-In: Have you prayed today?",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { onQuickAdd("prayer_alone") },
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentMint),
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Log Prayer")
-                        }
-                        OutlinedButton(
-                            onClick = { onQuickAdd("ddewg") },
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("DDEWG")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.NotificationsActive,
+                                        contentDescription = null,
+                                        tint = AccentMint,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Text(
+                                        text = "Daily Check-In: Have you done $currentTitle today?",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { onQuickAdd(currentIncomplete.id) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentMint),
+                                    shape = RoundedCornerShape(20.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Log $currentTitle")
+                                }
+                                OutlinedButton(
+                                    onClick = { activeCheckinIndex++ },
+                                    shape = RoundedCornerShape(20.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Next Aspect")
+                                }
+                            }
                         }
                     }
                 }

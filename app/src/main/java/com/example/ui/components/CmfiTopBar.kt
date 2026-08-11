@@ -45,28 +45,8 @@ fun CmfiTopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(PrimaryBlueDark)
     ) {
-        // Decorative Header Canvas Graphics
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-        ) {
-            val w = size.width
-            val h = size.height
-            drawCircle(
-                color = PrimaryBlue.copy(alpha = 0.08f),
-                radius = h * 1.2f,
-                center = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.2f)
-            )
-            drawCircle(
-                color = PrimaryBlueDark.copy(alpha = 0.05f),
-                radius = h * 0.9f,
-                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.8f)
-            )
-        }
-
         TopAppBar(
             title = {
                 Row(
@@ -78,14 +58,14 @@ fun CmfiTopBar(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(PrimaryBlue)
+                            .background(Color.White)
                             .clickable { onProfileClick() }
                             .testTag("top_bar_profile_avatar"),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = userName.take(1).uppercase(),
-                            color = Color.White,
+                            color = PrimaryBlueDark,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -101,7 +81,7 @@ fun CmfiTopBar(
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "App Settings & Preferences",
-                            tint = PrimaryBlue
+                            tint = Color.White
                         )
                     }
 
@@ -109,7 +89,7 @@ fun CmfiTopBar(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White
                     )
                 }
             },
@@ -119,8 +99,8 @@ fun CmfiTopBar(
                     Surface(
                         onClick = { showLanguageMenu = true },
                         shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                        color = Color.White.copy(alpha = 0.2f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
                         modifier = Modifier
                             .padding(end = 4.dp)
                             .testTag("top_bar_language_selector")
@@ -134,13 +114,13 @@ fun CmfiTopBar(
                                 text = if (currentLanguage == AppLanguage.FRENCH) "🇫🇷 FR" else "🇬🇧 EN",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = Color.White
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Select Language",
                                 modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                tint = Color.White
                             )
                         }
                     }
@@ -196,7 +176,8 @@ fun CmfiTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
+                        contentDescription = "Search",
+                        tint = Color.White
                     )
                 }
                 IconButton(
@@ -205,12 +186,15 @@ fun CmfiTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings"
+                        contentDescription = "Settings",
+                        tint = Color.White
                     )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
+                containerColor = PrimaryBlueDark,
+                titleContentColor = Color.White,
+                actionIconContentColor = Color.White
             )
         )
     }

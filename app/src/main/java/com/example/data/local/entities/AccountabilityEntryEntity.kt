@@ -12,6 +12,8 @@ data class AccountabilityEntryEntity(
     val timestampMs: Long, // canonical event timestamp
     val timezoneId: String, // device timezone ID
     val durationSeconds: Long = 0L,
+    val startTimeIso: String = "",
+    val endTimeIso: String = "",
     val notes: String = "",
     val reflection: String = "",
 
@@ -23,7 +25,8 @@ data class AccountabilityEntryEntity(
     val chaptersCount: Int = 0,
 
     // Prayer Fields
-    val prayerType: String = "", // Thanksgiving, Intercession, Worship, etc.
+    val prayerType: String = "", // Thanksgiving, Request, 15-Minute Retreat, Bertoua Message, Intercession, Worship, etc.
+    val prayerTopicsCount: Int = 0,
     val prayerParticipantsCount: Int = 1,
     val prayerParticipantNames: String = "",
 
