@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,10 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.core.localization.AppLanguage
 import com.example.ui.theme.PrimaryBlue
 import com.example.ui.theme.PrimaryBlueDark
@@ -71,7 +75,7 @@ fun CmfiTopBar(
                         )
                     }
 
-                    // Preference/Settings App Logo Icon
+                    // Preferences/Settings Icon
                     IconButton(
                         onClick = onProfileClick,
                         modifier = Modifier

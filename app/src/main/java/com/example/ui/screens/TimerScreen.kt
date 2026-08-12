@@ -182,6 +182,7 @@ fun TimerScreen(
 
     if (showSaveDialog) {
         SaveTimerDialog(
+            domainId = domainId,
             formattedTime = formattedTime,
             onDismiss = { showSaveDialog = false },
             onConfirm = { notes, reflection ->
@@ -193,8 +194,10 @@ fun TimerScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SaveTimerDialog(
+    domainId: String,
     formattedTime: String,
     onDismiss: () -> Unit,
     onConfirm: (notes: String, reflection: String) -> Unit
@@ -202,27 +205,285 @@ fun SaveTimerDialog(
     var notes by remember { mutableStateOf("") }
     var reflection by remember { mutableStateOf("") }
 
+    // Domain Specific State
+    var selectedBook by remember { mutableStateOf("Genesis") }
+    var startChapter by remember { mutableStateOf("1") }
+    var endChapter by remember { mutableStateOf("1") }
+    var bookDropdownExpanded by remember { mutableStateOf(false) }
+
+    var prayerType by remember { mutableStateOf("Intercession") }
+    var participantsCountText by remember { mutableStateOf("1") }
+
+    var bookTitle by remember { mutableStateOf("") }
+    var pagesReadText by remember { mutableStateOf("10") }
+
+    var fastingType by remember { mutableStateOf("Complete Fast") }
+
+    var givingType by remember { mutableStateOf("Tithe") }
+    var amountText by remember { mutableStateOf("0.0") }
+
+    var preachedCountText by remember { mutableStateOf("1") }
+    var convertedCountText by remember { mutableStateOf("0") }
+    var ddewgInspiration by remember { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Save Session ($formattedTime)") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text("Prayer / DDEWG Notes") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = reflection,
-                    onValueChange = { reflection = it },
-                    label = { Text("Spiritual Insight / What God said") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                when (domainId) {
+                    "bible_reading" -> {
+                        Text("Bible Reading Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        ExposedDropdownMenuBox(
+                            expanded = bookDropdownExpanded,
+                            onExpandedChange = { bookDropdownExpanded = !bookDropdownExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedBook,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Bible Book") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookDropdownExpanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = bookDropdownExpanded,
+                                onDismissRequest = { bookDropdownExpanded = false }
+                            ) {
+                                com.example.domain.models.BibleMetadata.BOOKS.forEach { bookInfo ->
+                                    DropdownMenuItem(
+                                        text = { Text(bookInfo.name) },
+                                        onClick = {
+                                            selectedBook = bookInfo.name
+                                            bookDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = startChapter,
+                                onValueChange = { startChapter = it.filter { c -> c.isDigit() } },
+                                label = { Text("Start Chapter") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = endChapter,
+                                onValueChange = { endChapter = it.filter { c -> c.isDigit() } },
+                                label = { Text("End Chapter") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Key Learnings / Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "ddewg" -> {
+                        Text("Dynamic Encounter (DDEWG)", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = ddewgInspiration,
+                            onValueChange = { ddewgInspiration = it },
+                            label = { Text("Inspiration for Meditation") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "prayer_alone", "prayer_with_others" -> {
+                        Text("Prayer Session Details", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = prayerType,
+                            onValueChange = { prayerType = it },
+                            label = { Text("Prayer Focus (Intercession, Thanksgiving...)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (domainId == "prayer_with_others") {
+                            OutlinedTextField(
+                                value = participantsCountText,
+                                onValueChange = { participantsCountText = it.filter { c -> c.isDigit() } },
+                                label = { Text("Number of Prayer Partners") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Prayer Topics & Burdens Prayed For") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = reflection,
+                            onValueChange = { reflection = it },
+                            label = { Text("Prophetic Burdens / Divine Impressions") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "fasting" -> {
+                        Text("Fasting Session Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = fastingType,
+                            onValueChange = { fastingType = it },
+                            label = { Text("Type of Fast (Complete, Partial, Water)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Spiritual Goals & Reflection") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "giving" -> {
+                        Text("Giving Session Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = givingType,
+                            onValueChange = { givingType = it },
+                            label = { Text("Giving Category (Tithe, Offering, Alms)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = amountText,
+                            onValueChange = { amountText = it },
+                            label = { Text("Amount Given") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Recipient / Additional Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "christian_lit", "christian_lit_mem" -> {
+                        Text("Christian Literature Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = bookTitle,
+                            onValueChange = { bookTitle = it },
+                            label = { Text("Book Title / Author") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = pagesReadText,
+                            onValueChange = { pagesReadText = it.filter { c -> c.isDigit() } },
+                            label = { Text("Pages Read") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Key Quotes & Takeaways") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "bible_mem" -> {
+                        Text("Bible Memorization Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = selectedBook,
+                            onValueChange = { selectedBook = it },
+                            label = { Text("Passage / Verses Memorized (e.g. John 3:16)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Reflection on Passages Memorized") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "soul_winning" -> {
+                        Text("Evangelism & Soul Winning Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = preachedCountText,
+                                onValueChange = { preachedCountText = it.filter { c -> c.isDigit() } },
+                                label = { Text("Preached To") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = convertedCountText,
+                                onValueChange = { convertedCountText = it.filter { c -> c.isDigit() } },
+                                label = { Text("Converts") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Names & Follow-up Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    else -> {
+                        Text("Session Notes", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Session Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = reflection,
+                            onValueChange = { reflection = it },
+                            label = { Text("Spiritual Reflection / Takeaway") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(notes, reflection) }) {
+            Button(
+                onClick = {
+                    val finalNotes = when (domainId) {
+                        "bible_reading" -> "Book: $selectedBook, Ch: $startChapter-$endChapter. Notes: $notes"
+                        "ddewg" -> if (notes.isNotBlank()) notes else "DDEWG session"
+                        "prayer_alone", "prayer_with_others" -> "Type: $prayerType. Notes: $notes"
+                        "fasting" -> "Fast Type: $fastingType. Notes: $notes"
+                        "giving" -> "Category: $givingType, Amount: $amountText. Notes: $notes"
+                        "christian_lit", "christian_lit_mem" -> "Book: $bookTitle, Pages: $pagesReadText. Notes: $notes"
+                        "bible_mem" -> "Verses: $selectedBook. Notes: $notes"
+                        "soul_winning" -> "Preached: $preachedCountText, Converts: $convertedCountText. Notes: $notes"
+                        else -> notes
+                    }
+                    val finalReflection = if (domainId == "ddewg") ddewgInspiration else if (reflection.isNotBlank()) reflection else "Logged via live timer."
+                    onConfirm(finalNotes, finalReflection)
+                }
+            ) {
                 Text("Save to Log")
             }
         },

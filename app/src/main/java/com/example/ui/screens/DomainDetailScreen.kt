@@ -49,6 +49,9 @@ fun DomainDetailScreen(
     var selectedPrayerType by remember { mutableStateOf("Intercession") } // Thanksgiving, Request, 15-Minute Retreat, Bertoua Message, Intercession, Worship
     var prayerTopicsCountText by remember { mutableStateOf("1") }
 
+    // DDEWG Field
+    var ddewgInspirationText by remember { mutableStateOf("") }
+
     // Bible Reading / Bible Mem Dropdowns
     var selectedBibleBook by remember { mutableStateOf("Genesis") }
     var selectedStartChapter by remember { mutableStateOf("1") }
@@ -306,7 +309,7 @@ fun DomainDetailScreen(
                             }
 
                             // Prayer Domain Specific Fields
-                            if (domainId.startsWith("prayer") || domainId == "ddewg") {
+                            if (domainId.startsWith("prayer")) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("Type of Prayer / Focus:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     val prayerTypes = listOf("Thanksgiving", "Request", "15-Min Retreat", "Bertoua Message", "Intercession", "Worship")
@@ -350,6 +353,19 @@ fun DomainDetailScreen(
                             }
 
                             when (domainId) {
+                                "ddewg" -> {
+                                    OutlinedTextField(
+                                        value = ddewgInspirationText,
+                                        onValueChange = { ddewgInspirationText = it },
+                                        label = { Text("Inspiration for Meditation") },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("entry_ddewg_inspiration"),
+                                        singleLine = false,
+                                        minLines = 2
+                                    )
+                                }
+
                                 "bible_reading", "bible_mem" -> {
                                     // Book Selection Dropdown
                                     ExposedDropdownMenuBox(
@@ -734,7 +750,7 @@ fun DomainDetailScreen(
                                         fastingDaysCount = fastingDaysText.toIntOrNull() ?: 1,
                                         fastingType = selectedFastingType,
                                         notes = notes,
-                                        reflection = ""
+                                        reflection = if (domainId == "ddewg") ddewgInspirationText else ""
                                     )
                                     onSaveEntry(entry)
                                     isSaved = true

@@ -2,6 +2,9 @@ package com.example.ui.navigation
 
 import android.content.Context
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -150,13 +153,13 @@ fun MainApp() {
                                 onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
                                 onDragEnd = {
                                     val idx = mainTabsList.indexOf(currentRoute)
-                                    if (totalDrag < -90f && idx in 0 until mainTabsList.size - 1) {
+                                    if (totalDrag < -50f && idx in 0 until mainTabsList.size - 1) {
                                         navController.navigate(mainTabsList[idx + 1]) {
                                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    } else if (totalDrag > 90f && idx > 0) {
+                                    } else if (totalDrag > 50f && idx > 0) {
                                         navController.navigate(mainTabsList[idx - 1]) {
                                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                             launchSingleTop = true
@@ -171,10 +174,34 @@ fun MainApp() {
                 NavHost(
                     navController = navController,
                     startDestination = NavRoutes.DASHBOARD,
-                    enterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { 60 }) },
-                    exitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { -60 }) },
-                    popEnterTransition = { fadeIn(tween(250)) + slideInHorizontally(animationSpec = tween(250), initialOffsetX = { -60 }) },
-                    popExitTransition = { fadeOut(tween(200)) + slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { 60 }) }
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                        slideInHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                            initialOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                        slideOutHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                            targetOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                        slideInHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                            initialOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                        slideOutHorizontally(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                            targetOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
+                        )
+                    }
                 ) {
                 composable(NavRoutes.AUTH) {
                     AuthScreen(

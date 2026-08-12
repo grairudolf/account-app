@@ -12,9 +12,11 @@ class UserRepository(private val userDao: UserDao) {
     val currentUserFlow: Flow<UserEntity?> = userDao.getCurrentUserFlow()
 
     val currentLanguageFlow: Flow<AppLanguage> = userDao.getCurrentUserFlow().map { user ->
-        when (user?.language) {
-            "fr" -> AppLanguage.FRENCH
-            else -> AppLanguage.ENGLISH
+        val langCode = user?.language ?: java.util.Locale.getDefault().language.lowercase()
+        if (langCode.startsWith("fr")) {
+            AppLanguage.FRENCH
+        } else {
+            AppLanguage.ENGLISH
         }
     }
 
@@ -30,12 +32,13 @@ class UserRepository(private val userDao: UserDao) {
         val existing = userDao.getCurrentUser()
         if (existing != null) return existing
 
+        val systemLang = if (java.util.Locale.getDefault().language.lowercase().startsWith("fr")) "fr" else "en"
         val defaultGuest = UserEntity(
             id = "guest_user",
             fullName = "Disciple",
             email = "",
             isGuest = true,
-            language = "en",
+            language = systemLang,
             themeMode = "LIGHT"
         )
         userDao.insertOrUpdateUser(defaultGuest)
