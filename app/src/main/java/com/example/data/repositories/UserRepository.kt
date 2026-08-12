@@ -12,11 +12,14 @@ class UserRepository(private val userDao: UserDao) {
     val currentUserFlow: Flow<UserEntity?> = userDao.getCurrentUserFlow()
 
     val currentLanguageFlow: Flow<AppLanguage> = userDao.getCurrentUserFlow().map { user ->
-        val langCode = user?.language ?: java.util.Locale.getDefault().language.lowercase()
-        if (langCode.startsWith("fr")) {
-            AppLanguage.FRENCH
-        } else {
-            AppLanguage.ENGLISH
+        val langCode = user?.language?.lowercase() ?: java.util.Locale.getDefault().language.lowercase()
+        when {
+            langCode.startsWith("fr") -> AppLanguage.FRENCH
+            langCode.startsWith("es") -> AppLanguage.SPANISH
+            langCode.startsWith("pt") -> AppLanguage.PORTUGUESE
+            langCode.startsWith("sw") -> AppLanguage.SWAHILI
+            langCode.startsWith("ar") -> AppLanguage.ARABIC
+            else -> AppLanguage.ENGLISH
         }
     }
 
@@ -32,7 +35,15 @@ class UserRepository(private val userDao: UserDao) {
         val existing = userDao.getCurrentUser()
         if (existing != null) return existing
 
-        val systemLang = if (java.util.Locale.getDefault().language.lowercase().startsWith("fr")) "fr" else "en"
+        val sysLangCode = java.util.Locale.getDefault().language.lowercase()
+        val systemLang = when {
+            sysLangCode.startsWith("fr") -> "fr"
+            sysLangCode.startsWith("es") -> "es"
+            sysLangCode.startsWith("pt") -> "pt"
+            sysLangCode.startsWith("sw") -> "sw"
+            sysLangCode.startsWith("ar") -> "ar"
+            else -> "en"
+        }
         val defaultGuest = UserEntity(
             id = "guest_user",
             fullName = "Disciple",

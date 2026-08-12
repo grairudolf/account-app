@@ -39,6 +39,7 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodels.DashboardUiState
 import com.example.ui.viewmodels.GoalWithProgress
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -117,8 +118,14 @@ fun DashboardScreen(
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 1.sp
                     )
+                    val currentHour = LocalTime.now().hour
+                    val timeGreeting = when {
+                        currentHour in 5..11 -> strings.greetingMorning
+                        currentHour in 12..17 -> strings.greetingAfternoon
+                        else -> strings.greetingEvening
+                    }
                     Text(
-                        text = "Hello, $discipleName",
+                        text = "$timeGreeting, $discipleName",
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

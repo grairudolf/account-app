@@ -75,20 +75,6 @@ fun CmfiTopBar(
                         )
                     }
 
-                    // Preferences/Settings Icon
-                    IconButton(
-                        onClick = onProfileClick,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .testTag("top_bar_app_settings_logo")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = "App Settings & Preferences",
-                            tint = Color.White
-                        )
-                    }
-
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,

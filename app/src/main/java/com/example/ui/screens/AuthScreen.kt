@@ -49,20 +49,16 @@ fun AuthScreen(
         Surface(
             shape = RoundedCornerShape(20.dp),
             shadowElevation = 6.dp,
-            color = PrimaryBlue,
             modifier = Modifier.size(88.dp)
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MenuBook,
-                    contentDescription = "CMFI Accountability Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(44.dp)
-                )
-            }
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher),
+                contentDescription = strings.appName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp))
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
