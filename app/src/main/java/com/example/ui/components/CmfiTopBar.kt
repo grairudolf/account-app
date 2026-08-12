@@ -100,8 +100,16 @@ fun CmfiTopBar(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            val langPillText = when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "🇬🇧 EN"
+                                AppLanguage.FRENCH -> "🇫🇷 FR"
+                                AppLanguage.SPANISH -> "🇪🇸 ES"
+                                AppLanguage.PORTUGUESE -> "🇵🇹 PT"
+                                AppLanguage.SWAHILI -> "🇰🇪 SW"
+                                AppLanguage.ARABIC -> "🇸🇦 AR"
+                            }
                             Text(
-                                text = if (currentLanguage == AppLanguage.FRENCH) "🇫🇷 FR" else "🇬🇧 EN",
+                                text = langPillText,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -119,44 +127,35 @@ fun CmfiTopBar(
                         expanded = showLanguageMenu,
                         onDismissRequest = { showLanguageMenu = false }
                     ) {
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text("🇬🇧", fontSize = 16.sp)
-                                    Text(
-                                        "English",
-                                        fontWeight = if (currentLanguage == AppLanguage.ENGLISH) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            },
-                            onClick = {
-                                showLanguageMenu = false
-                                onLanguageSelected(AppLanguage.ENGLISH)
-                            },
-                            modifier = Modifier.testTag("lang_option_en")
+                        val languageList = listOf(
+                            Triple("🇬🇧", AppLanguage.ENGLISH, "English"),
+                            Triple("🇫🇷", AppLanguage.FRENCH, "Français"),
+                            Triple("🇪🇸", AppLanguage.SPANISH, "Español"),
+                            Triple("🇵🇹", AppLanguage.PORTUGUESE, "Português"),
+                            Triple("🇰🇪", AppLanguage.SWAHILI, "Kiswahili"),
+                            Triple("🇸🇦", AppLanguage.ARABIC, "العربية")
                         )
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text("🇫🇷", fontSize = 16.sp)
-                                    Text(
-                                        "Français",
-                                        fontWeight = if (currentLanguage == AppLanguage.FRENCH) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            },
-                            onClick = {
-                                showLanguageMenu = false
-                                onLanguageSelected(AppLanguage.FRENCH)
-                            },
-                            modifier = Modifier.testTag("lang_option_fr")
-                        )
+                        languageList.forEach { (flag, lang, name) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(flag, fontSize = 16.sp)
+                                        Text(
+                                            name,
+                                            fontWeight = if (currentLanguage == lang) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    showLanguageMenu = false
+                                    onLanguageSelected(lang)
+                                },
+                                modifier = Modifier.testTag("lang_option_${lang.code}")
+                            )
+                        }
                     }
                 }
 

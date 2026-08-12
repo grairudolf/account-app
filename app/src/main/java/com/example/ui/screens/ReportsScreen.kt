@@ -163,7 +163,7 @@ fun ReportsScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Generate a formatted CMFI PDF report summarizing your spiritual disciplines for your Disciple Maker.",
+                        text = strings.reportDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -174,10 +174,16 @@ fun ReportsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf("DAILY", "WEEKLY", "MONTHLY", "CUSTOM").forEach { type ->
+                            val chipLabel = when (type) {
+                                "DAILY" -> strings.dailyReport
+                                "WEEKLY" -> strings.weeklyReport
+                                "MONTHLY" -> strings.monthlyReport
+                                else -> type
+                            }
                             FilterChip(
                                 selected = selectedReportType == type,
                                 onClick = { onSelectReportType(type) },
-                                label = { Text(type) },
+                                label = { Text(chipLabel) },
                                 shape = RoundedCornerShape(20.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PrimaryBlue,
@@ -199,7 +205,7 @@ fun ReportsScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Exact Date / Date Range Selection:",
+                                text = strings.exactDateSelection,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryBlue
@@ -210,10 +216,10 @@ fun ReportsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val dateText = when (selectedReportType) {
-                                    "DAILY" -> "Target Day: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
-                                    "WEEKLY" -> "Week Ending: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
-                                    "MONTHLY" -> "Month: ${targetDate.month.name} ${targetDate.year}"
-                                    else -> "Range: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "DAILY" -> "${strings.targetDayLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "WEEKLY" -> "${strings.weekEndingLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "MONTHLY" -> "${strings.monthLabel}: ${targetDate.month.name} ${targetDate.year}"
+                                    else -> "${strings.dateRangeLabel}: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
                                 }
                                 Text(
                                     text = dateText,
@@ -231,7 +237,7 @@ fun ReportsScreen(
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Change Date", style = MaterialTheme.typography.labelSmall)
+                                    Text(strings.changeDate, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
@@ -250,24 +256,24 @@ fun ReportsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Select Exact Domains to Include:",
+                                    text = strings.selectDomainsToInclude,
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = onSelectAllDomains) {
-                                    Text("Select All", style = MaterialTheme.typography.labelSmall)
+                                    Text(strings.selectAll, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
 
                             val availableDomains = listOf(
-                                "ddewg" to "DDEWG (Daily Encounter)",
-                                "bible_reading" to "Bible Reading",
-                                "prayer_alone" to "Prayer Alone",
-                                "prayer_with_others" to "Prayer With Others",
-                                "fasting" to "Fasting",
-                                "giving" to "Giving & Tithes",
-                                "christian_lit" to "Christian Literature",
-                                "soul_winning" to "Soul Winning & Evangelism"
+                                "ddewg" to strings.ddewgTitle,
+                                "bible_reading" to strings.bibleReadingTitle,
+                                "prayer_alone" to strings.prayerAloneTitle,
+                                "prayer_with_others" to strings.prayerWithOthersTitle,
+                                "fasting" to strings.fastingTitle,
+                                "giving" to strings.givingTitle,
+                                "christian_lit" to strings.christianLitTitle,
+                                "soul_winning" to strings.soulWinningTitle
                             )
 
                             availableDomains.forEach { (id, title) ->
@@ -320,7 +326,8 @@ fun ReportsScreen(
                         } else {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generate $selectedReportType PDF", fontWeight = FontWeight.Bold)
+                            val btnText = String.format(strings.generatePdfButton, selectedReportType)
+                            Text(btnText, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -338,7 +345,7 @@ fun ReportsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "PDF Generated!",
+                                        text = strings.pdfGeneratedTitle,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = StatusSuccess

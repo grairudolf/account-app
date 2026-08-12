@@ -156,17 +156,17 @@ fun SettingsScreen(
                             }
                             Column {
                                 Text(
-                                    text = user?.fullName?.ifBlank { "Disciple Profile" } ?: "Disciple Profile",
+                                    text = user?.fullName?.ifBlank { strings.discipleProfile } ?: strings.discipleProfile,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Assembly: ${user?.localAssembly?.ifBlank { "Not set" } ?: "Not set"}",
+                                    text = "${strings.localAssembly}: ${user?.localAssembly?.ifBlank { strings.notSet } ?: strings.notSet}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "Disciple Maker: ${user?.discipleMaker?.ifBlank { "Not set" } ?: "Not set"}",
+                                    text = "${strings.discipleMakerName}: ${user?.discipleMaker?.ifBlank { strings.notSet } ?: strings.notSet}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -200,7 +200,7 @@ fun SettingsScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Spiritual Journey",
+                                    text = strings.spiritualJourney,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -213,7 +213,7 @@ fun SettingsScreen(
                             }
                         }
                         TextButton(onClick = { showProfileDialog = true }) {
-                            Text("Set Date", style = MaterialTheme.typography.labelSmall)
+                            Text(strings.setDate, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -396,7 +396,7 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "No active reminders set. Add daily alerts for DDEWG or Prayer.",
+                        text = strings.noActiveReminders,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp)
@@ -442,19 +442,19 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     ListItem(
-                        headlineContent = { Text("Privacy Policy", fontWeight = FontWeight.SemiBold) },
+                        headlineContent = { Text(strings.privacyPolicy, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = PrimaryBlue) },
                         modifier = Modifier.clickable { showPrivacyDialog = true }.testTag("settings_privacy_policy")
                     )
                     HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
                     ListItem(
-                        headlineContent = { Text("Terms & Conditions", fontWeight = FontWeight.SemiBold) },
+                        headlineContent = { Text(strings.termsConditions, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.Gavel, contentDescription = null, tint = PrimaryBlue) },
                         modifier = Modifier.clickable { showTermsDialog = true }.testTag("settings_terms_conditions")
                     )
                     HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
                     ListItem(
-                        headlineContent = { Text("Support & Feedback", fontWeight = FontWeight.SemiBold) },
+                        headlineContent = { Text(strings.supportFeedback, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.HelpCenter, contentDescription = null, tint = PrimaryBlue) },
                         modifier = Modifier.clickable { }
                     )
@@ -484,6 +484,7 @@ fun SettingsScreen(
     if (showProfileDialog) {
         EditProfileDialog(
             user = user,
+            strings = strings,
             onDismiss = { showProfileDialog = false },
             onConfirm = { name, email, assembly, maker, phone, convDate ->
                 onUpdateProfile(name, email, assembly, maker, phone, convDate, user?.accountabilityDays ?: "MON,TUE,WED,THU,FRI,SAT,SUN")
@@ -494,6 +495,7 @@ fun SettingsScreen(
 
     if (showReminderDialog) {
         AddReminderDialog(
+            strings = strings,
             onDismiss = { showReminderDialog = false },
             onConfirm = { domainId, title, msg, h, m ->
                 onAddReminder(context, domainId, title, msg, h, m)
@@ -514,6 +516,7 @@ fun SettingsScreen(
 @Composable
 fun EditProfileDialog(
     user: UserEntity?,
+    strings: AppStrings,
     onDismiss: () -> Unit,
     onConfirm: (name: String, email: String, assembly: String, maker: String, phone: String, convDate: String) -> Unit
 ) {
@@ -526,18 +529,18 @@ fun EditProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Disciple Profile", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.editProfile, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") })
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
-                OutlinedTextField(value = assembly, onValueChange = { assembly = it }, label = { Text("Local Assembly") })
-                OutlinedTextField(value = maker, onValueChange = { maker = it }, label = { Text("Disciple Maker Name") })
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") })
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(strings.email) })
+                OutlinedTextField(value = assembly, onValueChange = { assembly = it }, label = { Text(strings.localAssembly) })
+                OutlinedTextField(value = maker, onValueChange = { maker = it }, label = { Text(strings.discipleMakerName) })
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(strings.phoneNumber) })
                 OutlinedTextField(
                     value = convDate,
                     onValueChange = { convDate = it },
-                    label = { Text("Conversion Date (YYYY-MM-DD)") },
+                    label = { Text(strings.conversionDate) },
                     placeholder = { Text("2021-04-15") },
                     leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) }
                 )
@@ -545,12 +548,12 @@ fun EditProfileDialog(
         },
         confirmButton = {
             Button(onClick = { onConfirm(name, email, assembly, maker, phone, convDate) }) {
-                Text("Save")
+                Text(strings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         },
         shape = RoundedCornerShape(28.dp)
@@ -559,6 +562,7 @@ fun EditProfileDialog(
 
 @Composable
 fun AddReminderDialog(
+    strings: AppStrings,
     onDismiss: () -> Unit,
     onConfirm: (domainId: String, title: String, msg: String, hour: Int, minute: Int) -> Unit
 ) {
@@ -569,14 +573,14 @@ fun AddReminderDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Spiritual Reminder") },
+        title = { Text(strings.addReminderTitle) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Reminder Title") })
-                OutlinedTextField(value = msg, onValueChange = { msg = it }, label = { Text("Message") })
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(strings.reminderTitleLabel) })
+                OutlinedTextField(value = msg, onValueChange = { msg = it }, label = { Text(strings.messageLabel) })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = hourText, onValueChange = { hourText = it }, label = { Text("Hour (0-23)") }, modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = minText, onValueChange = { minText = it }, label = { Text("Minute (0-59)") }, modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = hourText, onValueChange = { hourText = it }, label = { Text(strings.hourLabel) }, modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = minText, onValueChange = { minText = it }, label = { Text(strings.minuteLabel) }, modifier = Modifier.weight(1f))
                 }
             }
         },
@@ -586,12 +590,12 @@ fun AddReminderDialog(
                 val m = minText.toIntOrNull() ?: 0
                 onConfirm("ddewg", title, msg, h, m)
             }) {
-                Text("Save")
+                Text(strings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         },
         shape = RoundedCornerShape(28.dp)

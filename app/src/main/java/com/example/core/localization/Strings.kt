@@ -214,7 +214,53 @@ data class AppStrings(
     val clearDataConfirm: String,
     val version: String,
     val confirmDelete: String,
-    val deleteRecordPrompt: String
+    val deleteRecordPrompt: String,
+
+    // Legal & Support
+    val privacyPolicy: String,
+    val termsConditions: String,
+    val supportFeedback: String,
+
+    // Profile & Settings Extra
+    val spiritualJourney: String,
+    val discipleProfile: String,
+    val localAssembly: String,
+    val discipleMakerName: String,
+    val phoneNumber: String,
+    val conversionDate: String,
+    val editProfile: String,
+    val setDate: String,
+    val notSet: String,
+    val noActiveReminders: String,
+    val addReminderTitle: String,
+    val reminderTitleLabel: String,
+    val messageLabel: String,
+    val hourLabel: String,
+    val minuteLabel: String,
+
+    // Reports Extra
+    val reportDesc: String,
+    val exactDateSelection: String,
+    val targetDayLabel: String,
+    val weekEndingLabel: String,
+    val monthLabel: String,
+    val dateRangeLabel: String,
+    val changeDate: String,
+    val selectDomainsToInclude: String,
+    val selectAll: String,
+    val generatePdfButton: String,
+    val pdfGeneratedTitle: String,
+    val openPdf: String,
+    val sharePdf: String,
+    val shareAccountsTitle: String,
+    val shareAccountsDesc: String,
+    val shareSummary: String,
+    val copyLink: String,
+
+    // Daily Word of Encouragement
+    val dailyWordTitle: String,
+    val nextQuote: String,
+    val dailyQuotes: List<String>
 ) {
     fun getDomainTitle(key: String): String {
         return when (key) {
@@ -432,7 +478,57 @@ val EnglishStrings = AppStrings(
     clearDataConfirm = "Are you sure you want to delete all local records?",
     version = "App Version",
     confirmDelete = "Confirm Delete",
-    deleteRecordPrompt = "Are you sure you want to permanently delete this record?"
+    deleteRecordPrompt = "Are you sure you want to permanently delete this record?",
+
+    privacyPolicy = "Privacy Policy",
+    termsConditions = "Terms & Conditions",
+    supportFeedback = "Support & Feedback",
+
+    spiritualJourney = "Spiritual Journey",
+    discipleProfile = "Disciple Profile",
+    localAssembly = "Local Assembly",
+    discipleMakerName = "Disciple Maker Name",
+    phoneNumber = "Phone Number",
+    conversionDate = "Conversion Date (YYYY-MM-DD)",
+    editProfile = "Edit Disciple Profile",
+    setDate = "Set Date",
+    notSet = "Not set",
+    noActiveReminders = "No active reminders set. Add daily alerts for DDEWG or Prayer.",
+    addReminderTitle = "Add Spiritual Reminder",
+    reminderTitleLabel = "Reminder Title",
+    messageLabel = "Message",
+    hourLabel = "Hour (0-23)",
+    minuteLabel = "Minute (0-59)",
+
+    reportDesc = "Generate a formatted CMFI PDF report summarizing your spiritual disciplines for your Disciple Maker.",
+    exactDateSelection = "Exact Date / Date Range Selection:",
+    targetDayLabel = "Target Day",
+    weekEndingLabel = "Week Ending",
+    monthLabel = "Month",
+    dateRangeLabel = "Range",
+    changeDate = "Change Date",
+    selectDomainsToInclude = "Select Exact Domains to Include:",
+    selectAll = "Select All",
+    generatePdfButton = "Generate %s PDF Report",
+    pdfGeneratedTitle = "PDF Generated!",
+    openPdf = "Open PDF",
+    sharePdf = "Share PDF File",
+    shareAccountsTitle = "Share Accounts to Social Media & Messaging",
+    shareAccountsDesc = "Send summary links or reports directly to your Disciple Maker, WhatsApp, or Social Platforms:",
+    shareSummary = "Share Summary",
+    copyLink = "Copy Link",
+
+    dailyWordTitle = "Daily Word of Encouragement (3B Messages)",
+    nextQuote = "Next Quote",
+    dailyQuotes = listOf(
+        "“Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness.” — The Bertoua Message (Z.T. Fomum)",
+        "“Faithfulness in becoming and being a disciple includes praying alone, daily dynamic encounters with God (DDEWG), Bible reading, reading Christian literature, retreats, fasting, and soul-winning.” — The Pathway to Revival (Z.T. Fomum)",
+        "“Son, write on your heart that what a person IS before God is of far greater importance than what he DOES. Seek to be filled with the Holy Spirit in all fullness.” — The Beijing Prophecy (Z.T. Fomum)",
+        "“The power released in prayer and fasting depends primarily on WHO is praying and fasting, and secondarily on the duration.” — The Beijing Prophecy (Z.T. Fomum)",
+        "“Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call upon your life.” — The Congo Brazzaville Message (Z.T. Fomum)",
+        "“During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through.” — Pr. Zacharias Tanee Fomum",
+        "“When a Spirit-filled believer prays and fasts in total surrender, heaven moves and hell is brought to naught for the glory of Christ!” — 3B Prophetic Messages (Z.T. Fomum)"
+    )
 )
 
 val FrenchStrings = AppStrings(
@@ -616,7 +712,57 @@ val FrenchStrings = AppStrings(
     clearDataConfirm = "Êtes-vous sûr de vouloir supprimer tous les enregistrements locaux ?",
     version = "App Version",
     confirmDelete = "Confirmer la Suppression",
-    deleteRecordPrompt = "Êtes-vous sûr de vouloir supprimer définitivement cet enregistrement ?"
+    deleteRecordPrompt = "Êtes-vous sûr de vouloir supprimer définitivement cet enregistrement ?",
+
+    privacyPolicy = "Politique de Confidentialité",
+    termsConditions = "Conditions Générales",
+    supportFeedback = "Support & Commentaires",
+
+    spiritualJourney = "Parcours Spirituel",
+    discipleProfile = "Profil du Disciple",
+    localAssembly = "Assemblée Locale",
+    discipleMakerName = "Nom du Faiseur de Disciples",
+    phoneNumber = "Numéro de Téléphone",
+    conversionDate = "Date de Conversion (AAAA-MM-JJ)",
+    editProfile = "Modifier le Profil du Disciple",
+    setDate = "Définir la Date",
+    notSet = "Non défini",
+    noActiveReminders = "Aucun rappel actif. Ajoutez des alertes quotidiennes pour la RDQD ou la Prière.",
+    addReminderTitle = "Ajouter un Rappel Spirituel",
+    reminderTitleLabel = "Titre du Rappel",
+    messageLabel = "Message",
+    hourLabel = "Heure (0-23)",
+    minuteLabel = "Minute (0-59)",
+
+    reportDesc = "Générez un rapport PDF formaté CMFI résumant vos disciplines spirituelles pour votre faiseur de disciples.",
+    exactDateSelection = "Sélection de Date / Plage de Dates :",
+    targetDayLabel = "Jour Cible",
+    weekEndingLabel = "Fin de Semaine",
+    monthLabel = "Mois",
+    dateRangeLabel = "Période",
+    changeDate = "Changer la Date",
+    selectDomainsToInclude = "Sélectionnez les Domaines à Inclure :",
+    selectAll = "Tout Sélectionner",
+    generatePdfButton = "Générer Rapport PDF %s",
+    pdfGeneratedTitle = "PDF Généré !",
+    openPdf = "Ouvrir le PDF",
+    sharePdf = "Partager le Fichier PDF",
+    shareAccountsTitle = "Partager les Comptes sur les Réseaux Sociaux & Messageries",
+    shareAccountsDesc = "Envoyez des résumés ou rapports directement à votre faiseur de disciples, WhatsApp, ou réseaux sociaux :",
+    shareSummary = "Partager le Résumé",
+    copyLink = "Copier le Lien",
+
+    dailyWordTitle = "Parole d'Encouragement Quotidienne (Messages 3B)",
+    nextQuote = "Citation Suivante",
+    dailyQuotes = listOf(
+        "« Retourne à ton premier amour pour le Seigneur Jésus-Christ. Ce retour inclut la libération de tout péché, de l'amour de soi, de l'amour du monde, de la cupidité, de la paresse et du manque de buts. » — Le Message de Bertoua (Z.T. Fomum)",
+        "« La fidélité à devenir et rester un disciple inclut la prière seul, la rencontre dynamique quotidienne avec Dieu (RDQD), la lecture biblique, la littérature chrétienne, les retraites, le jeûne et le gagnagisme d'âmes. » — Le Chemin de la Revivification (Z.T. Fomum)",
+        "« Mon fils, écris sur ton cœur que ce qu'une personne EST devant Dieu est de bien plus grande importance que ce qu'elle FAIT. Cherche à être rempli du Saint-Esprit en toute plénitude. » — La Prophétie de Pékin (Z.T. Fomum)",
+        "« La puissance libérée dans la prière et le jeûne dépend principalement de QUI prie et jeûne, et secondairement de la durée. » — La Prophétie de Pékin (Z.T. Fomum)",
+        "« Vis ta vie pour la gloire exclusive du Seigneur Jésus-Christ en toutes choses, en Le servant dans le domaine de Son appel sur ta vie. » — Le Message de Congo Brazzaville (Z.T. Fomum)",
+        "« Pendant la Rencontre Dynamique Quotidienne avec Dieu (RDQD), lis la Parole de Dieu, médite-la, écoute Sa voix, note ce Qu'Il dit, et prie en conséquence. » — Pr. Zacharias Tanee Fomum",
+        "« Quand un croyant rempli de l'Esprit prie et jeûne dans un abandon total, le ciel se meut et l'enfer est réduit à néant pour la gloire du Christ ! » — Messages Prophétiques 3B (Z.T. Fomum)"
+    )
 )
 
 val SpanishStrings = EnglishStrings.copy(
