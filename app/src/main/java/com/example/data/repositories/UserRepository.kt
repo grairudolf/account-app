@@ -15,10 +15,6 @@ class UserRepository(private val userDao: UserDao) {
         val langCode = user?.language?.lowercase() ?: java.util.Locale.getDefault().language.lowercase()
         when {
             langCode.startsWith("fr") -> AppLanguage.FRENCH
-            langCode.startsWith("es") -> AppLanguage.SPANISH
-            langCode.startsWith("pt") -> AppLanguage.PORTUGUESE
-            langCode.startsWith("sw") -> AppLanguage.SWAHILI
-            langCode.startsWith("ar") -> AppLanguage.ARABIC
             else -> AppLanguage.ENGLISH
         }
     }

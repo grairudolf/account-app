@@ -252,27 +252,9 @@ fun SettingsScreen(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        AppLanguage.entries.take(3).forEach { lang ->
-                            FilterChip(
-                                selected = currentLanguage == lang,
-                                onClick = { onUpdateLanguage(lang) },
-                                label = { Text(lang.displayName) },
-                                shape = RoundedCornerShape(20.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                modifier = Modifier.testTag("lang_chip_${lang.code}")
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AppLanguage.entries.drop(3).forEach { lang ->
+                        listOf(AppLanguage.ENGLISH, AppLanguage.FRENCH).forEach { lang ->
                             FilterChip(
                                 selected = currentLanguage == lang,
                                 onClick = { onUpdateLanguage(lang) },

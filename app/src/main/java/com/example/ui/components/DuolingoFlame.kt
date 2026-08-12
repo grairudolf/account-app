@@ -141,7 +141,7 @@ fun DuolingoFlame(
                 )
             )
 
-            // Inner Golden Core
+            // Inner Core
             val innerCore = Path().apply {
                 moveTo(w * 0.5f, h * 0.42f)
                 cubicTo(w * 0.68f, h * 0.58f, w * 0.72f, h * 0.82f, w * 0.5f, h * 0.90f)

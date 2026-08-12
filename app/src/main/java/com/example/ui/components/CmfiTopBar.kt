@@ -103,10 +103,6 @@ fun CmfiTopBar(
                             val langPillText = when (currentLanguage) {
                                 AppLanguage.ENGLISH -> "🇬🇧 EN"
                                 AppLanguage.FRENCH -> "🇫🇷 FR"
-                                AppLanguage.SPANISH -> "🇪🇸 ES"
-                                AppLanguage.PORTUGUESE -> "🇵🇹 PT"
-                                AppLanguage.SWAHILI -> "🇰🇪 SW"
-                                AppLanguage.ARABIC -> "🇸🇦 AR"
                             }
                             Text(
                                 text = langPillText,
@@ -129,11 +125,7 @@ fun CmfiTopBar(
                     ) {
                         val languageList = listOf(
                             Triple("🇬🇧", AppLanguage.ENGLISH, "English"),
-                            Triple("🇫🇷", AppLanguage.FRENCH, "Français"),
-                            Triple("🇪🇸", AppLanguage.SPANISH, "Español"),
-                            Triple("🇵🇹", AppLanguage.PORTUGUESE, "Português"),
-                            Triple("🇰🇪", AppLanguage.SWAHILI, "Kiswahili"),
-                            Triple("🇸🇦", AppLanguage.ARABIC, "العربية")
+                            Triple("🇫🇷", AppLanguage.FRENCH, "Français")
                         )
                         languageList.forEach { (flag, lang, name) ->
                             DropdownMenuItem(

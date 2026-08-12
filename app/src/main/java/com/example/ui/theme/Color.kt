@@ -40,4 +40,3 @@ val SurfaceDark = Color(0xFF1D1B20)
 val SurfaceVariantDark = Color(0xFF2B2930)
 val TextPrimaryNight = Color(0xFFE6E0E9)
 val TextSecondaryNight = Color(0xFFCAC4D0)
-
