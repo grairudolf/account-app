@@ -71,14 +71,21 @@ class TimerViewModel(
             val durationMs = timerServiceManager.stopTimer(session)
             val durationSeconds = durationMs / 1000L
 
+            val endMs = System.currentTimeMillis()
+            val timeFormatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val startFormatted = timeFormatter.format(java.util.Date(session.startTimestampMs))
+            val endFormatted = timeFormatter.format(java.util.Date(endMs))
+
             val entry = AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
                 userId = session.userId,
                 domainId = session.domainId,
                 dateIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                timestampMs = System.currentTimeMillis(),
+                timestampMs = endMs,
                 timezoneId = session.timezoneId,
                 durationSeconds = durationSeconds,
+                startTimeIso = startFormatted,
+                endTimeIso = endFormatted,
                 notes = notes,
                 reflection = reflection,
                 prayerType = prayerType,

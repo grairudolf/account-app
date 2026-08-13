@@ -277,35 +277,37 @@ fun DomainDetailScreen(
                                 }
                             }
 
-                            // Start Time & Stop Time Duration Input
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("Time & Duration:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    OutlinedTextField(
-                                        value = startTimeText,
-                                        onValueChange = { startTimeText = it },
-                                        label = { Text("Start Time (e.g. 06:00)") },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .testTag("entry_start_time"),
-                                        singleLine = true
-                                    )
-                                    OutlinedTextField(
-                                        value = stopTimeText,
-                                        onValueChange = { stopTimeText = it },
-                                        label = { Text("Stop Time (e.g. 07:15)") },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .testTag("entry_stop_time"),
-                                        singleLine = true
+                            if (domainId != "fasting") {
+                                // Start Time & Stop Time Duration Input
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Time & Duration:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        OutlinedTextField(
+                                            value = startTimeText,
+                                            onValueChange = { startTimeText = it },
+                                            label = { Text("Start Time (e.g. 06:00)") },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .testTag("entry_start_time"),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = stopTimeText,
+                                            onValueChange = { stopTimeText = it },
+                                            label = { Text("Stop Time (e.g. 07:15)") },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .testTag("entry_stop_time"),
+                                            singleLine = true
+                                        )
+                                    }
+                                    Text(
+                                        text = "Calculated Duration: $calculatedDurationMinutes Minutes",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = PrimaryBlue,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Text(
-                                    text = "Calculated Duration: $calculatedDurationMinutes Minutes",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = PrimaryBlue,
-                                    fontWeight = FontWeight.Bold
-                                )
                             }
 
                             // Prayer Domain Specific Fields

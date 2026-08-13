@@ -153,7 +153,12 @@ fun TimerScreen(
                             }
 
                             Button(
-                                onClick = { showSaveDialog = true },
+                                onClick = {
+                                    if (activeSession != null && !activeSession.isPaused) {
+                                        onPauseTimer()
+                                    }
+                                    showSaveDialog = true
+                                },
                                 modifier = Modifier
                                     .height(52.dp)
                                     .testTag("timer_stop_save_button"),
@@ -228,7 +233,7 @@ fun SaveTimerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Save Session ($formattedTime)") },
+        title = { Text(if (domainId == "fasting") "Save Fasting Record" else "Save Session ($formattedTime)") },
         text = {
             Column(
                 modifier = Modifier

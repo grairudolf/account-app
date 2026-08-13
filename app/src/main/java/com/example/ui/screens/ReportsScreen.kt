@@ -380,6 +380,29 @@ fun ReportsScreen(
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
+                                    IconButton(
+                                        onClick = {
+                                            try {
+                                                if (file.exists()) file.delete()
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                            val matching = reportHistory.find { it.generatedFilePath == file.absolutePath }
+                                            if (matching != null) {
+                                                onDeleteReport(matching.id)
+                                            }
+                                            lastGeneratedFile = null
+                                            Toast.makeText(context, "Report deleted", Toast.LENGTH_SHORT).show()
+                                        },
+                                        modifier = Modifier.testTag("delete_last_generated_pdf_btn")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Report",
+                                            tint = StatusError,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

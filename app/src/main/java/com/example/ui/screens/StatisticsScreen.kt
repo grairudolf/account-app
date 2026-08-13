@@ -451,16 +451,45 @@ fun EntryLogCard(
                     color = PrimaryBlue
                 )
                 Text(
-                    text = "Date: ${entry.dateIso}" + if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) " (${entry.startTimeIso} - ${entry.endTimeIso})" else "",
+                    text = "Date: ${entry.dateIso}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = "Duration: ${entry.durationSeconds / 60} mins",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AccentPurple
-                )
+                if (entry.domainId == "fasting") {
+                    val days = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
+                    Text(
+                        text = "Fasting: $days Days" + if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else "",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AccentPurple
+                    )
+                } else {
+                    val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) {
+                        "${entry.startTimeIso} - ${entry.endTimeIso}"
+                    } else if (entry.timestampMs > 0 && entry.durationSeconds > 0) {
+                        val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                        val endStr = fmt.format(java.util.Date(entry.timestampMs))
+                        val startStr = fmt.format(java.util.Date(entry.timestampMs - entry.durationSeconds * 1000L))
+                        "$startStr - $endStr"
+                    } else ""
+
+                    if (timeSpan.isNotBlank()) {
+                        Text(
+                            text = "Time Span: $timeSpan",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = PrimaryBlueDark
+                        )
+                    }
+                    val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
+                    val displayDuration = if (mins >= 60) "${mins / 60} hrs ${mins % 60} mins" else "$mins mins"
+                    Text(
+                        text = "Duration: $displayDuration",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AccentPurple
+                    )
+                }
                 if (entry.prayerType.isNotBlank()) {
                     Text(
                         text = "Prayer Focus: ${entry.prayerType}" + if (entry.prayerTopicsCount > 0) " (${entry.prayerTopicsCount} Topics)" else "",

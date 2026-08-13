@@ -136,21 +136,6 @@ fun NotificationsScreen(
                                     )
                                 }
                             }
-                            Button(
-                                onClick = {
-                                    onTriggerTestNotification(context)
-                                    Toast.makeText(context, "Test notification dispatched to OS!", Toast.LENGTH_SHORT).show()
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("test_push_notification_btn")
-                            ) {
-                                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Send Test Push Notification")
-                            }
                         }
                     }
                 }
