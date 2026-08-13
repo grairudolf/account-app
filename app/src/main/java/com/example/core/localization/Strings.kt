@@ -305,7 +305,7 @@ data class AppStrings(
 }
 
 val EnglishStrings = AppStrings(
-    appName = "CMFI Accountability",
+    appName = "CMFI Accap",
     dashboard = "Home",
     domains = "Domains",
     calendar = "Calendar",
@@ -317,7 +317,7 @@ val EnglishStrings = AppStrings(
     notifications = "Notifications",
     search = "Search",
 
-    welcomeTitle = "CMFI Accountability Book",
+    welcomeTitle = "CMFI Accap Book",
     welcomeSubtitle = "Digital accountability tool for spiritual disciplines and growth in Christian discipleship.",
     continueAsGuest = "Continue as Guest",
     guestExplanation = "You can record all activities locally without an account. Sign in anytime to sync to the cloud.",
@@ -554,7 +554,7 @@ val EnglishStrings = AppStrings(
 )
 
 val FrenchStrings = AppStrings(
-    appName = "CMFI Accountability",
+    appName = "CMFI Accap",
     dashboard = "Accueil",
     domains = "Domaines",
     calendar = "Calendrier",

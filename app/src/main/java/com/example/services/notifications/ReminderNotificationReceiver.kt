@@ -13,7 +13,7 @@ import com.example.MainActivity
 class ReminderNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val title = intent.getStringExtra("EXTRA_TITLE") ?: "CMFI Spiritual Accountability Reminder"
+        val title = intent.getStringExtra("EXTRA_TITLE") ?: "CMFI Accap Reminder"
         val message = intent.getStringExtra("EXTRA_MESSAGE") ?: "Time for your daily spiritual discipline!"
 
         showNotification(context, title, message)

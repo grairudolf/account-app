@@ -97,10 +97,10 @@ fun ReportsScreen(
     fun shareTextReport(platform: String?) {
         val userName = user?.fullName?.ifBlank { "A Disciple" } ?: "A Disciple"
         val assembly = user?.localAssembly?.ifBlank { "CMFI" } ?: "CMFI"
-        val shareMessage = "✝️ CMFI Spiritual Accountability Account Summary\n" +
+        val shareMessage = "✝️ CMFI Accap Summary\n" +
                 "Disciple: $userName ($assembly)\n" +
                 "Report Period: $selectedReportType\n\n" +
-                "Logged via CMFI Spiritual Accountability App.\n" +
+                "Logged via CMFI Accap.\n" +
                 "\"He who holds himself accountable grows in grace.\" #CMFI #Discipleship"
 
         val sendIntent = Intent().apply {

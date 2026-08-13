@@ -50,7 +50,7 @@ fun PrivacyPolicyDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Welcome to CMFI Spiritual Accountability. Your privacy and spiritual data confidentiality are paramount to us.",
+                    text = "Welcome to CMFI Accap. Your privacy and spiritual data confidentiality are paramount to us.",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
@@ -118,7 +118,7 @@ fun TermsAndConditionsDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "By using CMFI Spiritual Accountability, you agree to the following terms:",
+                    text = "By using CMFI Accap, you agree to the following terms:",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(

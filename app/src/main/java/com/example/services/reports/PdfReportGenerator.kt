@@ -442,8 +442,8 @@ object PdfReportGenerator {
         paint.style = Paint.Style.FILL
         paint.color = Color.GRAY
         paint.textSize = 8.5f
-        val genText = if (isFrench) "Généré le ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via Application de Redevabilité CMFI  •  Page $pNum"
-        else "Generated on ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accountability App  •  Page $pNum"
+        val genText = if (isFrench) "Généré le ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via Application CMFI Accap  •  Page $pNum"
+        else "Generated on ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accap  •  Page $pNum"
         c.drawText(genText, 30f, 795f, paint)
 
         // Disciple Maker Signature Line
