@@ -495,20 +495,55 @@ fun SettingsScreen(
             }
         }
 
-        // Sign Out Button
+        // Account Status & Sign Out
         item {
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onSignOut,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("sign_out_button"),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+            if (user?.isGuest == true) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = PrimaryBlue.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(Icons.Default.OfflinePin, contentDescription = null, tint = PrimaryBlue)
+                            Column {
+                                Text("Guest Mode Active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                                Text("Your entries are saved locally on this device.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Button(
+                            onClick = onSignOut,
+                            modifier = Modifier.fillMaxWidth().height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Sign In / Create Account", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onSignOut,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("sign_out_button"),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

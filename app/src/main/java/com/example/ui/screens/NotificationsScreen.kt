@@ -297,16 +297,16 @@ fun NotificationCard(
     dateFormat: SimpleDateFormat,
     onDelete: () -> Unit
 ) {
-    val icon = when (notification.type) {
-        "ENTRY" -> Icons.Default.CheckCircle
-        "REPORT" -> Icons.Default.Description
-        "GOAL" -> Icons.Default.EmojiEvents
-        "TIMER" -> Icons.Default.Timer
-        "REMINDER" -> Icons.Default.Alarm
-        else -> Icons.Default.Notifications
+    val categoryLabel = when (notification.type) {
+        "ENTRY" -> "Discipline Log"
+        "REPORT" -> "Report"
+        "GOAL" -> "Milestone"
+        "TIMER" -> "Live Session"
+        "REMINDER" -> "Reminder"
+        else -> "Alert"
     }
 
-    val iconColor = when (notification.type) {
+    val tagColor = when (notification.type) {
         "ENTRY" -> StatusSuccess
         "REPORT" -> PrimaryBlue
         "GOAL" -> StreakGold
@@ -327,38 +327,45 @@ fun NotificationCard(
             .testTag("notification_item_${notification.id}")
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(22.dp))
-            }
-
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = notification.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.SemiBold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = tagColor.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = categoryLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = tagColor,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            text = notification.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.SemiBold
+                        )
+                    }
                     Text(
                         text = dateFormat.format(Date(notification.timestampMs)),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = notification.message,
                     style = MaterialTheme.typography.bodySmall,
