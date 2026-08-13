@@ -38,6 +38,8 @@ fun StatisticsScreen(
     monthDaysCompletion: List<DayCompletionInfo> = emptyList(),
     selectedDateEntries: List<AccountabilityEntryEntity> = emptyList(),
     allEntries: List<AccountabilityEntryEntity> = emptyList(),
+    selectedTab: Int = 0,
+    onTabSelected: (Int) -> Unit = {},
     onSelectDate: (LocalDate) -> Unit = {},
     onNextMonth: () -> Unit = {},
     onPreviousMonth: () -> Unit = {},
@@ -45,7 +47,6 @@ fun StatisticsScreen(
     onUpdateEntry: (AccountabilityEntryEntity) -> Unit = {},
     onDeleteEntry: (String) -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf(0) } // 0: Analytics Overview, 1: History Calendar & Logs
     var editingEntry by remember { mutableStateOf<AccountabilityEntryEntity?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -82,13 +83,13 @@ fun StatisticsScreen(
             ) {
                 Tab(
                     selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
+                    onClick = { onTabSelected(0) },
                     text = { Text("Overview Analytics", fontWeight = FontWeight.Bold) },
                     icon = { Icon(Icons.Default.BarChart, contentDescription = null) }
                 )
                 Tab(
                     selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
+                    onClick = { onTabSelected(1) },
                     text = { Text("History & Calendar", fontWeight = FontWeight.Bold) },
                     icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }
                 )

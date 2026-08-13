@@ -230,6 +230,7 @@ fun MainApp() {
                 composable(NavRoutes.DASHBOARD) {
                     val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
                     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+                    val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
                     DashboardScreen(
                         strings = strings,
                         uiState = dashboardUiState,
@@ -241,6 +242,12 @@ fun MainApp() {
                         },
                         onQuickAdd = { domainId ->
                             navController.navigate(NavRoutes.domainDetail(domainId))
+                        },
+                        onNavigateToRecentActivity = { entry ->
+                            statisticsViewModel.selectRecentActivity(entry.dateIso)
+                            navController.navigate(NavRoutes.STATISTICS) {
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }
@@ -277,6 +284,10 @@ fun MainApp() {
                         },
                         onSaveEntry = { entry ->
                             entryViewModel.saveEntry(context, entry)
+                            navController.navigate(NavRoutes.DOMAINS) {
+                                popUpTo(NavRoutes.DOMAINS)
+                                launchSingleTop = true
+                            }
                         },
                         onBack = { navController.popBackStack() }
                     )
@@ -325,6 +336,7 @@ fun MainApp() {
                     val monthDaysCompletion by statisticsViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
                     val selectedDateEntries by statisticsViewModel.selectedDateEntries.collectAsStateWithLifecycle()
                     val allEntries by statisticsViewModel.allEntries.collectAsStateWithLifecycle()
+                    val selectedTab by statisticsViewModel.selectedTab.collectAsStateWithLifecycle()
 
                     StatisticsScreen(
                         strings = strings,
@@ -334,6 +346,8 @@ fun MainApp() {
                         monthDaysCompletion = monthDaysCompletion,
                         selectedDateEntries = selectedDateEntries,
                         allEntries = allEntries,
+                        selectedTab = selectedTab,
+                        onTabSelected = { statisticsViewModel.setSelectedTab(it) },
                         onSelectDate = { statisticsViewModel.selectDate(it) },
                         onNextMonth = { statisticsViewModel.nextMonth() },
                         onPreviousMonth = { statisticsViewModel.previousMonth() },
@@ -446,6 +460,10 @@ fun MainApp() {
                         onResumeTimer = { timerViewModel.resumeTimer() },
                         onStopAndSaveTimer = { notes, reflection ->
                             timerViewModel.stopAndSaveTimer(notes, reflection)
+                            navController.navigate(NavRoutes.DOMAINS) {
+                                popUpTo(NavRoutes.DOMAINS)
+                                launchSingleTop = true
+                            }
                         },
                         onDiscardTimer = { timerViewModel.discardTimer() },
                         onBack = { navController.popBackStack() }

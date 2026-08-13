@@ -48,7 +48,8 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     onNavigateToDomain: (String) -> Unit,
     onNavigateToGoals: () -> Unit,
-    onQuickAdd: (String) -> Unit
+    onQuickAdd: (String) -> Unit,
+    onNavigateToRecentActivity: (AccountabilityEntryEntity) -> Unit = {}
 ) {
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
     val discipleName = uiState.user?.fullName?.ifBlank { "Disciple" } ?: "Disciple"
@@ -766,7 +767,7 @@ fun DashboardScreen(
                     visible = true,
                     enter = fadeIn(tween(400)) + slideInVertically(initialOffsetY = { 40 })
                 ) {
-                    RecentActivityCard(entry = entry, strings = strings, onClick = { onNavigateToDomain(entry.domainId) })
+                    RecentActivityCard(entry = entry, strings = strings, onClick = { onNavigateToRecentActivity(entry) })
                 }
             }
         }

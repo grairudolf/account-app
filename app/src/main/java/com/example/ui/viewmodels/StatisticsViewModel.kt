@@ -40,6 +40,9 @@ class StatisticsViewModel(
     private val _currentMonth = MutableStateFlow(YearMonth.now())
     val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
+    private val _selectedTab = MutableStateFlow(0)
+    val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
+
     val allEntries: StateFlow<List<AccountabilityEntryEntity>> = accountabilityRepository.allEntriesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -113,6 +116,19 @@ class StatisticsViewModel(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
+    }
+
+    fun setSelectedTab(tabIndex: Int) {
+        _selectedTab.value = tabIndex
+    }
+
+    fun selectRecentActivity(dateIso: String) {
+        try {
+            val parsed = LocalDate.parse(dateIso)
+            _selectedDate.value = parsed
+            _currentMonth.value = YearMonth.from(parsed)
+        } catch (_: Exception) {}
+        _selectedTab.value = 1 // Switch to History & Calendar tab
     }
 
     fun nextMonth() {
