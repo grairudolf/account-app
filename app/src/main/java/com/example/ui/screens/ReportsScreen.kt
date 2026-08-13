@@ -504,7 +504,7 @@ fun ReportsScreen(
                 }
             }
         } else {
-            items(reportHistory) { record ->
+            items(reportHistory, key = { "rep_${it.id}" }) { record ->
                 val savedFile = record.generatedFilePath?.let { File(it) }
                 Surface(
                     shape = RoundedCornerShape(24.dp),

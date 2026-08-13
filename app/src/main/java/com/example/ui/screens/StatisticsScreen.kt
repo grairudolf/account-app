@@ -384,7 +384,7 @@ fun StatisticsScreen(
                             }
                         }
                     } else {
-                        items(selectedDateEntries) { entry ->
+                        items(selectedDateEntries, key = { "sel_${it.id}" }) { entry ->
                             EntryLogCard(
                                 entry = entry,
                                 onEdit = { editingEntry = entry },
@@ -402,7 +402,7 @@ fun StatisticsScreen(
                         )
                     }
 
-                    items(allEntries) { entry ->
+                    items(allEntries, key = { "all_${it.id}" }) { entry ->
                         EntryLogCard(
                             entry = entry,
                             onEdit = { editingEntry = entry },

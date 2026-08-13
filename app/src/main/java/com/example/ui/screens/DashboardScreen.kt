@@ -221,7 +221,7 @@ fun DashboardScreen(
                     )
                 }
 
-                items(matchingDisciplines) { domain ->
+                items(matchingDisciplines, key = { "domain_${it.id}" }) { domain ->
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
@@ -284,7 +284,7 @@ fun DashboardScreen(
                     )
                 }
 
-                items(matchingActivities) { entry ->
+                items(matchingActivities, key = { "act_${it.id}" }) { entry ->
                     RecentActivityCard(
                         entry = entry,
                         strings = strings,
@@ -328,6 +328,7 @@ fun DashboardScreen(
                     .testTag("dashboard_hero_card")
             ) {
                 // Background Vector Graphic Overlay (Spiritual Light Waves)
+                val path = remember { Path() }
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val w = size.width
                     val h = size.height
@@ -343,13 +344,12 @@ fun DashboardScreen(
                         center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.9f)
                     )
 
-                    val path = Path().apply {
-                        moveTo(0f, h * 0.7f)
-                        cubicTo(w * 0.3f, h * 0.5f, w * 0.6f, h * 0.9f, w, h * 0.6f)
-                        lineTo(w, h)
-                        lineTo(0f, h)
-                        close()
-                    }
+                    path.reset()
+                    path.moveTo(0f, h * 0.7f)
+                    path.cubicTo(w * 0.3f, h * 0.5f, w * 0.6f, h * 0.9f, w, h * 0.6f)
+                    path.lineTo(w, h)
+                    path.lineTo(0f, h)
+                    path.close()
                     drawPath(path, color = PrimaryBlue.copy(alpha = 0.04f))
                 }
 
@@ -695,7 +695,7 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(PredefinedDomains.ALL) { domain ->
+                    items(PredefinedDomains.ALL, key = { "quick_${it.id}" }) { domain ->
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surface,
@@ -761,7 +761,7 @@ fun DashboardScreen(
                 }
             }
         } else {
-            items(uiState.recentActivities) { entry ->
+            items(uiState.recentActivities, key = { "recent_${it.id}" }) { entry ->
                 AnimatedVisibility(
                     visible = true,
                     enter = fadeIn(tween(400)) + slideInVertically(initialOffsetY = { 40 })

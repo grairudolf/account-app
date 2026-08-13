@@ -194,7 +194,7 @@ fun NotificationsScreen(
                         }
                     }
                 } else {
-                    items(notifications) { item ->
+                    items(notifications, key = { "notif_${it.id}" }) { item ->
                         NotificationCard(
                             notification = item,
                             dateFormat = dateFormat,
