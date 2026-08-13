@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,6 +54,8 @@ fun ProclamationScreen(
     val selectedTopic by viewModel.selectedTopic.collectAsState()
     val topicText by viewModel.topicText.collectAsState()
     val counter by viewModel.counter.collectAsState()
+    val startingCount by viewModel.startingCount.collectAsState()
+    val isResumedSession by viewModel.isResumedSession.collectAsState()
     val targetCount by viewModel.targetCount.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val isTimerRunning by viewModel.isTimerRunning.collectAsState()
@@ -245,7 +248,7 @@ fun ProclamationScreen(
                                     val isSelected = selectedTopic?.id == item.id || topicText == item.topic
                                     FilterChip(
                                         selected = isSelected,
-                                        onClick = { viewModel.selectTopic(item) },
+                                        onClick = { viewModel.resumeTopicSession(item) },
                                         label = {
                                             Text(
                                                 text = "${item.topic} (${item.cumulativeCount})",
@@ -255,7 +258,9 @@ fun ProclamationScreen(
                                         },
                                         leadingIcon = if (isSelected) {
                                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                                        } else null,
+                                        } else {
+                                            { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = PrimaryBlue) }
+                                        },
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                 }
@@ -282,6 +287,55 @@ fun ProclamationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Resumed Session Status Banner
+                        if (isResumedSession && startingCount > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = PrimaryBlue.copy(alpha = 0.1f),
+                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayCircle,
+                                            contentDescription = null,
+                                            tint = PrimaryBlue,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        val addedInSession = (counter - startingCount).coerceAtLeast(0)
+                                        Column {
+                                            Text(
+                                                text = "Continuing session from $startingCount",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryBlue
+                                            )
+                                            Text(
+                                                text = "+$addedInSession added in today's session",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    TextButton(
+                                        onClick = { viewModel.clearResumedSession() },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("Start at 0", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                        }
+
                         // Live Timer Header Bar
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -611,7 +665,8 @@ fun ProclamationScreen(
                 items(topics) { topicItem ->
                     TopicHistoryCard(
                         topic = topicItem,
-                        onSelect = { viewModel.selectTopic(topicItem) },
+                        onResume = { viewModel.resumeTopicSession(topicItem) },
+                        onStartFresh = { viewModel.startNewSessionForTopic(topicItem) },
                         onDelete = { viewModel.deleteTopic(topicItem) }
                     )
                 }
@@ -623,6 +678,7 @@ fun ProclamationScreen(
     if (showEditCounterDialog) {
         var inputVal by remember { mutableStateOf(counter.toString()) }
         var targetVal by remember { mutableStateOf(targetCount.toString()) }
+        var asStartingBase by remember { mutableStateOf(isResumedSession || startingCount > 0) }
 
         AlertDialog(
             onDismissRequest = { showEditCounterDialog = false },
@@ -635,7 +691,7 @@ fun ProclamationScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "If you have already proclaimed or prayed before logging, you can set your counter to any starting number (e.g., 50).",
+                        text = "If you have already proclaimed or prayed before logging, you can set your counter to any number (e.g., 100) and choose whether to continue from this number as your session starting base.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -659,6 +715,25 @@ fun ProclamationScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { asStartingBase = !asStartingBase }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = asStartingBase,
+                            onCheckedChange = { asStartingBase = it },
+                            colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Set as session starting baseline (only count additional repetitions toward today's log)",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -666,7 +741,7 @@ fun ProclamationScreen(
                     onClick = {
                         val num = inputVal.toIntOrNull() ?: 0
                         val tgt = targetVal.toIntOrNull() ?: 100
-                        viewModel.setCounterValue(num)
+                        viewModel.setCounterValue(num, asStartingPoint = asStartingBase)
                         viewModel.setTargetCount(tgt)
                         showEditCounterDialog = false
                     },
@@ -769,73 +844,122 @@ fun ProclamationScreen(
 @Composable
 private fun TopicHistoryCard(
     topic: ProclamationTopicEntity,
-    onSelect: () -> Unit,
+    onResume: () -> Unit,
+    onStartFresh: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect() },
-        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = topic.topic,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Total: ${topic.cumulativeCount} proclamations",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PrimaryBlue,
-                        fontWeight = FontWeight.SemiBold
+                        text = topic.topic,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = "Time: ${topic.totalDurationSeconds / 60} mins",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (topic.lastPracticedIso.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = PrimaryBlue.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = "${topic.cumulativeCount} Proclamations",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                         Text(
-                            text = topic.lastPracticedIso,
+                            text = "${topic.totalDurationSeconds / 60}m logged",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (topic.lastPracticedIso.isNotBlank()) {
+                            Text(
+                                text = "Last: ${topic.lastPracticedIso}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onSelect) {
-                    Icon(
-                        imageVector = Icons.Default.PlayCircle,
-                        contentDescription = "Resume Proclaiming",
-                        tint = PrimaryBlue
-                    )
-                }
-                IconButton(onClick = onDelete) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
                         contentDescription = "Delete topic",
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            // Action Buttons Row: Resume from last count vs Fresh Session
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = onResume,
+                    modifier = Modifier.weight(1.3f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Continue from ${topic.cumulativeCount}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onStartFresh,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestartAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "New (+0)",
+                        style = MaterialTheme.typography.labelMedium
                     )
                 }
             }

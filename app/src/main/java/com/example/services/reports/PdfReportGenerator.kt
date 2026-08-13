@@ -97,30 +97,87 @@ object PdfReportGenerator {
         paint.color = Color.parseColor("#1565C0")
         paint.textSize = 13f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        val summaryTitle = if (isFrench) "RÉSUMÉ GLOBAL DES ACTIVITÉS" else "GLOBAL SUMMARY OF ACTIVITIES"
+        val summaryTitle = if (isFrench) "RÉSUMÉ DYNAMIQUE PAR DOMAINE" else "DYNAMIC DOMAIN SUMMARY & METRICS"
         canvas.drawText(summaryTitle, 30f, y, paint)
-        y += 20f
-
-        // Calculate totals
-        val bibleChapters = entries.filter { it.domainId == "bible_reading" }.sumOf { it.chaptersCount }
-        val prayerMinutes = entries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }.sumOf { it.durationSeconds } / 60
-        val preachedTo = entries.filter { it.domainId == "soul_winning" }.sumOf { it.preachedToCount }
-        val converts = entries.filter { it.domainId == "soul_winning" }.sumOf { it.convertedCount }
-
-        paint.color = Color.BLACK
-        paint.textSize = 10.5f
-        paint.typeface = Typeface.DEFAULT
-        val totalRecText = if (isFrench) "• Activités enregistrées : ${entries.size}" else "• Total Activities Recorded: ${entries.size}"
-        val chaptersText = if (isFrench) "• Chapitres bibliques lus : $bibleChapters" else "• Bible Chapters Read: $bibleChapters"
-        canvas.drawText(totalRecText, 40f, y, paint)
-        canvas.drawText(chaptersText, 300f, y, paint)
         y += 18f
 
-        val prayerText = if (isFrench) "• Temps de Prière / DDEWG : ${prayerMinutes} min" else "• Total Prayer / DDEWG: ${prayerMinutes} mins"
-        val soulText = if (isFrench) "• Évangélisation : $preachedTo prêchés, $converts convertis" else "• Soul Winning: Preached $preachedTo, Converts $converts"
+        // Compute dynamic domain stats
+        val proclamationEntries = entries.filter { it.domainId == "proclamation_importunity" }
+        val bibleEntries = entries.filter { it.domainId == "bible_reading" }
+        val prayerEntries = entries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }
+        val soulEntries = entries.filter { it.domainId == "soul_winning" }
+        val givingEntries = entries.filter { it.domainId == "giving" }
+        val fastingEntries = entries.filter { it.domainId == "fasting" }
+        val litEntries = entries.filter { it.domainId == "christian_lit" || it.domainId == "christian_lit_mem" }
+
+        val totalProclamations = proclamationEntries.sumOf { it.proclamationCount }
+        val proclamationDurationMins = proclamationEntries.sumOf { it.durationSeconds } / 60
+        val bibleChapters = bibleEntries.sumOf { it.chaptersCount }
+        val prayerMinutes = prayerEntries.sumOf { it.durationSeconds } / 60
+        val preachedTo = soulEntries.sumOf { it.preachedToCount }
+        val converts = soulEntries.sumOf { it.convertedCount }
+        val totalGiving = givingEntries.sumOf { it.givingAmount }
+        val totalFastingDays = fastingEntries.sumOf { it.fastingDaysCount }
+        val totalLitPages = litEntries.sumOf { it.pagesRead }
+
+        paint.color = Color.BLACK
+        paint.textSize = 10f
+        paint.typeface = Typeface.DEFAULT
+
+        // Row 1: General & Proclamation
+        val totalRecText = if (isFrench) "• Activités totales : ${entries.size}" else "• Total Entries Logged: ${entries.size}"
+        val procSummaryText = if (isFrench) {
+            "• Proclamation & Importunité : $totalProclamations répétitions (${proclamationDurationMins}m)"
+        } else {
+            "• Proclamation & Importunity: $totalProclamations repetitions (${proclamationDurationMins}m)"
+        }
+        canvas.drawText(totalRecText, 40f, y, paint)
+        canvas.drawText(procSummaryText, 270f, y, paint)
+        y += 16f
+
+        // Row 2: Prayer & Bible
+        val prayerText = if (isFrench) "• Prière & DDEWG : ${prayerMinutes} min (${prayerMinutes / 60}h ${prayerMinutes % 60}m)" else "• Prayer & DDEWG: ${prayerMinutes} mins (${prayerMinutes / 60}h ${prayerMinutes % 60}m)"
+        val chaptersText = if (isFrench) "• Lecture Biblique : $bibleChapters chapitres lus" else "• Bible Reading: $bibleChapters chapters read"
         canvas.drawText(prayerText, 40f, y, paint)
-        canvas.drawText(soulText, 300f, y, paint)
-        y += 25f
+        canvas.drawText(chaptersText, 270f, y, paint)
+        y += 16f
+
+        // Row 3: Soul winning & Giving/Fasting
+        val soulText = if (isFrench) "• Évangélisation : $preachedTo prêchés, $converts convertis" else "• Soul Winning: Preached $preachedTo, Converts $converts"
+        val extraDomainText = when {
+            totalGiving > 0 -> if (isFrench) "• Offrandes / Dîmes : $totalGiving" else "• Giving: $totalGiving"
+            totalFastingDays > 0 -> if (isFrench) "• Jeûne : $totalFastingDays jours" else "• Fasting: $totalFastingDays days"
+            totalLitPages > 0 -> if (isFrench) "• Livres Chrétiens : $totalLitPages pages" else "• Christian Lit: $totalLitPages pages"
+            else -> if (isFrench) "• Assiduité : Active" else "• Discipline Status: Active"
+        }
+        canvas.drawText(soulText, 40f, y, paint)
+        canvas.drawText(extraDomainText, 270f, y, paint)
+        y += 18f
+
+        // Detailed Proclamation Topics Breakdown if any proclamation entries exist
+        if (proclamationEntries.isNotEmpty()) {
+            val topicBreakdown = proclamationEntries
+                .groupBy { it.proclamationTopic.ifBlank { "Faith Proclamation" } }
+                .mapValues { entryGroup -> entryGroup.value.sumOf { it.proclamationCount } }
+
+            paint.color = Color.parseColor("#0D47A1")
+            paint.textSize = 9.5f
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            val topicHeader = if (isFrench) "Détail des Sujets de Proclamation :" else "Proclamation Topics Breakdown (Times Proclaimed):"
+            canvas.drawText(topicHeader, 40f, y, paint)
+            y += 14f
+
+            paint.color = Color.DKGRAY
+            paint.typeface = Typeface.DEFAULT
+            paint.textSize = 9f
+            for ((topic, count) in topicBreakdown.entries.take(4)) {
+                val bullet = "  › \"$topic\": $count ${if (isFrench) "fois" else "times"}"
+                canvas.drawText(bullet.take(75), 45f, y, paint)
+                y += 13f
+            }
+            y += 4f
+        }
+        y += 8f
 
         // If report is WEEKLY, draw Breakdown by Day
         if (reportType == "WEEKLY") {
@@ -137,19 +194,21 @@ object PdfReportGenerator {
             canvas.drawRect(30f, y, 565f, y + 20f, paint)
 
             paint.color = Color.WHITE
-            paint.textSize = 9.5f
+            paint.textSize = 9f
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             val colDay = if (isFrench) "Jour" else "Day"
-            val colCount = if (isFrench) "Activités" else "Count"
+            val colCount = if (isFrench) "Total" else "Total"
             val colPrayer = if (isFrench) "Prière" else "Prayer"
+            val colProc = if (isFrench) "Proclam." else "Proclam."
             val colBible = if (isFrench) "Bible" else "Bible"
-            val colSoul = if (isFrench) "Évangélisation" else "Soul Winning"
+            val colSoul = if (isFrench) "Évangél." else "Soul Win."
 
-            canvas.drawText(colDay, 38f, y + 14f, paint)
-            canvas.drawText(colCount, 130f, y + 14f, paint)
-            canvas.drawText(colPrayer, 210f, y + 14f, paint)
-            canvas.drawText(colBible, 310f, y + 14f, paint)
-            canvas.drawText(colSoul, 420f, y + 14f, paint)
+            canvas.drawText(colDay, 36f, y + 14f, paint)
+            canvas.drawText(colCount, 120f, y + 14f, paint)
+            canvas.drawText(colPrayer, 190f, y + 14f, paint)
+            canvas.drawText(colProc, 280f, y + 14f, paint)
+            canvas.drawText(colBible, 370f, y + 14f, paint)
+            canvas.drawText(colSoul, 470f, y + 14f, paint)
 
             y += 20f
 
@@ -164,6 +223,7 @@ object PdfReportGenerator {
                 val dayName = day.getDisplayName(TextStyle.FULL, locale).lowercase().replaceFirstChar { it.uppercase() }
                 val count = dayEntries.size
                 val pMins = dayEntries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }.sumOf { it.durationSeconds } / 60
+                val procTimes = dayEntries.filter { it.domainId == "proclamation_importunity" }.sumOf { it.proclamationCount }
                 val bChaps = dayEntries.filter { it.domainId == "bible_reading" }.sumOf { it.chaptersCount }
                 val sPreach = dayEntries.filter { it.domainId == "soul_winning" }.sumOf { it.preachedToCount }
 
@@ -178,14 +238,15 @@ object PdfReportGenerator {
 
                 paint.style = Paint.Style.FILL
                 paint.color = Color.BLACK
-                paint.textSize = 9f
+                paint.textSize = 8.5f
                 paint.typeface = Typeface.DEFAULT
 
-                canvas.drawText(dayName, 38f, y + 13f, paint)
-                canvas.drawText("$count", 130f, y + 13f, paint)
-                canvas.drawText("${pMins}m", 210f, y + 13f, paint)
-                canvas.drawText("${bChaps} ch", 310f, y + 13f, paint)
-                canvas.drawText("$sPreach", 420f, y + 13f, paint)
+                canvas.drawText(dayName, 36f, y + 13f, paint)
+                canvas.drawText("$count", 120f, y + 13f, paint)
+                canvas.drawText("${pMins}m", 190f, y + 13f, paint)
+                canvas.drawText("$procTimes x", 280f, y + 13f, paint)
+                canvas.drawText("${bChaps} ch", 370f, y + 13f, paint)
+                canvas.drawText("$sPreach", 470f, y + 13f, paint)
 
                 y += 18f
             }
@@ -205,20 +266,22 @@ object PdfReportGenerator {
             canvas.drawRect(30f, y, 565f, y + 20f, paint)
 
             paint.color = Color.WHITE
-            paint.textSize = 9.5f
+            paint.textSize = 9f
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
             val colWk = if (isFrench) "Semaine" else "Week"
-            val colCount = if (isFrench) "Activités" else "Count"
+            val colCount = if (isFrench) "Total" else "Total"
             val colPrayer = if (isFrench) "Prière" else "Prayer"
+            val colProc = if (isFrench) "Proclam." else "Proclam."
             val colBible = if (isFrench) "Bible" else "Bible"
-            val colSoul = if (isFrench) "Évangélisation" else "Soul Winning"
+            val colSoul = if (isFrench) "Évangél." else "Soul Win."
 
-            canvas.drawText(colWk, 38f, y + 14f, paint)
-            canvas.drawText(colCount, 150f, y + 14f, paint)
-            canvas.drawText(colPrayer, 230f, y + 14f, paint)
-            canvas.drawText(colBible, 330f, y + 14f, paint)
-            canvas.drawText(colSoul, 430f, y + 14f, paint)
+            canvas.drawText(colWk, 36f, y + 14f, paint)
+            canvas.drawText(colCount, 135f, y + 14f, paint)
+            canvas.drawText(colPrayer, 200f, y + 14f, paint)
+            canvas.drawText(colProc, 290f, y + 14f, paint)
+            canvas.drawText(colBible, 380f, y + 14f, paint)
+            canvas.drawText(colSoul, 480f, y + 14f, paint)
 
             y += 20f
 
@@ -240,6 +303,7 @@ object PdfReportGenerator {
                 }
                 val count = weekEntries.size
                 val pMins = weekEntries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }.sumOf { it.durationSeconds } / 60
+                val procTimes = weekEntries.filter { it.domainId == "proclamation_importunity" }.sumOf { it.proclamationCount }
                 val bChaps = weekEntries.filter { it.domainId == "bible_reading" }.sumOf { it.chaptersCount }
                 val sPreach = weekEntries.filter { it.domainId == "soul_winning" }.sumOf { it.preachedToCount }
 
@@ -254,14 +318,15 @@ object PdfReportGenerator {
 
                 paint.style = Paint.Style.FILL
                 paint.color = Color.BLACK
-                paint.textSize = 9f
+                paint.textSize = 8.5f
                 paint.typeface = Typeface.DEFAULT
 
-                canvas.drawText(label, 38f, y + 13f, paint)
-                canvas.drawText("$count", 150f, y + 13f, paint)
-                canvas.drawText("${pMins}m", 230f, y + 13f, paint)
-                canvas.drawText("${bChaps} ch", 330f, y + 13f, paint)
-                canvas.drawText("$sPreach", 430f, y + 13f, paint)
+                canvas.drawText(label, 36f, y + 13f, paint)
+                canvas.drawText("$count", 135f, y + 13f, paint)
+                canvas.drawText("${pMins}m", 200f, y + 13f, paint)
+                canvas.drawText("$procTimes x", 290f, y + 13f, paint)
+                canvas.drawText("${bChaps} ch", 380f, y + 13f, paint)
+                canvas.drawText("$sPreach", 480f, y + 13f, paint)
 
                 y += 18f
             }
@@ -415,13 +480,13 @@ object PdfReportGenerator {
 
                 activeCanvas.drawText(entry.dateIso, 35f, y + 14f, paint)
                 val domainTitle = getDomainDisplayName(entry.domainId, isFrench)
-                activeCanvas.drawText(domainTitle.take(18), 115f, y + 14f, paint)
+                activeCanvas.drawText(domainTitle.take(20), 115f, y + 14f, paint)
 
                 val details = getEntrySummaryDetails(entry, isFrench)
-                activeCanvas.drawText(details.take(32), 230f, y + 14f, paint)
+                activeCanvas.drawText(details.take(38), 230f, y + 14f, paint)
 
                 val notesText = entry.notes.ifBlank { "-" }
-                activeCanvas.drawText(notesText.take(28), 420f, y + 14f, paint)
+                activeCanvas.drawText(notesText.take(30), 420f, y + 14f, paint)
 
                 y += rowHeight
                 rowIndex++

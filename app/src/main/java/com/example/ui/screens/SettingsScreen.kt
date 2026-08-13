@@ -61,7 +61,19 @@ fun SettingsScreen(
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { onUpdateProfileImage(it.toString()) }
+        uri?.let { sourceUri ->
+            try {
+                val file = java.io.File(context.filesDir, "user_avatar_${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    java.io.FileOutputStream(file).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                onUpdateProfileImage(file.absolutePath)
+            } catch (e: Exception) {
+                onUpdateProfileImage(sourceUri.toString())
+            }
+        }
     }
 
     val daysOfWeek = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")

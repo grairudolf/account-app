@@ -74,6 +74,7 @@ class AccountabilityRepository(
             if (existing != null) {
                 val updated = existing.copy(
                     cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
+                    targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else existing.targetCount,
                     totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
                     lastPracticedIso = entry.dateIso,
                     updatedAtMs = System.currentTimeMillis()

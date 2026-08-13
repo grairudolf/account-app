@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.PredefinedDomains
@@ -148,17 +150,29 @@ fun DashboardScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(46.dp)
                             .clip(CircleShape)
                             .background(LightBlueContainer),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(26.dp)
-                        )
+                        val profilePic = uiState.user?.profileImageUri
+                        if (!profilePic.isNullOrBlank()) {
+                            AsyncImage(
+                                model = profilePic,
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = discipleName.take(1).uppercase(),
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
                     }
                 }
             }
