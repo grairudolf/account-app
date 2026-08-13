@@ -42,7 +42,8 @@ fun CmfiTopBar(
     onLanguageSelected: (AppLanguage) -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    unreadCount: Int = 0
 ) {
     var showLanguageMenu by remember { mutableStateOf(false) }
 
@@ -162,14 +163,30 @@ fun CmfiTopBar(
                     )
                 }
                 IconButton(
-                    onClick = onProfileClick,
-                    modifier = Modifier.testTag("top_bar_settings_button")
+                    onClick = onNotificationClick,
+                    modifier = Modifier.testTag("top_bar_notification_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = Color.White
-                    )
+                    BadgedBox(
+                        badge = {
+                            if (unreadCount > 0) {
+                                Badge(
+                                    containerColor = Color.Red,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(
+                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color.White
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

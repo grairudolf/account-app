@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -49,12 +50,14 @@ fun ReportsScreen(
     onSelectAllDomains: () -> Unit = {},
     onSetTargetDate: (java.time.LocalDate) -> Unit = {},
     onSetDateRange: (java.time.LocalDate, java.time.LocalDate) -> Unit = { _, _ -> },
-    onGeneratePdfReport: (Context, (File) -> Unit) -> Unit
+    onGeneratePdfReport: (Context, (File) -> Unit) -> Unit,
+    onDeleteReport: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     var lastGeneratedFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
     var showCalendarDatePicker by remember { mutableStateOf(false) }
+    var reportToDelete by remember { mutableStateOf<ReportRecordEntity?>(null) }
 
     fun sharePdfFile(file: File) {
         try {
@@ -522,6 +525,12 @@ fun ReportsScreen(
                                     Icon(Icons.Default.Share, contentDescription = "Share Summary", tint = PrimaryBlue)
                                 }
                             }
+                            IconButton(
+                                onClick = { reportToDelete = record },
+                                modifier = Modifier.testTag("delete_report_button_${record.id}")
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Report", tint = StatusError)
+                            }
                         }
                     }
                 }
@@ -544,6 +553,34 @@ fun ReportsScreen(
                 onSetDateRange(start, end)
                 showCalendarDatePicker = false
             }
+        )
+    }
+
+    if (reportToDelete != null) {
+        val target = reportToDelete!!
+        AlertDialog(
+            onDismissRequest = { reportToDelete = null },
+            title = { Text("Delete Report", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete this ${target.reportType} report record (${target.dateRangeLabel})? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteReport(target.id)
+                        reportToDelete = null
+                        Toast.makeText(context, "Report deleted", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusError),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reportToDelete = null }) {
+                    Text("Cancel")
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 }

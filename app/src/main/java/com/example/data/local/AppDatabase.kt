@@ -15,9 +15,10 @@ import com.example.data.local.entities.*
         TimerSessionEntity::class,
         CustomDomainEntity::class,
         ReminderEntity::class,
-        ReportRecordEntity::class
+        ReportRecordEntity::class,
+        NotificationEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun customDomainDao(): CustomDomainDao
     abstract fun reminderDao(): ReminderDao
     abstract fun reportDao(): ReportDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile

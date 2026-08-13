@@ -1,5 +1,6 @@
 package com.example.ui.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.entities.AccountabilityEntryEntity
@@ -10,9 +11,15 @@ class EntryViewModel(
     private val accountabilityRepository: AccountabilityRepository
 ) : ViewModel() {
 
-    fun saveEntry(entry: AccountabilityEntryEntity) {
+    fun saveEntry(context: Context, entry: AccountabilityEntryEntity) {
         viewModelScope.launch {
             accountabilityRepository.saveEntry(entry)
+            accountabilityRepository.logNotification(
+                context = context,
+                title = "Entry Logged",
+                message = "Logged transaction for ${entry.domainId.uppercase()} on ${entry.dateIso}",
+                type = "ENTRY"
+            )
         }
     }
 

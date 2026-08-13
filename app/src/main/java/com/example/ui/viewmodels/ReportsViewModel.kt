@@ -155,7 +155,20 @@ class ReportsViewModel(
             )
             accountabilityRepository.saveReportRecord(record)
 
+            accountabilityRepository.logNotification(
+                context = context,
+                title = "Report Generated",
+                message = "Generated $reportType PDF report ($dateRangeLabel)",
+                type = "REPORT"
+            )
+
             onPdfGenerated(pdfFile)
+        }
+    }
+
+    fun deleteReport(id: String) {
+        viewModelScope.launch {
+            accountabilityRepository.deleteReportRecord(id)
         }
     }
 }

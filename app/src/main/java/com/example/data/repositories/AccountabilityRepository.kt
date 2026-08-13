@@ -38,13 +38,48 @@ class AccountabilityRepository(
     private val goalDao: GoalDao,
     private val customDomainDao: CustomDomainDao,
     private val reminderDao: ReminderDao,
-    private val reportDao: ReportDao
+    private val reportDao: ReportDao,
+    private val notificationDao: NotificationDao
 ) {
     val allEntriesFlow: Flow<List<AccountabilityEntryEntity>> = entryDao.getAllEntriesFlow()
     val allGoalsFlow: Flow<List<GoalEntity>> = goalDao.getAllGoalsFlow()
     val customDomainsFlow: Flow<List<CustomDomainEntity>> = customDomainDao.getAllCustomDomainsFlow()
     val remindersFlow: Flow<List<ReminderEntity>> = reminderDao.getAllRemindersFlow()
     val reportsFlow: Flow<List<ReportRecordEntity>> = reportDao.getAllReportsFlow()
+    val notificationsFlow: Flow<List<NotificationEntity>> = notificationDao.getAllNotificationsFlow()
+    val unreadNotificationCountFlow: Flow<Int> = notificationDao.getUnreadCountFlow()
+
+    suspend fun logNotification(context: android.content.Context, title: String, message: String, type: String = "TRANSACTION") {
+        val entity = NotificationEntity(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            message = message,
+            type = type,
+            timestampMs = System.currentTimeMillis()
+        )
+        notificationDao.insertNotification(entity)
+        try {
+            com.example.services.notifications.ReminderNotificationReceiver.showNotification(context, title, message)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun markAllNotificationsAsRead() {
+        notificationDao.markAllAsRead()
+    }
+
+    suspend fun deleteNotification(id: String) {
+        notificationDao.deleteNotificationById(id)
+    }
+
+    suspend fun clearAllNotifications() {
+        notificationDao.clearAllNotifications()
+    }
+
+    suspend fun deleteReportRecord(id: String) {
+        reportDao.deleteReportById(id)
+    }
 
     fun getEntriesByDateFlow(dateIso: String): Flow<List<AccountabilityEntryEntity>> {
         return entryDao.getEntriesByDateFlow(dateIso)

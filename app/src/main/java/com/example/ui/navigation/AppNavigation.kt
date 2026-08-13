@@ -41,6 +41,7 @@ object NavRoutes {
     const val REPORTS = "reports"
     const val SETTINGS = "settings"
     const val SEARCH = "search"
+    const val NOTIFICATIONS = "notifications"
     const val TIMER = "timer/{domainId}"
 
     fun domainDetail(domainId: String) = "domain_detail/$domainId"
@@ -54,10 +55,13 @@ fun MainApp() {
 
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
+    val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
 
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val currentLanguage by settingsViewModel.currentLanguage.collectAsStateWithLifecycle()
     val currentTheme by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
+    val notificationsList by notificationsViewModel.notifications.collectAsStateWithLifecycle()
+    val unreadNotificationsCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
 
     val strings = LocalizationManager.getStrings(currentLanguage)
 
@@ -81,6 +85,7 @@ fun MainApp() {
             NavRoutes.REPORTS -> strings.reports
             NavRoutes.SETTINGS -> strings.settings
             NavRoutes.SEARCH -> strings.search
+            NavRoutes.NOTIFICATIONS -> "Notifications"
             NavRoutes.CALENDAR -> "Spiritual Calendar"
             else -> strings.appName
         }
@@ -92,6 +97,7 @@ fun MainApp() {
                         title = topBarTitle,
                         userName = currentUser?.fullName?.ifBlank { "Disciple" } ?: "Disciple",
                         currentLanguage = currentLanguage,
+                        unreadCount = unreadNotificationsCount,
                         onLanguageSelected = { newLang ->
                             settingsViewModel.updateLanguage(newLang)
                         },
@@ -101,8 +107,8 @@ fun MainApp() {
                             }
                         },
                         onNotificationClick = {
-                            if (currentRoute != NavRoutes.SETTINGS) {
-                                navController.navigate(NavRoutes.SETTINGS)
+                            if (currentRoute != NavRoutes.NOTIFICATIONS) {
+                                navController.navigate(NavRoutes.NOTIFICATIONS)
                             }
                         },
                         onSearchClick = {
@@ -270,7 +276,7 @@ fun MainApp() {
                             navController.navigate(NavRoutes.timer(id))
                         },
                         onSaveEntry = { entry ->
-                            entryViewModel.saveEntry(entry)
+                            entryViewModel.saveEntry(context, entry)
                         },
                         onBack = { navController.popBackStack() }
                     )
@@ -361,7 +367,22 @@ fun MainApp() {
                         onSetDateRange = { start, end -> reportsViewModel.setDateRange(start, end) },
                         onGeneratePdfReport = { ctx, onFile ->
                             reportsViewModel.generatePdfReport(ctx, onFile)
+                        },
+                        onDeleteReport = { reportId ->
+                            reportsViewModel.deleteReport(reportId)
                         }
+                    )
+                }
+
+                composable(NavRoutes.NOTIFICATIONS) {
+                    NotificationsScreen(
+                        notifications = notificationsList,
+                        unreadCount = unreadNotificationsCount,
+                        onMarkAllAsRead = { notificationsViewModel.markAllAsRead() },
+                        onDeleteNotification = { notificationsViewModel.deleteNotification(it) },
+                        onClearAll = { notificationsViewModel.clearAllNotifications() },
+                        onTriggerTestNotification = { ctx -> notificationsViewModel.triggerTestNotification(ctx) },
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 
