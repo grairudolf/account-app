@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +43,7 @@ fun SettingsScreen(
     reminders: List<ReminderEntity>,
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateTheme: (ThemeMode) -> Unit,
+    onUpdateProfileImage: (String) -> Unit = {},
     onUpdateProfile: (fullName: String, email: String, assembly: String, maker: String, phone: String, conversionDate: String, accountabilityDays: String) -> Unit,
     onAddReminder: (context: Context, domainId: String, title: String, msg: String, h: Int, m: Int) -> Unit,
     onDeleteReminder: (context: Context, String) -> Unit,
@@ -51,6 +55,11 @@ fun SettingsScreen(
     var showTermsDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { onUpdateProfileImage(it.toString()) }
+    }
 
     val daysOfWeek = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
     val selectedDaysList = remember(user?.accountabilityDays) {
@@ -96,24 +105,27 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
         item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(28.dp)
-                )
-                Text(
-                    text = strings.settings,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+            Box(modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = strings.settings,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
@@ -124,6 +136,7 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
+                    .widthIn(max = 840.dp)
                     .fillMaxWidth()
                     .testTag("settings_profile_card")
             ) {
@@ -142,17 +155,40 @@ fun SettingsScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(64.dp)
                                     .clip(CircleShape)
-                                    .background(LightBlueContainer),
+                                    .background(LightBlueContainer)
+                                    .clickable { photoPickerLauncher.launch("image/*") }
+                                    .testTag("profile_image_picker"),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = null,
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                if (!user?.profileImageUri.isNull_Blank()) {
+                                    AsyncImage(
+                                        model = user?.profileImageUri,
+                                        contentDescription = "Profile Photo",
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountCircle,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                                Surface(
+                                    shape = CircleShape,
+                                    color = PrimaryBlue,
+                                    modifier = Modifier.align(Alignment.BottomEnd).size(20.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Change photo",
+                                        tint = Color.White,
+                                        modifier = Modifier.padding(3.dp)
+                                    )
+                                }
                             }
                             Column {
                                 Text(
@@ -583,3 +619,6 @@ fun AddReminderDialog(
         shape = RoundedCornerShape(28.dp)
     )
 }
+
+private fun String?.isNull_Blank(): Boolean = this == null || this.isBlank()
+

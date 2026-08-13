@@ -43,6 +43,12 @@ class SettingsViewModel(
         }
     }
 
+    fun updateProfileImage(uri: String) {
+        viewModelScope.launch {
+            userRepository.updateProfileImage(uri)
+        }
+    }
+
     fun updateProfile(
         fullName: String,
         email: String,

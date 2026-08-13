@@ -136,14 +136,17 @@ fun ReportsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
         item {
-            Text(
-                text = strings.accountabilityReports,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Box(modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
+                Text(
+                    text = strings.accountabilityReports,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         // Generator Card - 28.dp rounded card
@@ -153,6 +156,7 @@ fun ReportsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
+                    .widthIn(max = 840.dp)
                     .fillMaxWidth()
                     .testTag("reports_generator_card")
             ) {
@@ -391,6 +395,7 @@ fun ReportsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
+                    .widthIn(max = 840.dp)
                     .fillMaxWidth()
                     .testTag("reports_social_share_card")
             ) {

@@ -75,6 +75,15 @@ class UserRepository(private val userDao: UserDao) {
         userDao.insertOrUpdateUser(updated)
     }
 
+    suspend fun updateProfileImage(uri: String) {
+        val current = getOrCreateGuestUser()
+        val updated = current.copy(
+            profileImageUri = uri,
+            updatedAtMs = System.currentTimeMillis()
+        )
+        userDao.insertOrUpdateUser(updated)
+    }
+
     suspend fun updateLanguage(language: AppLanguage) {
         val current = getOrCreateGuestUser()
         val updated = current.copy(

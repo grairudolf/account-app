@@ -135,13 +135,17 @@ class ReportsViewModel(
             // Filter by checked domains
             val finalEntries = filteredByPeriod.filter { activeDomains.contains(it.domainId) }
 
+            val langCode = user.language.lowercase()
+            val isFrench = langCode.startsWith("fr")
+
             val pdfFile = withContext(Dispatchers.IO) {
                 PdfReportGenerator.generatePdfReport(
                     context = context,
                     user = user,
                     reportType = reportType,
                     dateRangeLabel = dateRangeLabel,
-                    entries = finalEntries
+                    entries = finalEntries,
+                    isFrench = isFrench
                 )
             }
 
@@ -168,6 +172,15 @@ class ReportsViewModel(
 
     fun deleteReport(id: String) {
         viewModelScope.launch {
+            val record = reportHistory.value.find { it.id == id }
+            record?.generatedFilePath?.let { path ->
+                try {
+                    val f = File(path)
+                    if (f.exists()) f.delete()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             accountabilityRepository.deleteReportRecord(id)
         }
     }

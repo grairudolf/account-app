@@ -396,6 +396,7 @@ fun MainApp() {
                         reminders = settingsReminders,
                         onUpdateLanguage = { settingsViewModel.updateLanguage(it) },
                         onUpdateTheme = { settingsViewModel.updateThemeMode(it) },
+                        onUpdateProfileImage = { uri -> settingsViewModel.updateProfileImage(uri) },
                         onUpdateProfile = { name, email, assembly, maker, phone, convDate, accDays ->
                             settingsViewModel.updateProfile(name, email, assembly, maker, phone, convDate, accDays)
                         },
