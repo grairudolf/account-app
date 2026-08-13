@@ -30,6 +30,16 @@
             android:name="com.example.services.notifications.ReminderNotificationReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name="com.example.services.notifications.TimerNotificationReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.action.TIMER_PAUSE" />
+                <action android:name="com.example.action.TIMER_RESUME" />
+                <action android:name="com.example.action.TIMER_STOP" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

@@ -1,7 +1,12 @@
 package com.example.ui.screens
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.data.local.entities.NotificationEntity
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
@@ -41,6 +47,27 @@ fun NotificationsScreen(
 ) {
     val context = LocalContext.current
     var showClearConfirm by remember { mutableStateOf(false) }
+
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasNotificationPermission = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Notifications enabled! You will now receive all spiritual alerts and live sessions.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Notification permission denied.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy · HH:mm", Locale.getDefault()) }
 
@@ -119,8 +146,8 @@ fun NotificationsScreen(
                 item {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = LightBlueContainer,
-                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                        color = if (hasNotificationPermission) LightBlueContainer else Color(0xFFFFF3E0),
+                        border = BorderStroke(1.dp, if (hasNotificationPermission) PrimaryBlue.copy(alpha = 0.3f) else Color(0xFFFF9800).copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -132,23 +159,39 @@ fun NotificationsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.NotificationsActive,
+                                    imageVector = if (hasNotificationPermission) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                                     contentDescription = null,
-                                    tint = PrimaryBlue,
+                                    tint = if (hasNotificationPermission) PrimaryBlue else Color(0xFFE65100),
                                     modifier = Modifier.size(28.dp)
                                 )
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "OS Push Notifications Active",
+                                        text = if (hasNotificationPermission) "OS Push Notifications Active" else "Allow System Notifications",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = PrimaryBlueDark
+                                        color = if (hasNotificationPermission) PrimaryBlueDark else Color(0xFFBF360C)
                                     )
                                     Text(
-                                        text = "All spiritual transactions, reports, goals, and reminders are automatically logged here and sent as Android OS system notifications.",
+                                        text = if (hasNotificationPermission) {
+                                            "All spiritual transactions, live session timers, reports, goals, and reminders are actively sent as Android OS system notifications."
+                                        } else {
+                                            "Notifications are currently disabled. Tap 'Allow Notifications' so live countdown timers and reminders can appear on your phone."
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                            }
+                            if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                Button(
+                                    onClick = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Allow Notifications", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.core.localization.AppLanguage
 import com.example.ui.theme.PrimaryBlue
@@ -38,6 +39,7 @@ import com.example.ui.theme.PrimaryBlueDark
 fun CmfiTopBar(
     title: String,
     userName: String = "Disciple",
+    profileImageUri: String? = null,
     currentLanguage: AppLanguage = AppLanguage.ENGLISH,
     onLanguageSelected: (AppLanguage) -> Unit = {},
     onProfileClick: () -> Unit = {},
@@ -68,12 +70,23 @@ fun CmfiTopBar(
                             .testTag("top_bar_profile_avatar"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = userName.take(1).uppercase(),
-                            color = PrimaryBlueDark,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        if (!profileImageUri.isNullOrBlank()) {
+                            AsyncImage(
+                                model = profileImageUri,
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = userName.take(1).uppercase(),
+                                color = PrimaryBlueDark,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
 
                     Text(

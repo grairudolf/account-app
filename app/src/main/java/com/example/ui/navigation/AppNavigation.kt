@@ -96,6 +96,7 @@ fun MainApp() {
                     CmfiTopBar(
                         title = topBarTitle,
                         userName = currentUser?.fullName?.ifBlank { "Disciple" } ?: "Disciple",
+                        profileImageUri = currentUser?.profileImageUri,
                         currentLanguage = currentLanguage,
                         unreadCount = unreadNotificationsCount,
                         onLanguageSelected = { newLang ->

@@ -165,7 +165,7 @@ fun SettingsScreen(
                                     .testTag("profile_image_picker"),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (!user?.profileImageUri.isNull_Blank()) {
+                                if (!user?.profileImageUri.isNullOrBlank()) {
                                     AsyncImage(
                                         model = user?.profileImageUri,
                                         contentDescription = "Profile Photo",

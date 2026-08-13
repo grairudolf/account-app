@@ -1,10 +1,12 @@
 package com.example.ui.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.TimerSessionEntity
 import com.example.data.repositories.AccountabilityRepository
+import com.example.services.notifications.TimerNotificationReceiver
 import com.example.services.timer.TimerServiceManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -16,6 +18,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class TimerViewModel(
+    private val context: Context,
     private val timerServiceManager: TimerServiceManager,
     private val accountabilityRepository: AccountabilityRepository
 ) : ViewModel() {
@@ -29,6 +32,7 @@ class TimerViewModel(
     init {
         viewModelScope.launch {
             activeSession.collectLatest { session ->
+                TimerNotificationReceiver.updateOngoingTimerNotification(context, session)
                 if (session != null && session.isRunning && !session.isPaused) {
                     while (coroutineContext.isActive) {
                         val durationMs = timerServiceManager.calculateCurrentDurationMs(session)
@@ -47,21 +51,24 @@ class TimerViewModel(
 
     fun startTimer(userId: String, domainId: String) {
         viewModelScope.launch {
-            timerServiceManager.startTimer(userId, domainId)
+            val session = timerServiceManager.startTimer(userId, domainId)
+            TimerNotificationReceiver.updateOngoingTimerNotification(context, session)
         }
     }
 
     fun pauseTimer() {
         viewModelScope.launch {
             val session = activeSession.value ?: return@launch
-            timerServiceManager.pauseTimer(session)
+            val updated = timerServiceManager.pauseTimer(session)
+            TimerNotificationReceiver.updateOngoingTimerNotification(context, updated)
         }
     }
 
     fun resumeTimer() {
         viewModelScope.launch {
             val session = activeSession.value ?: return@launch
-            timerServiceManager.resumeTimer(session)
+            val updated = timerServiceManager.resumeTimer(session)
+            TimerNotificationReceiver.updateOngoingTimerNotification(context, updated)
         }
     }
 
@@ -93,6 +100,7 @@ class TimerViewModel(
             )
 
             accountabilityRepository.saveEntry(entry)
+            TimerNotificationReceiver.cancelTimerNotification(context)
         }
     }
 
@@ -100,6 +108,7 @@ class TimerViewModel(
         viewModelScope.launch {
             val session = activeSession.value ?: return@launch
             timerServiceManager.discardSession(session)
+            TimerNotificationReceiver.cancelTimerNotification(context)
         }
     }
 }

@@ -9,6 +9,7 @@ import com.example.data.repositories.UserRepository
 import com.example.services.timer.TimerServiceManager
 
 class ViewModelFactory private constructor(
+    private val context: Context,
     private val userRepository: UserRepository,
     private val accountabilityRepository: AccountabilityRepository,
     private val timerServiceManager: TimerServiceManager
@@ -27,7 +28,7 @@ class ViewModelFactory private constructor(
                 DomainsViewModel(accountabilityRepository) as T
             }
             modelClass.isAssignableFrom(TimerViewModel::class.java) -> {
-                TimerViewModel(timerServiceManager, accountabilityRepository) as T
+                TimerViewModel(context, timerServiceManager, accountabilityRepository) as T
             }
             modelClass.isAssignableFrom(EntryViewModel::class.java) -> {
                 EntryViewModel(accountabilityRepository) as T
@@ -71,7 +72,7 @@ class ViewModelFactory private constructor(
                     db.notificationDao()
                 )
                 val timerMgr = TimerServiceManager(db.timerSessionDao())
-                val instance = ViewModelFactory(userRepo, accRepo, timerMgr)
+                val instance = ViewModelFactory(context.applicationContext, userRepo, accRepo, timerMgr)
                 INSTANCE = instance
                 instance
             }
