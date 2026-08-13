@@ -39,7 +39,8 @@ class AccountabilityRepository(
     private val customDomainDao: CustomDomainDao,
     private val reminderDao: ReminderDao,
     private val reportDao: ReportDao,
-    private val notificationDao: NotificationDao
+    private val notificationDao: NotificationDao,
+    private val proclamationTopicDao: ProclamationTopicDao
 ) {
     val allEntriesFlow: Flow<List<AccountabilityEntryEntity>> = entryDao.getAllEntriesFlow()
     val allGoalsFlow: Flow<List<GoalEntity>> = goalDao.getAllGoalsFlow()
@@ -48,6 +49,51 @@ class AccountabilityRepository(
     val reportsFlow: Flow<List<ReportRecordEntity>> = reportDao.getAllReportsFlow()
     val notificationsFlow: Flow<List<NotificationEntity>> = notificationDao.getAllNotificationsFlow()
     val unreadNotificationCountFlow: Flow<Int> = notificationDao.getUnreadCountFlow()
+
+    fun getProclamationTopicsFlow(userId: String = "guest_user"): Flow<List<ProclamationTopicEntity>> {
+        return proclamationTopicDao.getTopicsForUserFlow(userId)
+    }
+
+    suspend fun getProclamationTopics(userId: String = "guest_user"): List<ProclamationTopicEntity> {
+        return proclamationTopicDao.getTopicsForUser(userId)
+    }
+
+    suspend fun saveProclamationTopic(topic: ProclamationTopicEntity) {
+        proclamationTopicDao.insertOrUpdateTopic(topic)
+    }
+
+    suspend fun deleteProclamationTopic(topic: ProclamationTopicEntity) {
+        proclamationTopicDao.deleteTopic(topic)
+    }
+
+    suspend fun recordProclamationSession(entry: AccountabilityEntryEntity) {
+        entryDao.insertOrUpdateEntry(entry)
+        // Also update topic cumulative stats
+        if (entry.proclamationTopic.isNotBlank()) {
+            val existing = proclamationTopicDao.findTopicByName(entry.userId, entry.proclamationTopic)
+            if (existing != null) {
+                val updated = existing.copy(
+                    cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
+                    totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
+                    lastPracticedIso = entry.dateIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                proclamationTopicDao.insertOrUpdateTopic(updated)
+            } else {
+                val newTopic = ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = entry.userId,
+                    topic = entry.proclamationTopic,
+                    cumulativeCount = entry.proclamationCount,
+                    targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else 100,
+                    totalDurationSeconds = entry.durationSeconds,
+                    lastPracticedIso = entry.dateIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                proclamationTopicDao.insertOrUpdateTopic(newTopic)
+            }
+        }
+    }
 
     suspend fun logNotification(context: android.content.Context, title: String, message: String, type: String = "TRANSACTION") {
         val entity = NotificationEntity(
@@ -275,6 +321,13 @@ class AccountabilityRepository(
         val totalAchieved = when (goal.domainId) {
             "bible_reading" -> relevantEntries.sumOf { it.chaptersCount }.toDouble()
             "ddewg", "prayer_alone", "prayer_with_others" -> relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
+            "proclamation_importunity" -> {
+                if (goal.unit.contains("min", ignoreCase = true)) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else {
+                    relevantEntries.sumOf { it.proclamationCount }.toDouble()
+                }
+            }
             "christian_lit" -> relevantEntries.sumOf { it.pagesRead }.toDouble()
             "fasting" -> relevantEntries.sumOf { it.fastingDaysCount }.toDouble()
             "soul_winning" -> relevantEntries.sumOf { it.preachedToCount }.toDouble()

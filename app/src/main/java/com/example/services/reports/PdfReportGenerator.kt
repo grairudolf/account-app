@@ -458,6 +458,7 @@ object PdfReportGenerator {
             "bible_reading" -> if (isFrench) "Lecture Biblique" else "Bible Reading"
             "prayer_alone" -> if (isFrench) "Prière Seul" else "Prayer Alone"
             "prayer_with_others" -> if (isFrench) "Prière en Groupe" else "Prayer With Others"
+            "proclamation_importunity" -> if (isFrench) "Proclamation & Importunité" else "Proclamation & Importunity"
             "fasting" -> if (isFrench) "Jeûne" else "Fasting"
             "giving" -> if (isFrench) "Offrandes / Dîmes" else "Giving"
             "accountability" -> if (isFrench) "Redevabilité Disciple" else "Disciple Accountability"
@@ -476,6 +477,12 @@ object PdfReportGenerator {
                 val secs = entry.durationSeconds % 60
                 val durLabel = if (isFrench) "Durée" else "Duration"
                 "$durLabel: ${mins}m ${secs}s ${entry.notes}".trim()
+            }
+            "proclamation_importunity" -> {
+                val topic = entry.proclamationTopic.ifBlank { if (isFrench) "Proclamation" else "Proclamation" }
+                val repLabel = if (isFrench) "proclamations" else "proclamations"
+                val mins = entry.durationSeconds / 60
+                "$topic: ${entry.proclamationCount} $repLabel (${mins}m)"
             }
             "bible_reading" -> "${entry.bibleBook} ${entry.startChapter}-${entry.endChapter} (${entry.chaptersCount} chs)"
             "soul_winning" -> {

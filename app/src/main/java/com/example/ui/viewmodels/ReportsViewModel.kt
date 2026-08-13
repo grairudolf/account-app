@@ -34,7 +34,7 @@ class ReportsViewModel(
     private val _selectedDomains = MutableStateFlow<Set<String>>(
         setOf(
             "ddewg", "bible_reading", "prayer_alone", "prayer_with_others",
-            "fasting", "giving", "christian_lit", "soul_winning"
+            "proclamation_importunity", "fasting", "giving", "christian_lit", "soul_winning"
         )
     )
     val selectedDomains: StateFlow<Set<String>> = _selectedDomains.asStateFlow()
@@ -76,7 +76,7 @@ class ReportsViewModel(
     fun selectAllDomains() {
         _selectedDomains.value = setOf(
             "ddewg", "bible_reading", "prayer_alone", "prayer_with_others",
-            "fasting", "giving", "christian_lit", "soul_winning"
+            "proclamation_importunity", "fasting", "giving", "christian_lit", "soul_winning"
         )
     }
 

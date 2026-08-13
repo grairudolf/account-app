@@ -323,6 +323,8 @@ fun SaveTimerDialog(
     var preachedCountText by remember { mutableStateOf("1") }
     var convertedCountText by remember { mutableStateOf("0") }
     var ddewgInspiration by remember { mutableStateOf("") }
+    var proclamationTopic by remember { mutableStateOf("Jesus Christ is Lord") }
+    var proclamationCountText by remember { mutableStateOf("10") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -437,6 +439,35 @@ fun SaveTimerDialog(
                             value = reflection,
                             onValueChange = { reflection = it },
                             label = { Text("Prophetic Burdens / Divine Impressions") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "proclamation_importunity" -> {
+                        Text("Proclamation & Importunity", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+
+                        OutlinedTextField(
+                            value = proclamationTopic,
+                            onValueChange = { proclamationTopic = it },
+                            label = { Text("Prayer Topic / Faith Proclamation") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = proclamationCountText,
+                            onValueChange = { proclamationCountText = it.filter { c -> c.isDigit() } },
+                            label = { Text("Proclamations Count") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text("Session Notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = reflection,
+                            onValueChange = { reflection = it },
+                            label = { Text("Prophetic Impressions / Revelations") },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -571,6 +602,7 @@ fun SaveTimerDialog(
                         "bible_reading" -> "Book: $selectedBook, Ch: $startChapter-$endChapter. Notes: $notes"
                         "ddewg" -> if (notes.isNotBlank()) notes else "DDEWG session"
                         "prayer_alone", "prayer_with_others" -> "Type: $prayerType. Notes: $notes"
+                        "proclamation_importunity" -> "Topic: $proclamationTopic, Repetitions: $proclamationCountText. Notes: $notes"
                         "fasting" -> "Fast Type: $fastingType. Notes: $notes"
                         "giving" -> "Category: $givingType, Amount: $amountText. Notes: $notes"
                         "christian_lit", "christian_lit_mem" -> "Book: $bookTitle, Pages: $pagesReadText. Notes: $notes"

@@ -12,6 +12,7 @@ enum class DomainType {
     CHRISTIAN_LIT_MEM,
     BIBLE_MEM,
     SOUL_WINNING,
+    PROCLAMATION_IMPORTUNITY,
     CUSTOM
 }
 
@@ -31,6 +32,7 @@ object PredefinedDomains {
         AccountabilityDomainModel("bible_reading", DomainType.BIBLE_READING, "bibleReadingTitle", "bibleReadingDesc", "menu_book"),
         AccountabilityDomainModel("prayer_alone", DomainType.PRAYER_ALONE, "prayerAloneTitle", "prayerAloneDesc", "person_search"),
         AccountabilityDomainModel("prayer_with_others", DomainType.PRAYER_WITH_OTHERS, "prayerWithOthersTitle", "prayerWithOthersDesc", "groups"),
+        AccountabilityDomainModel("proclamation_importunity", DomainType.PROCLAMATION_IMPORTUNITY, "proclamationTitle", "proclamationDesc", "campaign"),
         AccountabilityDomainModel("fasting", DomainType.FASTING, "fastingTitle", "fastingDesc", "no_food"),
         AccountabilityDomainModel("giving", DomainType.GIVING, "givingTitle", "givingDesc", "volunteer_activism"),
         AccountabilityDomainModel("christian_lit", DomainType.CHRISTIAN_LITERATURE, "christianLitTitle", "christianLitDesc", "book"),

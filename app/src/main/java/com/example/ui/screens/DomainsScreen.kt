@@ -160,6 +160,7 @@ fun DomainCard(
                         "ddewg" -> Icons.Default.MenuBook
                         "bible_reading" -> Icons.Default.AutoStories
                         "prayer_alone", "prayer_with_others" -> Icons.Default.SelfImprovement
+                        "proclamation_importunity" -> Icons.Default.Campaign
                         "fasting" -> Icons.Default.Restaurant
                         "soul_winning" -> Icons.Default.Groups
                         "giving" -> Icons.Default.VolunteerActivism

@@ -292,6 +292,7 @@ fun AddGoalDialog(
         "bible_reading" to "Bible Reading",
         "prayer_alone" to "Prayer Alone",
         "prayer_with_others" to "Prayer With Others",
+        "proclamation_importunity" to "Proclamation & Importunity",
         "fasting" to "Fasting",
         "giving" to "Giving & Tithes",
         "christian_lit" to "Christian Literature",

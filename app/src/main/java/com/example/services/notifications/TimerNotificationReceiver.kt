@@ -34,7 +34,8 @@ class TimerNotificationReceiver : BroadcastReceiver() {
             db.customDomainDao(),
             db.reminderDao(),
             db.reportDao(),
-            db.notificationDao()
+            db.notificationDao(),
+            db.proclamationTopicDao()
         )
 
         val pendingResult = goAsync()
@@ -132,6 +133,7 @@ class TimerNotificationReceiver : BroadcastReceiver() {
             val domainTitle = when (session.domainId) {
                 "prayer_alone" -> "Prayer Alone"
                 "prayer_with_others" -> "Prayer with Others"
+                "proclamation_importunity" -> "Proclamation & Importunity"
                 "ddewg" -> "Daily Dynamic Encounter with God"
                 "bible_reading" -> "Bible Reading"
                 "fasting" -> "Fasting"

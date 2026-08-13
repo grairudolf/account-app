@@ -51,6 +51,9 @@ class ViewModelFactory private constructor(
             modelClass.isAssignableFrom(NotificationsViewModel::class.java) -> {
                 NotificationsViewModel(accountabilityRepository) as T
             }
+            modelClass.isAssignableFrom(ProclamationViewModel::class.java) -> {
+                ProclamationViewModel(context, userRepository, accountabilityRepository) as T
+            }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }
@@ -69,7 +72,8 @@ class ViewModelFactory private constructor(
                     db.customDomainDao(),
                     db.reminderDao(),
                     db.reportDao(),
-                    db.notificationDao()
+                    db.notificationDao(),
+                    db.proclamationTopicDao()
                 )
                 val timerMgr = TimerServiceManager(db.timerSessionDao())
                 val instance = ViewModelFactory(context.applicationContext, userRepo, accRepo, timerMgr)

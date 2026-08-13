@@ -835,6 +835,7 @@ private fun getSummaryText(entry: AccountabilityEntryEntity): String {
     return when (entry.domainId) {
         "bible_reading" -> "${entry.bibleBook} Ch ${entry.startChapter}-${entry.endChapter}"
         "ddewg", "prayer_alone", "prayer_with_others" -> "${entry.durationSeconds / 60} minutes"
+        "proclamation_importunity" -> "${entry.proclamationTopic.ifBlank { "Proclamation" }}: ${entry.proclamationCount} proclamations (${entry.durationSeconds / 60}m)"
         "soul_winning" -> "Preached: ${entry.preachedToCount}, Converted: ${entry.convertedCount}"
         "giving" -> "${if (entry.givingType.isNotBlank()) "${entry.givingType}: " else ""}Amount $${entry.givingAmount}"
         else -> entry.notes.ifBlank { "Activity logged" }

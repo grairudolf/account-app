@@ -43,6 +43,7 @@ object NavRoutes {
     const val SEARCH = "search"
     const val NOTIFICATIONS = "notifications"
     const val TIMER = "timer/{domainId}"
+    const val PROCLAMATION = "proclamation"
 
     fun domainDetail(domainId: String) = "domain_detail/$domainId"
     fun timer(domainId: String) = "timer/$domainId"
@@ -276,21 +277,39 @@ fun MainApp() {
                     arguments = listOf(navArgument("domainId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val domainId = backStackEntry.arguments?.getString("domainId") ?: "ddewg"
-                    val entryViewModel: EntryViewModel = viewModel(factory = factory)
-                    DomainDetailScreen(
-                        domainId = domainId,
+                    if (domainId == "proclamation_importunity") {
+                        val proclamationViewModel: ProclamationViewModel = viewModel(factory = factory)
+                        ProclamationScreen(
+                            viewModel = proclamationViewModel,
+                            strings = strings,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        val entryViewModel: EntryViewModel = viewModel(factory = factory)
+                        DomainDetailScreen(
+                            domainId = domainId,
+                            strings = strings,
+                            onNavigateToTimer = { id ->
+                                navController.navigate(NavRoutes.timer(id))
+                            },
+                            onSaveEntry = { entry ->
+                                entryViewModel.saveEntry(context, entry)
+                                navController.navigate(NavRoutes.DOMAINS) {
+                                    popUpTo(NavRoutes.DOMAINS)
+                                    launchSingleTop = true
+                                }
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                }
+
+                composable(NavRoutes.PROCLAMATION) {
+                    val proclamationViewModel: ProclamationViewModel = viewModel(factory = factory)
+                    ProclamationScreen(
+                        viewModel = proclamationViewModel,
                         strings = strings,
-                        onNavigateToTimer = { id ->
-                            navController.navigate(NavRoutes.timer(id))
-                        },
-                        onSaveEntry = { entry ->
-                            entryViewModel.saveEntry(context, entry)
-                            navController.navigate(NavRoutes.DOMAINS) {
-                                popUpTo(NavRoutes.DOMAINS)
-                                launchSingleTop = true
-                            }
-                        },
-                        onBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 

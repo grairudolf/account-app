@@ -90,8 +90,23 @@ data class AppStrings(
     val bibleMemDesc: String,
     val soulWinningTitle: String,
     val soulWinningDesc: String,
+    val proclamationTitle: String,
+    val proclamationDesc: String,
     val customDomain: String,
     val addCustomDomain: String,
+
+    // Proclamation & Importunity Feature
+    val enterPrayerTopicOrProclamation: String,
+    val proclamationCounter: String,
+    val tapToProclaim: String,
+    val editCounter: String,
+    val setCounterStartingValue: String,
+    val currentCount: String,
+    val targetProclamations: String,
+    val selectSavedTopic: String,
+    val createTopic: String,
+    val proclamationsMade: String,
+    val topicLabel: String,
 
     // Timer
     val startTimer: String,
@@ -275,6 +290,7 @@ data class AppStrings(
             "bibleReadingTitle" -> bibleReadingTitle
             "prayerAloneTitle" -> prayerAloneTitle
             "prayerWithOthersTitle" -> prayerWithOthersTitle
+            "proclamationTitle" -> proclamationTitle
             "fastingTitle" -> fastingTitle
             "givingTitle" -> givingTitle
             "accountabilityTitle" -> accountabilityTitle
@@ -292,6 +308,7 @@ data class AppStrings(
             "bibleReadingDesc" -> bibleReadingDesc
             "prayerAloneDesc" -> prayerAloneDesc
             "prayerWithOthersDesc" -> prayerWithOthersDesc
+            "proclamationDesc" -> proclamationDesc
             "fastingDesc" -> fastingDesc
             "givingDesc" -> givingDesc
             "accountabilityDesc" -> accountabilityDesc
@@ -376,8 +393,22 @@ val EnglishStrings = AppStrings(
     bibleMemDesc = "Hiding God's word in your heart through scripture memory.",
     soulWinningTitle = "Soul Winning",
     soulWinningDesc = "Evangelism, outreach, conversions, and baptisms.",
+    proclamationTitle = "Proclamation & Importunity",
+    proclamationDesc = "Persistent proclamation and repeated importunate prayer for specific spiritual topics.",
     customDomain = "Custom Domain",
     addCustomDomain = "Add Custom Domain",
+
+    enterPrayerTopicOrProclamation = "Enter prayer topic or proclamation...",
+    proclamationCounter = "Repetition Counter",
+    tapToProclaim = "TAP TO PROCLAIM",
+    editCounter = "Edit Counter",
+    setCounterStartingValue = "Set Counter Starting Value",
+    currentCount = "Current Count",
+    targetProclamations = "Target Repetitions",
+    selectSavedTopic = "Select Saved Topic",
+    createTopic = "Add Topic",
+    proclamationsMade = "Proclamations Made",
+    topicLabel = "Prayer Topic / Scripture Proclamation",
 
     startTimer = "Start Session",
     pauseTimer = "Pause",
@@ -625,8 +656,22 @@ val FrenchStrings = AppStrings(
     bibleMemDesc = "Garder la parole de Dieu dans son cœur par la mémorisation.",
     soulWinningTitle = "Gagnagisme d'Âmes",
     soulWinningDesc = "Évangélisation, témoignage, conversions et baptêmes.",
+    proclamationTitle = "Proclamation & Importunité",
+    proclamationDesc = "Proclamation persistante et prière importune répétée pour des sujets de prière spécifiques.",
     customDomain = "Domaine Personnalisé",
     addCustomDomain = "Ajouter un Domaine Personnalisé",
+
+    enterPrayerTopicOrProclamation = "Entrez le sujet de prière ou la proclamation...",
+    proclamationCounter = "Compteur de Répétitions",
+    tapToProclaim = "APPUYER POUR PROCLAMER",
+    editCounter = "Modifier le Compteur",
+    setCounterStartingValue = "Définir la Valeur Initiale du Compteur",
+    currentCount = "Nombre Actuel",
+    targetProclamations = "Répétitions Cibles",
+    selectSavedTopic = "Sélectionner un Sujet Enregistré",
+    createTopic = "Ajouter un Sujet",
+    proclamationsMade = "Proclamations Réalisées",
+    topicLabel = "Sujet de Prière / Proclamation des Écritures",
 
     startTimer = "Démarrer la Session",
     pauseTimer = "Pause",

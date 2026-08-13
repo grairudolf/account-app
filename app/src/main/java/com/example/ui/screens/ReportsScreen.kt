@@ -277,6 +277,7 @@ fun ReportsScreen(
                                 "bible_reading" to strings.bibleReadingTitle,
                                 "prayer_alone" to strings.prayerAloneTitle,
                                 "prayer_with_others" to strings.prayerWithOthersTitle,
+                                "proclamation_importunity" to strings.proclamationTitle,
                                 "fasting" to strings.fastingTitle,
                                 "giving" to strings.givingTitle,
                                 "christian_lit" to strings.christianLitTitle,

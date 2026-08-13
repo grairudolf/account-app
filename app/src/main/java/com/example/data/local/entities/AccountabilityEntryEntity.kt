@@ -70,6 +70,11 @@ data class AccountabilityEntryEntity(
     val waterBaptizedCount: Int = 0,
     val holySpiritBaptizedCount: Int = 0,
 
+    // Proclamation and Importunity
+    val proclamationTopic: String = "",
+    val proclamationCount: Int = 0,
+    val proclamationTarget: Int = 0,
+
     // Custom Domain Values
     val customValue: String = "",
 
