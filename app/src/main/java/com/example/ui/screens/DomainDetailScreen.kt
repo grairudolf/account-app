@@ -277,7 +277,7 @@ fun DomainDetailScreen(
                                 }
                             }
 
-                            if (domainId != "fasting") {
+                            if (domainId != "fasting" && domainId != "giving") {
                                 // Start Time & Stop Time Duration Input
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text("Time & Duration:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
@@ -593,47 +593,13 @@ fun DomainDetailScreen(
                                 }
 
                                 "giving" -> {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        OutlinedTextField(
-                                            value = givingAmountText,
-                                            onValueChange = {
-                                                givingAmountText = it
-                                                val amt = it.toDoubleOrNull() ?: 0.0
-                                                val inc = givingIncomeText.toDoubleOrNull() ?: 0.0
-                                                if (inc > 0) {
-                                                    givingPercentageText = String.format("%.1f", (amt / inc) * 100)
-                                                }
-                                            },
-                                            label = { Text("Giving Amount ($)") },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .testTag("entry_giving_amount"),
-                                            singleLine = true
-                                        )
-                                        OutlinedTextField(
-                                            value = givingPercentageText,
-                                            onValueChange = { givingPercentageText = it },
-                                            label = { Text("Giving % of Income") },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .testTag("entry_giving_percentage"),
-                                            singleLine = true
-                                        )
-                                    }
                                     OutlinedTextField(
-                                        value = givingIncomeText,
-                                        onValueChange = {
-                                            givingIncomeText = it
-                                            val amt = givingAmountText.toDoubleOrNull() ?: 0.0
-                                            val inc = it.toDoubleOrNull() ?: 0.0
-                                            if (inc > 0) {
-                                                givingPercentageText = String.format("%.1f", (amt / inc) * 100)
-                                            }
-                                        },
-                                        label = { Text("Total Earned Income ($) [Optional]") },
+                                        value = givingAmountText,
+                                        onValueChange = { givingAmountText = it },
+                                        label = { Text("Giving Amount ($)") },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .testTag("entry_giving_income"),
+                                            .testTag("entry_giving_amount"),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
@@ -724,9 +690,9 @@ fun DomainDetailScreen(
                                         dateIso = selectedDateIso,
                                         timestampMs = System.currentTimeMillis(),
                                         timezoneId = java.time.ZoneId.systemDefault().id,
-                                        durationSeconds = durSecs,
-                                        startTimeIso = startTimeText,
-                                        endTimeIso = stopTimeText,
+                                        durationSeconds = if (domainId == "fasting" || domainId == "giving") 0L else durSecs,
+                                        startTimeIso = if (domainId == "fasting" || domainId == "giving") "" else startTimeText,
+                                        endTimeIso = if (domainId == "fasting" || domainId == "giving") "" else stopTimeText,
                                         prayerType = selectedPrayerType,
                                         prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
                                         bibleBook = selectedBibleBook,

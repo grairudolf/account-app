@@ -54,15 +54,34 @@ fun TimerScreen(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                drawCircle(
+                    color = PrimaryBlue.copy(alpha = 0.05f),
+                    radius = w * 0.55f,
+                    center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.15f)
+                )
+                drawCircle(
+                    color = AccentPurple.copy(alpha = 0.04f),
+                    radius = w * 0.6f,
+                    center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.85f)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
             Surface(
                 shape = RoundedCornerShape(32.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -183,6 +202,7 @@ fun TimerScreen(
                 }
             }
         }
+    }
     }
 
     if (showSaveDialog) {

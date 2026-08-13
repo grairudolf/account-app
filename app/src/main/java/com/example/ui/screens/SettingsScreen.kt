@@ -29,6 +29,7 @@ import com.example.core.localization.AppStrings
 import com.example.data.local.entities.ReminderEntity
 import com.example.data.local.entities.UserEntity
 import com.example.ui.components.PrivacyPolicyDialog
+import com.example.ui.components.SupportFeedbackDialog
 import com.example.ui.components.TermsAndConditionsDialog
 import com.example.ui.theme.*
 import java.time.LocalDate
@@ -53,8 +54,10 @@ fun SettingsScreen(
     var showReminderDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
+    var showSupportDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val isFrench = currentLanguage == AppLanguage.FRENCH
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -474,7 +477,7 @@ fun SettingsScreen(
                     ListItem(
                         headlineContent = { Text(strings.supportFeedback, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.HelpCenter, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier.clickable { }
+                        modifier = Modifier.clickable { showSupportDialog = true }.testTag("settings_support_feedback")
                     )
                 }
             }
@@ -523,11 +526,15 @@ fun SettingsScreen(
     }
 
     if (showPrivacyDialog) {
-        PrivacyPolicyDialog(onDismiss = { showPrivacyDialog = false })
+        PrivacyPolicyDialog(isFrench = isFrench, onDismiss = { showPrivacyDialog = false })
     }
 
     if (showTermsDialog) {
-        TermsAndConditionsDialog(onDismiss = { showTermsDialog = false })
+        TermsAndConditionsDialog(isFrench = isFrench, onDismiss = { showTermsDialog = false })
+    }
+
+    if (showSupportDialog) {
+        SupportFeedbackDialog(isFrench = isFrench, onDismiss = { showSupportDialog = false })
     }
 }
 

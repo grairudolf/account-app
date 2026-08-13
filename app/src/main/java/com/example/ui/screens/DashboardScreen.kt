@@ -327,7 +327,7 @@ fun DashboardScreen(
                     .border(1.dp, PrimaryBlue.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
                     .testTag("dashboard_hero_card")
             ) {
-                // Background Vector Graphic Overlay (Spiritual Light Waves)
+                // Background Vector Graphic Overlay
                 val path = remember { Path() }
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val w = size.width
@@ -835,7 +835,7 @@ private fun getSummaryText(entry: AccountabilityEntryEntity): String {
         "bible_reading" -> "${entry.bibleBook} Ch ${entry.startChapter}-${entry.endChapter}"
         "ddewg", "prayer_alone", "prayer_with_others" -> "${entry.durationSeconds / 60} minutes"
         "soul_winning" -> "Preached: ${entry.preachedToCount}, Converted: ${entry.convertedCount}"
-        "giving" -> "Amount: $${entry.givingAmount}"
+        "giving" -> "${if (entry.givingType.isNotBlank()) "${entry.givingType}: " else ""}Amount $${entry.givingAmount}"
         else -> entry.notes.ifBlank { "Activity logged" }
     }
 }

@@ -463,6 +463,14 @@ fun EntryLogCard(
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
                     )
+                } else if (entry.domainId == "giving") {
+                    val gType = if (entry.givingType.isNotBlank()) " (${entry.givingType})" else ""
+                    Text(
+                        text = "Giving: $${entry.givingAmount}$gType",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AccentPurple
+                    )
                 } else {
                     val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) {
                         "${entry.startTimeIso} - ${entry.endTimeIso}"
@@ -526,6 +534,8 @@ fun EditEntryDialog(
     var notes by remember { mutableStateOf(entry.notes) }
     var chapters by remember { mutableStateOf(entry.chaptersCount.toString()) }
     var prayerMins by remember { mutableStateOf((entry.durationSeconds / 60).toString()) }
+    var givingAmt by remember { mutableStateOf(entry.givingAmount.toString()) }
+    var givingType by remember { mutableStateOf(entry.givingType) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -538,18 +548,33 @@ fun EditEntryDialog(
                     label = { Text("Activity Notes / Reflection") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = chapters,
-                    onValueChange = { chapters = it },
-                    label = { Text("Chapters Read / Count") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = prayerMins,
-                    onValueChange = { prayerMins = it },
-                    label = { Text("Duration (Minutes)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (entry.domainId == "giving") {
+                    OutlinedTextField(
+                        value = givingAmt,
+                        onValueChange = { givingAmt = it },
+                        label = { Text("Giving Amount ($)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = givingType,
+                        onValueChange = { givingType = it },
+                        label = { Text("Giving Type (Tithe, Offering...)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else if (entry.domainId != "fasting") {
+                    OutlinedTextField(
+                        value = chapters,
+                        onValueChange = { chapters = it },
+                        label = { Text("Chapters Read / Count") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = prayerMins,
+                        onValueChange = { prayerMins = it },
+                        label = { Text("Duration (Minutes)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
@@ -557,7 +582,9 @@ fun EditEntryDialog(
                 val updated = entry.copy(
                     notes = notes,
                     chaptersCount = chapters.toIntOrNull() ?: entry.chaptersCount,
-                    durationSeconds = (prayerMins.toLongOrNull() ?: (entry.durationSeconds / 60)) * 60,
+                    durationSeconds = if (entry.domainId == "giving" || entry.domainId == "fasting") 0L else ((prayerMins.toLongOrNull() ?: (entry.durationSeconds / 60)) * 60),
+                    givingAmount = givingAmt.toDoubleOrNull() ?: entry.givingAmount,
+                    givingType = givingType,
                     updatedAtMs = System.currentTimeMillis()
                 )
                 onConfirm(updated)
