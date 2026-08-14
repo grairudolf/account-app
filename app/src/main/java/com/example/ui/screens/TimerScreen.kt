@@ -74,7 +74,7 @@ fun TimerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("LIVE TIMER - ${domainId.replace("_", " ").uppercase()}", fontWeight = FontWeight.Bold) },
+                title = { Text("${strings.liveTimerMode.uppercase()} - ${strings.getDomainTitleById(domainId).uppercase()}", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("timer_back_button")) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -186,7 +186,7 @@ fun TimerScreen(
                     }
 
                     Text(
-                        text = domainId.replace("_", " ").uppercase(),
+                        text = strings.getDomainTitleById(domainId).uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold
@@ -218,7 +218,7 @@ fun TimerScreen(
                             ) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Start", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(strings.startTimer, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         } else {
                             if (activeSession.isPaused) {
@@ -235,7 +235,7 @@ fun TimerScreen(
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Resume", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(strings.resumeTimer, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             } else {
                                 OutlinedButton(
@@ -250,7 +250,7 @@ fun TimerScreen(
                                 ) {
                                     Icon(Icons.Default.Pause, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Pause", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(strings.pauseTimer, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -270,7 +270,7 @@ fun TimerScreen(
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Save", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(strings.save, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -283,7 +283,7 @@ fun TimerScreen(
                             },
                             modifier = Modifier.testTag("timer_discard_button")
                         ) {
-                            Text("Discard Session", color = StatusError, fontWeight = FontWeight.SemiBold)
+                            Text(strings.discardSession, color = StatusError, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -296,6 +296,7 @@ fun TimerScreen(
         SaveTimerDialog(
             domainId = domainId,
             formattedTime = formattedTime,
+            strings = strings,
             onDismiss = { showSaveDialog = false },
             onConfirm = { notes, reflection ->
                 onStopAndSaveTimer(notes, reflection)
@@ -311,6 +312,7 @@ fun TimerScreen(
 fun SaveTimerDialog(
     domainId: String,
     formattedTime: String,
+    strings: AppStrings,
     onDismiss: () -> Unit,
     onConfirm: (notes: String, reflection: String) -> Unit
 ) {
@@ -343,7 +345,7 @@ fun SaveTimerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (domainId == "fasting") "Save Fasting Record" else "Save Session ($formattedTime)") },
+        title = { Text(if (domainId == "fasting") strings.saveActivityRecord else "${strings.save} ($formattedTime)") },
         text = {
             Column(
                 modifier = Modifier
@@ -353,17 +355,17 @@ fun SaveTimerDialog(
             ) {
                 when (domainId) {
                     "bible_reading" -> {
-                        Text("Bible Reading Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.bibleReadingTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         ExposedDropdownMenuBox(
                             expanded = bookDropdownExpanded,
                             onExpandedChange = { bookDropdownExpanded = !bookDropdownExpanded }
                         ) {
                             OutlinedTextField(
-                                value = selectedBook,
+                                value = strings.getBibleBookName(selectedBook),
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Bible Book") },
+                                label = { Text(strings.selectBibleBook) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookDropdownExpanded) },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -375,7 +377,7 @@ fun SaveTimerDialog(
                             ) {
                                 com.example.domain.models.BibleMetadata.BOOKS.forEach { bookInfo ->
                                     DropdownMenuItem(
-                                        text = { Text(bookInfo.name) },
+                                        text = { Text(strings.getBibleBookName(bookInfo.name)) },
                                         onClick = {
                                             selectedBook = bookInfo.name
                                             bookDropdownExpanded = false
@@ -389,13 +391,13 @@ fun SaveTimerDialog(
                             OutlinedTextField(
                                 value = startChapter,
                                 onValueChange = { startChapter = it.filter { c -> c.isDigit() } },
-                                label = { Text("Start Chapter") },
+                                label = { Text(strings.startChapter) },
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = endChapter,
                                 onValueChange = { endChapter = it.filter { c -> c.isDigit() } },
-                                label = { Text("End Chapter") },
+                                label = { Text(strings.endChapter) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -403,35 +405,35 @@ fun SaveTimerDialog(
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Key Learnings / Notes") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "ddewg" -> {
-                        Text("Dynamic Encounter (DDEWG)", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.ddewgTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = ddewgInspiration,
                             onValueChange = { ddewgInspiration = it },
-                            label = { Text("Inspiration for Meditation") },
+                            label = { Text(strings.inspirationForMeditation) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Notes") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "prayer_alone", "prayer_with_others" -> {
-                        Text("Prayer Session Details", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(if (domainId == "prayer_alone") strings.prayerAloneTitle else strings.prayerWithOthersTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = prayerType,
                             onValueChange = { prayerType = it },
-                            label = { Text("Prayer Focus (Intercession, Thanksgiving...)") },
+                            label = { Text(strings.typeOfPrayerFocus) },
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -439,7 +441,7 @@ fun SaveTimerDialog(
                             OutlinedTextField(
                                 value = participantsCountText,
                                 onValueChange = { participantsCountText = it.filter { c -> c.isDigit() } },
-                                label = { Text("Number of Prayer Partners") },
+                                label = { Text(strings.numTopicsRecorded) },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -447,163 +449,163 @@ fun SaveTimerDialog(
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Prayer Topics & Burdens Prayed For") },
+                            label = { Text(strings.sessionNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = reflection,
                             onValueChange = { reflection = it },
-                            label = { Text("Prophetic Burdens / Divine Impressions") },
+                            label = { Text(strings.propheticBurdensPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "proclamation_importunity" -> {
-                        Text("Proclamation & Importunity", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.proclamationTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = proclamationTopic,
                             onValueChange = { proclamationTopic = it },
-                            label = { Text("Prayer Topic / Faith Proclamation") },
+                            label = { Text(strings.prayerFocus) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = proclamationCountText,
                             onValueChange = { proclamationCountText = it.filter { c -> c.isDigit() } },
-                            label = { Text("Proclamations Count") },
+                            label = { Text(strings.numTopicsRecorded) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Session Notes") },
+                            label = { Text(strings.sessionNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = reflection,
                             onValueChange = { reflection = it },
-                            label = { Text("Prophetic Impressions / Revelations") },
+                            label = { Text(strings.propheticBurdensPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "fasting" -> {
-                        Text("Fasting Session Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.fastingTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = fastingType,
                             onValueChange = { fastingType = it },
-                            label = { Text("Type of Fast (Complete, Partial, Water)") },
+                            label = { Text(strings.typeOfFast) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Spiritual Goals & Reflection") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "giving" -> {
-                        Text("Giving Session Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.givingTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = givingType,
                             onValueChange = { givingType = it },
-                            label = { Text("Giving Category (Tithe, Offering, Alms)") },
+                            label = { Text(strings.givingTypeExtendedPlaceholder) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = { amountText = it },
-                            label = { Text("Amount Given") },
+                            label = { Text(strings.givingAmountLabel) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Recipient / Additional Notes") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "christian_lit", "christian_lit_mem" -> {
-                        Text("Christian Literature Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.christianLitTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = bookTitle,
                             onValueChange = { bookTitle = it },
-                            label = { Text("Book Title / Author") },
+                            label = { Text(strings.bookTitle) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = pagesReadText,
                             onValueChange = { pagesReadText = it.filter { c -> c.isDigit() } },
-                            label = { Text("Pages Read") },
+                            label = { Text(strings.pagesRead) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Key Quotes & Takeaways") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "bible_mem" -> {
-                        Text("Bible Memorization Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.bibleMemTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         OutlinedTextField(
                             value = selectedBook,
                             onValueChange = { selectedBook = it },
-                            label = { Text("Passage / Verses Memorized (e.g. John 3:16)") },
+                            label = { Text(strings.versesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Reflection on Passages Memorized") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     "soul_winning" -> {
-                        Text("Evangelism & Soul Winning Summary", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.soulWinningTitle, fontWeight = FontWeight.Bold, color = PrimaryBlue)
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = preachedCountText,
                                 onValueChange = { preachedCountText = it.filter { c -> c.isDigit() } },
-                                label = { Text("Preached To") },
+                                label = { Text(strings.peoplePreachedTo) },
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = convertedCountText,
                                 onValueChange = { convertedCountText = it.filter { c -> c.isDigit() } },
-                                label = { Text("Converts") },
+                                label = { Text(strings.peopleConverted) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Names & Follow-up Notes") },
+                            label = { Text(strings.activityNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     else -> {
-                        Text("Session Notes", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        Text(strings.sessionNotesPrompt, fontWeight = FontWeight.Bold, color = PrimaryBlue)
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
-                            label = { Text("Session Notes") },
+                            label = { Text(strings.sessionNotesPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = reflection,
                             onValueChange = { reflection = it },
-                            label = { Text("Spiritual Reflection / Takeaway") },
+                            label = { Text(strings.propheticBurdensPrompt) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -630,12 +632,12 @@ fun SaveTimerDialog(
                     onConfirm(finalNotes, finalReflection)
                 }
             ) {
-                Text("Save to Log")
+                Text(strings.saveActivityRecord)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )

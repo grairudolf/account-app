@@ -214,7 +214,7 @@ fun AddCustomDomainDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Domain Name") },
+                    label = { Text(strings.domainNamePrompt) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_domain_name_input"),
@@ -223,7 +223,7 @@ fun AddCustomDomainDialog(
                 OutlinedTextField(
                     value = desc,
                     onValueChange = { desc = it },
-                    label = { Text("Description") },
+                    label = { Text(strings.descriptionPrompt) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_domain_desc_input")
@@ -231,7 +231,7 @@ fun AddCustomDomainDialog(
                 OutlinedTextField(
                     value = unit,
                     onValueChange = { unit = it },
-                    label = { Text("Measurement Unit (e.g., Pages, Minutes)") },
+                    label = { Text(strings.measurementUnitPrompt) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_domain_unit_input"),
@@ -248,12 +248,12 @@ fun AddCustomDomainDialog(
                 },
                 modifier = Modifier.testTag("confirm_custom_domain_button")
             ) {
-                Text("Save")
+                Text(strings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )

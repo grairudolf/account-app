@@ -135,7 +135,7 @@ fun DomainDetailScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = domainId.replace("_", " ").uppercase(),
+                            text = strings.getDomainTitleById(domainId).uppercase(),
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -186,13 +186,13 @@ fun DomainDetailScreen(
                                     }
                                     Column {
                                         Text(
-                                            text = "Live Timer Mode",
+                                            text = strings.liveTimerMode,
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = PrimaryBlueDark
                                         )
                                         Text(
-                                            text = "Track your session in real time with precise duration logging.",
+                                            text = strings.liveTimerDesc,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = PrimaryBlue
                                         )
@@ -212,7 +212,7 @@ fun DomainDetailScreen(
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Start Live Session Timer", fontWeight = FontWeight.Bold)
+                                    Text(strings.startLiveSessionTimer, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -232,14 +232,14 @@ fun DomainDetailScreen(
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Text(
-                                text = "Log Activity Record",
+                                text = strings.logActivityRecord,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
 
                             // Date Selector Bar
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("Date of Activity:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Text(strings.dateOfActivity, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -253,7 +253,7 @@ fun DomainDetailScreen(
                                         shape = RoundedCornerShape(20.dp)
                                     ) {
                                         Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
-                                        Text("Prev Day")
+                                        Text(strings.prevDay)
                                     }
 
                                     Surface(
@@ -277,7 +277,7 @@ fun DomainDetailScreen(
                                         },
                                         shape = RoundedCornerShape(20.dp)
                                     ) {
-                                        Text("Next Day")
+                                        Text(strings.nextDay)
                                         Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
                                     }
                                 }
@@ -286,12 +286,12 @@ fun DomainDetailScreen(
                             if (domainId != "fasting" && domainId != "giving") {
                                 // Start Time & Stop Time Duration Input
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("Time & Duration:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text(strings.timeAndDuration, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         OutlinedTextField(
                                             value = startTimeText,
                                             onValueChange = { startTimeText = it },
-                                            label = { Text("Start Time (e.g. 06:00)") },
+                                            label = { Text(strings.startTimePlaceholder) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_start_time"),
@@ -300,7 +300,7 @@ fun DomainDetailScreen(
                                         OutlinedTextField(
                                             value = stopTimeText,
                                             onValueChange = { stopTimeText = it },
-                                            label = { Text("Stop Time (e.g. 07:15)") },
+                                            label = { Text(strings.stopTimePlaceholder) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_stop_time"),
@@ -308,7 +308,7 @@ fun DomainDetailScreen(
                                         )
                                     }
                                     Text(
-                                        text = "Calculated Duration: $calculatedDurationMinutes Minutes",
+                                        text = String.format(strings.calculatedDurationFormat, calculatedDurationMinutes),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = PrimaryBlue,
                                         fontWeight = FontWeight.Bold
@@ -319,7 +319,7 @@ fun DomainDetailScreen(
                             // Prayer Domain Specific Fields
                             if (domainId.startsWith("prayer")) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Type of Prayer / Focus:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     val prayerTypes = listOf("Thanksgiving", "Request", "15-Min Retreat", "Bertoua Message", "Intercession", "Worship")
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -329,7 +329,7 @@ fun DomainDetailScreen(
                                             FilterChip(
                                                 selected = selectedPrayerType == pType,
                                                 onClick = { selectedPrayerType = pType },
-                                                label = { Text(pType, style = MaterialTheme.typography.labelSmall) }
+                                                label = { Text(strings.getPrayerTypeDisplayName(pType), style = MaterialTheme.typography.labelSmall) }
                                             )
                                         }
                                     }
@@ -341,7 +341,7 @@ fun DomainDetailScreen(
                                             FilterChip(
                                                 selected = selectedPrayerType == pType,
                                                 onClick = { selectedPrayerType = pType },
-                                                label = { Text(pType, style = MaterialTheme.typography.labelSmall) }
+                                                label = { Text(strings.getPrayerTypeDisplayName(pType), style = MaterialTheme.typography.labelSmall) }
                                             )
                                         }
                                     }
@@ -350,7 +350,7 @@ fun DomainDetailScreen(
                                         OutlinedTextField(
                                             value = prayerTopicsCountText,
                                             onValueChange = { prayerTopicsCountText = it },
-                                            label = { Text("Number of Topics Recorded") },
+                                            label = { Text(strings.numTopicsRecorded) },
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .testTag("entry_prayer_topics_count"),
@@ -365,7 +365,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = ddewgInspirationText,
                                         onValueChange = { ddewgInspirationText = it },
-                                        label = { Text("Inspiration for Meditation") },
+                                        label = { Text(strings.inspirationForMeditation) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_ddewg_inspiration"),
@@ -381,10 +381,10 @@ fun DomainDetailScreen(
                                         onExpandedChange = { bookBookDropdownExpanded = !bookBookDropdownExpanded }
                                     ) {
                                         OutlinedTextField(
-                                            value = selectedBibleBook,
+                                            value = strings.getBibleBookName(selectedBibleBook),
                                             onValueChange = {},
                                             readOnly = true,
-                                            label = { Text("Select Bible Book") },
+                                            label = { Text(strings.selectBibleBook) },
                                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookBookDropdownExpanded) },
                                             modifier = Modifier
                                                 .menuAnchor()
@@ -397,8 +397,9 @@ fun DomainDetailScreen(
                                             onDismissRequest = { bookBookDropdownExpanded = false }
                                         ) {
                                             BibleMetadata.BOOKS.forEach { book ->
+                                                val translatedBookName = strings.getBibleBookName(book.name)
                                                 DropdownMenuItem(
-                                                    text = { Text("${book.name} (${book.chapters} Chs)") },
+                                                    text = { Text("$translatedBookName (${book.chapters} ${strings.chaptersReadLabel.substringBefore("/")})") },
                                                     onClick = {
                                                         selectedBibleBook = book.name
                                                         selectedStartChapter = "1"
@@ -421,7 +422,7 @@ fun DomainDetailScreen(
                                                 value = "Ch. $selectedStartChapter",
                                                 onValueChange = {},
                                                 readOnly = true,
-                                                label = { Text("Start Chapter") },
+                                                label = { Text(strings.startChapter) },
                                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = startChapterDropdownExpanded) },
                                                 modifier = Modifier
                                                     .menuAnchor()
@@ -435,7 +436,7 @@ fun DomainDetailScreen(
                                             ) {
                                                 (1..maxChapters).forEach { ch ->
                                                     DropdownMenuItem(
-                                                        text = { Text("Chapter $ch") },
+                                                        text = { Text(String.format(strings.chapterNumberFormat, ch)) },
                                                         onClick = {
                                                             selectedStartChapter = ch.toString()
                                                             if ((selectedEndChapter.toIntOrNull() ?: 1) < ch) {
@@ -459,7 +460,7 @@ fun DomainDetailScreen(
                                                     value = "Ch. $selectedEndChapter",
                                                     onValueChange = {},
                                                     readOnly = true,
-                                                    label = { Text("End Chapter") },
+                                                    label = { Text(strings.endChapter) },
                                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = endChapterDropdownExpanded) },
                                                     modifier = Modifier
                                                         .menuAnchor()
@@ -473,7 +474,7 @@ fun DomainDetailScreen(
                                                 ) {
                                                     ((selectedStartChapter.toIntOrNull() ?: 1)..maxChapters).forEach { ch ->
                                                         DropdownMenuItem(
-                                                            text = { Text("Chapter $ch") },
+                                                            text = { Text(String.format(strings.chapterNumberFormat, ch)) },
                                                             onClick = {
                                                                 selectedEndChapter = ch.toString()
                                                                 endChapterDropdownExpanded = false
@@ -486,7 +487,7 @@ fun DomainDetailScreen(
                                             OutlinedTextField(
                                                 value = bibleMemVerse,
                                                 onValueChange = { bibleMemVerse = it },
-                                                label = { Text("Verses (e.g. 1-12)") },
+                                                label = { Text(strings.versesPrompt) },
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .testTag("entry_bible_mem_verse"),
@@ -500,7 +501,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = bookTitle,
                                         onValueChange = { bookTitle = it },
-                                        label = { Text("Book Title") },
+                                        label = { Text(strings.bookTitle) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_christian_lit_title"),
@@ -509,7 +510,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = bookAuthor,
                                         onValueChange = { bookAuthor = it },
-                                        label = { Text("Author") },
+                                        label = { Text(strings.author) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_christian_lit_author"),
@@ -519,7 +520,7 @@ fun DomainDetailScreen(
                                         OutlinedTextField(
                                             value = pagesReadText,
                                             onValueChange = { pagesReadText = it },
-                                            label = { Text("Pages Read") },
+                                            label = { Text(strings.pagesRead) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_pages_read"),
@@ -528,7 +529,7 @@ fun DomainDetailScreen(
                                         OutlinedTextField(
                                             value = timesReadText,
                                             onValueChange = { timesReadText = it },
-                                            label = { Text("Times Read") },
+                                            label = { Text(strings.timesReadPrompt) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_times_read"),
@@ -541,7 +542,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = bookTitle,
                                         onValueChange = { bookTitle = it },
-                                        label = { Text("Book Title") },
+                                        label = { Text(strings.bookTitle) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_lit_mem_title"),
@@ -550,7 +551,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = bookAuthor,
                                         onValueChange = { bookAuthor = it },
-                                        label = { Text("Author") },
+                                        label = { Text(strings.author) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_lit_mem_author"),
@@ -559,7 +560,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = pagesMemorizedText,
                                         onValueChange = { pagesMemorizedText = it },
-                                        label = { Text("Pages Memorized") },
+                                        label = { Text(strings.pagesMemorizedPrompt) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_pages_memorized"),
@@ -568,7 +569,7 @@ fun DomainDetailScreen(
                                 }
 
                                 "fasting" -> {
-                                    Text("Type of Fast:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text(strings.typeOfFast, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -577,7 +578,7 @@ fun DomainDetailScreen(
                                             FilterChip(
                                                 selected = selectedFastingType == type,
                                                 onClick = { selectedFastingType = type },
-                                                label = { Text(type, fontWeight = FontWeight.SemiBold) },
+                                                label = { Text(strings.getFastingTypeDisplayName(type), fontWeight = FontWeight.SemiBold) },
                                                 modifier = Modifier.weight(1f),
                                                 shape = RoundedCornerShape(20.dp),
                                                 colors = FilterChipDefaults.filterChipColors(
@@ -590,7 +591,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = fastingDaysText,
                                         onValueChange = { fastingDaysText = it },
-                                        label = { Text("Fasting Duration (Days)") },
+                                        label = { Text(strings.fastingDurationDays) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_fasting_days"),
@@ -602,7 +603,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = givingAmountText,
                                         onValueChange = { givingAmountText = it },
-                                        label = { Text("Giving Amount ($)") },
+                                        label = { Text(strings.givingAmountLabel) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_giving_amount"),
@@ -611,7 +612,7 @@ fun DomainDetailScreen(
                                     OutlinedTextField(
                                         value = givingType,
                                         onValueChange = { givingType = it },
-                                        label = { Text("Type (Tithe, Offering, Missions, Firstfruit)") },
+                                        label = { Text(strings.givingTypeExtendedPlaceholder) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("entry_giving_type"),
@@ -625,7 +626,7 @@ fun DomainDetailScreen(
                                             OutlinedTextField(
                                                 value = preachedToCountText,
                                                 onValueChange = { preachedToCountText = it },
-                                                label = { Text("People Preached To") },
+                                                label = { Text(strings.peoplePreachedTo) },
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .testTag("entry_preached_to"),
@@ -634,7 +635,7 @@ fun DomainDetailScreen(
                                             OutlinedTextField(
                                                 value = convertedCountText,
                                                 onValueChange = { convertedCountText = it },
-                                                label = { Text("People Converted") },
+                                                label = { Text(strings.peopleConverted) },
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .testTag("entry_converts"),
@@ -645,7 +646,7 @@ fun DomainDetailScreen(
                                             OutlinedTextField(
                                                 value = waterBaptizedText,
                                                 onValueChange = { waterBaptizedText = it },
-                                                label = { Text("Water Baptized") },
+                                                label = { Text(strings.waterBaptized) },
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .testTag("entry_water_baptized"),
@@ -654,7 +655,7 @@ fun DomainDetailScreen(
                                             OutlinedTextField(
                                                 value = holySpiritBaptizedText,
                                                 onValueChange = { holySpiritBaptizedText = it },
-                                                label = { Text("Holy Spirit Baptized") },
+                                                label = { Text(strings.holySpiritBaptized) },
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .testTag("entry_holy_spirit_baptized"),
@@ -673,7 +674,7 @@ fun DomainDetailScreen(
                             OutlinedTextField(
                                 value = notes,
                                 onValueChange = { notes = it },
-                                label = { Text("Activity Notes / Observations") },
+                                label = { Text(strings.activityNotesPrompt) },
                                 minLines = 3,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -737,12 +738,12 @@ fun DomainDetailScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
-                                Text("Save Activity Record", fontWeight = FontWeight.Bold)
+                                Text(strings.saveActivityRecord, fontWeight = FontWeight.Bold)
                             }
 
                             if (isSaved) {
                                 Text(
-                                    text = "Activity recorded successfully!",
+                                    text = strings.activityRecordedSuccess,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = StatusSuccess,
                                     fontWeight = FontWeight.Bold
