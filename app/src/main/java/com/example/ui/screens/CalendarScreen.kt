@@ -99,13 +99,13 @@ fun CalendarScreen(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Accountability Streaks",
+                            text = strings.accountabilityStreaks,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = StreakGoldDark
                         )
                         Text(
-                            text = "$activeStreakDays days with logged accountability this month",
+                            text = String.format(strings.streakDaysWithAccountability, activeStreakDays),
                             style = MaterialTheme.typography.bodySmall,
                             color = StreakGoldDark.copy(alpha = 0.8f)
                         )
@@ -248,7 +248,7 @@ fun CalendarScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Streak / Completed Day (Yellow Fire)",
+                            text = strings.streakLegend,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -260,7 +260,7 @@ fun CalendarScreen(
         // Selected Date Summary Header
         item {
             Text(
-                text = "Activities for ${selectedDate.format(DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"))}",
+                text = String.format(strings.activitiesForDate, selectedDate.format(DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"))),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface

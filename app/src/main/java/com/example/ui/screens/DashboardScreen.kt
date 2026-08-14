@@ -222,7 +222,7 @@ fun DashboardScreen(
         if (searchQuery.isNotBlank()) {
             item {
                 Text(
-                    text = "Search Results for “$searchQuery”",
+                    text = String.format(strings.searchResultsFor, searchQuery),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -549,7 +549,7 @@ fun DashboardScreen(
                                         modifier = Modifier.size(24.dp)
                                     )
                                     Text(
-                                        text = "Daily Check-In: Have you done $currentTitle today?",
+                                        text = String.format(strings.dailyCheckInPrompt, currentTitle),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -568,14 +568,14 @@ fun DashboardScreen(
                                 ) {
                                     Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Log $currentTitle")
+                                    Text(String.format(strings.logAction, currentTitle))
                                 }
                                 OutlinedButton(
                                     onClick = { activeCheckinIndex++ },
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Next Aspect")
+                                    Text(strings.nextAspect)
                                 }
                             }
                         }
@@ -615,7 +615,7 @@ fun DashboardScreen(
                                     color = StreakGold
                                 ) {
                                     Text(
-                                        text = "ON FIRE!",
+                                        text = strings.onFire,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
@@ -683,13 +683,13 @@ fun DashboardScreen(
                             )
                         } else {
                             Text(
-                                text = "No Goals Set",
+                                text = strings.noGoalsSet,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Tap to set goals →",
+                                text = strings.tapToSetGoals,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = PrimaryBlue,
                                 fontWeight = FontWeight.SemiBold
@@ -737,7 +737,7 @@ fun DashboardScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = domain.id.replace("_", " ").uppercase(),
+                                    text = strings.getDomainTitle(domain.titleKey).uppercase(),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = PrimaryBlue
@@ -831,13 +831,13 @@ fun RecentActivityCard(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.domainId.replace("_", " ").uppercase(),
+                    text = strings.getDomainTitleById(entry.domainId).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = getSummaryText(entry),
+                    text = strings.formatActivitySummary(entry),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -848,16 +848,5 @@ fun RecentActivityCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    }
-}
-
-private fun getSummaryText(entry: AccountabilityEntryEntity): String {
-    return when (entry.domainId) {
-        "bible_reading" -> "${entry.bibleBook} Ch ${entry.startChapter}-${entry.endChapter}"
-        "ddewg", "prayer_alone", "prayer_with_others" -> "${entry.durationSeconds / 60} minutes"
-        "proclamation_importunity" -> "${entry.proclamationTopic.ifBlank { "Proclamation" }}: ${entry.proclamationCount} proclamations (${entry.durationSeconds / 60}m)"
-        "soul_winning" -> "Preached: ${entry.preachedToCount}, Converted: ${entry.convertedCount}"
-        "giving" -> "${if (entry.givingType.isNotBlank()) "${entry.givingType}: " else ""}Amount $${entry.givingAmount}"
-        else -> entry.notes.ifBlank { "Activity logged" }
     }
 }

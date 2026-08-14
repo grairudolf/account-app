@@ -1,5 +1,7 @@
 package com.example.core.localization
 
+import com.example.data.local.entities.AccountabilityEntryEntity
+
 enum class AppLanguage(val code: String, val displayName: String) {
     ENGLISH("en", "English"),
     FRENCH("fr", "Français")
@@ -282,7 +284,44 @@ data class AppStrings(
     // Daily Word of Encouragement
     val dailyWordTitle: String,
     val nextQuote: String,
-    val dailyQuotes: List<String>
+    val dailyQuotes: List<String>,
+
+    // Additional Screen Localizations
+    val searchResultsFor: String,
+    val dailyCheckInPrompt: String,
+    val logAction: String,
+    val nextAspect: String,
+    val onFire: String,
+    val noGoalsSet: String,
+    val tapToSetGoals: String,
+    val accountabilityStreaks: String,
+    val streakDaysWithAccountability: String,
+    val streakLegend: String,
+    val activitiesForDate: String,
+    val editPastRecord: String,
+    val activityNotesPrompt: String,
+    val givingAmountLabel: String,
+    val givingTypePlaceholder: String,
+    val chaptersReadLabel: String,
+    val durationMinutesLabel: String,
+    val saveChanges: String,
+    val prayerFocus: String,
+    val topicsCountFormat: String,
+    val hoursUnit: String,
+    val minutesUnit: String,
+    val selectDomainLabel: String,
+    val targetPeriodLabel: String,
+    val unitPlaceholder: String,
+    val saveGoal: String,
+    val filterAll: String,
+    val logEmptySessionTitle: String,
+    val logEmptySessionDesc: String,
+    val saveAnyway: String,
+    val startAtZero: String,
+    val sessionNotesPrompt: String,
+    val propheticBurdensPrompt: String,
+    val understood: String,
+    val noRecordedEntriesForDate: String
 ) {
     fun getDomainTitle(key: String): String {
         return when (key) {
@@ -302,6 +341,24 @@ data class AppStrings(
         }
     }
 
+    fun getDomainTitleById(id: String): String {
+        return when (id.lowercase().trim()) {
+            "ddewg" -> ddewgTitle
+            "bible_reading" -> bibleReadingTitle
+            "prayer_alone" -> prayerAloneTitle
+            "prayer_with_others" -> prayerWithOthersTitle
+            "fasting" -> fastingTitle
+            "giving" -> givingTitle
+            "accountability" -> accountabilityTitle
+            "christian_lit_reading", "christian_lit" -> christianLitTitle
+            "christian_lit_memory", "christian_lit_mem" -> christianLitMemTitle
+            "bible_memory", "bible_mem" -> bibleMemTitle
+            "soul_winning" -> soulWinningTitle
+            "proclamation_importunity", "proclamation" -> proclamationTitle
+            else -> id.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+        }
+    }
+
     fun getDomainDesc(key: String): String {
         return when (key) {
             "ddewgDesc" -> ddewgDesc
@@ -317,6 +374,34 @@ data class AppStrings(
             "bibleMemDesc" -> bibleMemDesc
             "soulWinningDesc" -> soulWinningDesc
             else -> key
+        }
+    }
+
+    fun formatActivitySummary(entry: AccountabilityEntryEntity): String {
+        return when (entry.domainId) {
+            "bible_reading" -> "${entry.bibleBook} Ch. ${entry.startChapter}-${entry.endChapter}"
+            "ddewg", "prayer_alone", "prayer_with_others" -> {
+                val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
+                if (mins >= 60) "${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$mins $minutesUnit"
+            }
+            "proclamation_importunity" -> {
+                val topic = entry.proclamationTopic.ifBlank { proclamationTitle }
+                val mins = entry.durationSeconds / 60
+                "$topic: ${entry.proclamationCount} proclamations ($mins $minutesUnit)"
+            }
+            "soul_winning" -> {
+                "$preachedTo: ${entry.preachedToCount}, $converted: ${entry.convertedCount}"
+            }
+            "giving" -> {
+                val typeStr = if (entry.givingType.isNotBlank()) "${entry.givingType}: " else ""
+                "$givingTitle: $typeStr$amount $${entry.givingAmount}"
+            }
+            "fasting" -> {
+                val daysCount = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
+                val typeStr = if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else ""
+                "$fastingTitle: $daysCount $days$typeStr"
+            }
+            else -> entry.notes.ifBlank { loggedDisciplineActivities }
         }
     }
 }
@@ -581,7 +666,43 @@ val EnglishStrings = AppStrings(
         "“Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call upon your life.” — The Congo Brazzaville Message (Z.T. Fomum)",
         "“During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through.” — Pr. Zacharias Tanee Fomum",
         "“When a Spirit-filled believer prays and fasts in total surrender, heaven moves and hell is brought to naught for the glory of Christ!” — 3B Prophetic Messages (Z.T. Fomum)"
-    )
+    ),
+
+    searchResultsFor = "Search Results for “%s”",
+    dailyCheckInPrompt = "Daily Check-In: Have you done %s today?",
+    logAction = "Log %s",
+    nextAspect = "Next Aspect",
+    onFire = "ON FIRE!",
+    noGoalsSet = "No Goals Set",
+    tapToSetGoals = "Tap to set goals →",
+    accountabilityStreaks = "Accountability Streaks",
+    streakDaysWithAccountability = "%d days with logged accountability this month",
+    streakLegend = "Streak / Completed Day (Yellow Fire)",
+    activitiesForDate = "Activities for %s",
+    editPastRecord = "Edit Past Discipline Record",
+    activityNotesPrompt = "Activity Notes / Reflection",
+    givingAmountLabel = "Giving Amount ($)",
+    givingTypePlaceholder = "Giving Type (Tithe, Offering...)",
+    chaptersReadLabel = "Chapters Read / Count",
+    durationMinutesLabel = "Duration (Minutes)",
+    saveChanges = "Save Changes",
+    prayerFocus = "Prayer Focus",
+    topicsCountFormat = "%d Topics",
+    hoursUnit = "hrs",
+    minutesUnit = "mins",
+    selectDomainLabel = "Select Domain:",
+    targetPeriodLabel = "Target Period:",
+    unitPlaceholder = "Unit (Minutes, Chapters, Souls, USD)",
+    saveGoal = "Save Goal",
+    filterAll = "All",
+    logEmptySessionTitle = "Log Empty Session?",
+    logEmptySessionDesc = "You currently have 0 repetitions and 0 minutes recorded. Would you still like to log this session?",
+    saveAnyway = "Save Anyway",
+    startAtZero = "Start at 0",
+    sessionNotesPrompt = "Session Notes (e.g. Specific breakthrough, scriptures)",
+    propheticBurdensPrompt = "Prophetic Burdens / Divine Impressions",
+    understood = "Understood",
+    noRecordedEntriesForDate = "No recorded discipline entries for this date. Pick another date or tap on any past entry below to edit."
 )
 
 val FrenchStrings = AppStrings(
@@ -844,5 +965,41 @@ val FrenchStrings = AppStrings(
         "« Vis ta vie pour la gloire exclusive du Seigneur Jésus-Christ en toutes choses, en Le servant dans le domaine de Son appel sur ta vie. » — Le Message de Congo Brazzaville (Z.T. Fomum)",
         "« Pendant la Rencontre Dynamique Quotidienne avec Dieu (RDQD), lis la Parole de Dieu, médite-la, écoute Sa voix, note ce Qu'Il dit, et prie en conséquence. » — Pr. Zacharias Tanee Fomum",
         "« Quand un croyant rempli de l'Esprit prie et jeûne dans un abandon total, le ciel se meut et l'enfer est réduit à néant pour la gloire du Christ ! » — Messages Prophétiques 3B (Z.T. Fomum)"
-    )
+    ),
+
+    searchResultsFor = "Résultats de recherche pour « %s »",
+    dailyCheckInPrompt = "Point Quotidien : Avez-vous fait %s aujourd'hui ?",
+    logAction = "Enregistrer %s",
+    nextAspect = "Aspect Suivant",
+    onFire = "EN FEU !",
+    noGoalsSet = "Aucun Objectif Défini",
+    tapToSetGoals = "Appuyez pour définir des objectifs →",
+    accountabilityStreaks = "Séries de Redevabilité",
+    streakDaysWithAccountability = "%d jours avec redevabilité enregistrée ce mois-ci",
+    streakLegend = "Série / Jour Complété (Feu Doré)",
+    activitiesForDate = "Activités pour %s",
+    editPastRecord = "Modifier l'Enregistrement de Discipline",
+    activityNotesPrompt = "Notes d'Activité / Réflexion",
+    givingAmountLabel = "Montant du Don ($)",
+    givingTypePlaceholder = "Type de Don (Dîme, Offrande...)",
+    chaptersReadLabel = "Chapitres Lus / Nombre",
+    durationMinutesLabel = "Durée (Minutes)",
+    saveChanges = "Enregistrer les Modifications",
+    prayerFocus = "Sujet de Prière",
+    topicsCountFormat = "%d Sujets",
+    hoursUnit = "h",
+    minutesUnit = "min",
+    selectDomainLabel = "Sélectionner le Domaine :",
+    targetPeriodLabel = "Période Cible :",
+    unitPlaceholder = "Unité (Minutes, Chapitres, Âmes, USD)",
+    saveGoal = "Enregistrer l'Objectif",
+    filterAll = "Tous",
+    logEmptySessionTitle = "Enregistrer une Session Vide ?",
+    logEmptySessionDesc = "Vous avez actuellement 0 répétitions et 0 minutes enregistrées. Voulez-vous tout de même enregistrer cette session ?",
+    saveAnyway = "Enregistrer quand même",
+    startAtZero = "Départ à 0",
+    sessionNotesPrompt = "Notes de Session (ex. Victoire spécifique, écritures)",
+    propheticBurdensPrompt = "Fardeaux Prophétiques / Impressions Divines",
+    understood = "Compris",
+    noRecordedEntriesForDate = "Aucune discipline enregistrée pour cette date. Choisissez une autre date ou appuyez sur un enregistrement ci-dessous pour le modifier."
 )

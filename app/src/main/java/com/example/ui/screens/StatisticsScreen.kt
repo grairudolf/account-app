@@ -84,13 +84,13 @@ fun StatisticsScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { onTabSelected(0) },
-                    text = { Text("Overview Analytics", fontWeight = FontWeight.Bold) },
+                    text = { Text(strings.analyticsOverview, fontWeight = FontWeight.Bold) },
                     icon = { Icon(Icons.Default.BarChart, contentDescription = null) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { onTabSelected(1) },
-                    text = { Text("History & Calendar", fontWeight = FontWeight.Bold) },
+                    text = { Text(strings.historyAndCalendar, fontWeight = FontWeight.Bold) },
                     icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }
                 )
             }
@@ -118,17 +118,17 @@ fun StatisticsScreen(
                             MetricCard(
                                 modifier = Modifier.weight(1f),
                                 title = strings.currentStreak,
-                                value = "${uiState.streakStats.currentStreakDays} Days",
-                                subtitle = "Longest: ${uiState.streakStats.longestStreakDays} Days",
+                                value = "${uiState.streakStats.currentStreakDays} ${strings.days}",
+                                subtitle = "${strings.longestStreak}: ${uiState.streakStats.longestStreakDays} ${strings.days}",
                                 icon = Icons.Default.LocalFireDepartment,
                                 iconBg = StreakGoldContainer,
                                 testTag = "stat_card_streak"
                             )
                             MetricCard(
                                 modifier = Modifier.weight(1f),
-                                title = "Total Records",
+                                title = strings.totalRecords,
                                 value = "${uiState.totalEntriesCount}",
-                                subtitle = "Logged Discipline Activities",
+                                subtitle = strings.loggedDisciplineActivities,
                                 icon = Icons.Default.List,
                                 iconBg = LightBlueContainer,
                                 testTag = "stat_card_total"
@@ -155,12 +155,12 @@ fun StatisticsScreen(
                                 ) {
                                     Column {
                                         Text(
-                                            text = "Weekly Activity Trend",
+                                            text = strings.weeklyActivityTrend,
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "Disciplines completed per day",
+                                            text = strings.disciplinesCompletedPerDay,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -224,15 +224,15 @@ fun StatisticsScreen(
                                 Text(text = strings.bibleReading, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
-                                        Text("Total Chapters", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(strings.totalBibleChapters, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("${uiState.bibleStats.totalChaptersRead}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                     }
                                     Column {
-                                        Text("Bibles Read", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(strings.biblesRead, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(String.format("%.1f", uiState.bibleStats.biblesReadCount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                     }
                                     Column {
-                                        Text("Completion", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(strings.completion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(String.format("%.1f%%", uiState.bibleStats.completionPercentage), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -362,7 +362,7 @@ fun StatisticsScreen(
 
                     item {
                         Text(
-                            text = "Selected Date: ${selectedDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))}",
+                            text = String.format(strings.selectedDateLabel, selectedDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -377,7 +377,7 @@ fun StatisticsScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = "No recorded discipline entries for this date. Pick another date or tap on any past entry below to edit.",
+                                    text = strings.noRecordedEntriesForDate,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(20.dp)
@@ -388,6 +388,7 @@ fun StatisticsScreen(
                         items(selectedDateEntries, key = { "sel_${it.id}" }) { entry ->
                             EntryLogCard(
                                 entry = entry,
+                                strings = strings,
                                 onEdit = { editingEntry = entry },
                                 onDelete = { onDeleteEntry(entry.id) }
                             )
@@ -397,7 +398,7 @@ fun StatisticsScreen(
                     item {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "All Past Accountability Records (${allEntries.size})",
+                            text = "${strings.allPastRecords} (${allEntries.size})",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -406,6 +407,7 @@ fun StatisticsScreen(
                     items(allEntries, key = { "all_${it.id}" }) { entry ->
                         EntryLogCard(
                             entry = entry,
+                            strings = strings,
                             onEdit = { editingEntry = entry },
                             onDelete = { onDeleteEntry(entry.id) }
                         )
@@ -418,6 +420,7 @@ fun StatisticsScreen(
     if (editingEntry != null) {
         EditEntryDialog(
             entry = editingEntry!!,
+            strings = strings,
             onDismiss = { editingEntry = null },
             onConfirm = { updated ->
                 onUpdateEntry(updated)
@@ -430,6 +433,7 @@ fun StatisticsScreen(
 @Composable
 fun EntryLogCard(
     entry: AccountabilityEntryEntity,
+    strings: AppStrings,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -446,7 +450,7 @@ fun EntryLogCard(
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = entry.domainId.replace("_", " ").uppercase(),
+                    text = strings.getDomainTitleById(entry.domainId).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryBlue
@@ -459,7 +463,7 @@ fun EntryLogCard(
                 if (entry.domainId == "fasting") {
                     val days = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
                     Text(
-                        text = "Fasting: $days Days" + if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else "",
+                        text = "${strings.fastingTitle}: $days ${strings.days}" + if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else "",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
@@ -467,7 +471,7 @@ fun EntryLogCard(
                 } else if (entry.domainId == "giving") {
                     val gType = if (entry.givingType.isNotBlank()) " (${entry.givingType})" else ""
                     Text(
-                        text = "Giving: $${entry.givingAmount}$gType",
+                        text = "${strings.givingTitle}: $${entry.givingAmount}$gType",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
@@ -484,31 +488,32 @@ fun EntryLogCard(
 
                     if (timeSpan.isNotBlank()) {
                         Text(
-                            text = "Time Span: $timeSpan",
+                            text = "${strings.timeSpanLabel}: $timeSpan",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = PrimaryBlueDark
                         )
                     }
                     val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
-                    val displayDuration = if (mins >= 60) "${mins / 60} hrs ${mins % 60} mins" else "$mins mins"
+                    val displayDuration = if (mins >= 60) "${mins / 60} ${strings.hoursUnit} ${mins % 60} ${strings.minutesUnit}" else "$mins ${strings.minutesUnit}"
                     Text(
-                        text = "Duration: $displayDuration",
+                        text = "${strings.duration}: $displayDuration",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
                     )
                 }
                 if (entry.prayerType.isNotBlank()) {
+                    val topicsStr = if (entry.prayerTopicsCount > 0) " (" + String.format(strings.topicsCountFormat, entry.prayerTopicsCount) + ")" else ""
                     Text(
-                        text = "Prayer Focus: ${entry.prayerType}" + if (entry.prayerTopicsCount > 0) " (${entry.prayerTopicsCount} Topics)" else "",
+                        text = "${strings.prayerFocus}: ${entry.prayerType}$topicsStr",
                         style = MaterialTheme.typography.bodySmall,
                         color = PrimaryBlueDark
                     )
                 }
                 if (entry.notes.isNotBlank()) {
                     Text(
-                        text = "Notes: ${entry.notes}",
+                        text = "${strings.notes}: ${entry.notes}",
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 3
                     )
@@ -516,10 +521,10 @@ fun EntryLogCard(
             }
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Entry", tint = PrimaryBlue)
+                    Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = PrimaryBlue)
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete Entry", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -529,6 +534,7 @@ fun EntryLogCard(
 @Composable
 fun EditEntryDialog(
     entry: AccountabilityEntryEntity,
+    strings: AppStrings,
     onDismiss: () -> Unit,
     onConfirm: (AccountabilityEntryEntity) -> Unit
 ) {
@@ -540,39 +546,39 @@ fun EditEntryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Past Discipline Record") },
+        title = { Text(strings.editPastRecord) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Activity Notes / Reflection") },
+                    label = { Text(strings.activityNotesPrompt) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (entry.domainId == "giving") {
                     OutlinedTextField(
                         value = givingAmt,
                         onValueChange = { givingAmt = it },
-                        label = { Text("Giving Amount ($)") },
+                        label = { Text(strings.givingAmountLabel) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = givingType,
                         onValueChange = { givingType = it },
-                        label = { Text("Giving Type (Tithe, Offering...)") },
+                        label = { Text(strings.givingTypePlaceholder) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else if (entry.domainId != "fasting") {
                     OutlinedTextField(
                         value = chapters,
                         onValueChange = { chapters = it },
-                        label = { Text("Chapters Read / Count") },
+                        label = { Text(strings.chaptersReadLabel) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = prayerMins,
                         onValueChange = { prayerMins = it },
-                        label = { Text("Duration (Minutes)") },
+                        label = { Text(strings.durationMinutesLabel) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -590,12 +596,12 @@ fun EditEntryDialog(
                 )
                 onConfirm(updated)
             }) {
-                Text("Save Changes")
+                Text(strings.saveChanges)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )
