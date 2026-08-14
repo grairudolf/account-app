@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
 import com.example.core.localization.EnglishStrings
+import com.example.core.util.HapticHelper
 import com.example.data.local.entities.ProclamationTopicEntity
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.ProclamationViewModel
@@ -50,6 +52,7 @@ fun ProclamationScreen(
     strings: AppStrings = EnglishStrings,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val topics by viewModel.topicsFlow.collectAsState()
     val selectedTopic by viewModel.selectedTopic.collectAsState()
     val topicText by viewModel.topicText.collectAsState()
@@ -372,7 +375,10 @@ fun ProclamationScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 if (!isTimerRunning) {
                                     FilledTonalIconButton(
-                                        onClick = { viewModel.startTimer() },
+                                        onClick = {
+                                            HapticHelper.vibrateClick(context)
+                                            viewModel.startTimer()
+                                        },
                                         modifier = Modifier
                                             .size(36.dp)
                                             .testTag("proclamation_timer_play")
@@ -381,7 +387,10 @@ fun ProclamationScreen(
                                     }
                                 } else {
                                     FilledTonalIconButton(
-                                        onClick = { viewModel.pauseTimer() },
+                                        onClick = {
+                                            HapticHelper.vibrateClick(context)
+                                            viewModel.pauseTimer()
+                                        },
                                         modifier = Modifier
                                             .size(36.dp)
                                             .testTag("proclamation_timer_pause")
@@ -391,7 +400,10 @@ fun ProclamationScreen(
                                 }
 
                                 IconButton(
-                                    onClick = { viewModel.resetTimer() },
+                                    onClick = {
+                                        HapticHelper.vibrateWarning(context)
+                                        viewModel.resetTimer()
+                                    },
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(Icons.Default.RestartAlt, contentDescription = "Reset Timer", modifier = Modifier.size(20.dp))
@@ -424,7 +436,10 @@ fun ProclamationScreen(
                                     ),
                                     shape = CircleShape
                                 )
-                                .clickable { showEditCounterDialog = true }
+                                .clickable {
+                                    HapticHelper.vibrateClick(context)
+                                    showEditCounterDialog = true
+                                }
                                 .testTag("proclamation_counter_display"),
                             contentAlignment = Alignment.Center
                         ) {
@@ -508,7 +523,15 @@ fun ProclamationScreen(
                         )
 
                         Button(
-                            onClick = { viewModel.incrementCounter(1) },
+                            onClick = {
+                                val nextCount = counter + 1
+                                if (nextCount == targetCount || (nextCount > 0 && nextCount % 50 == 0)) {
+                                    HapticHelper.vibrateMilestone(context)
+                                } else {
+                                    HapticHelper.vibrateClick(context)
+                                }
+                                viewModel.incrementCounter(1)
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(64.dp)
@@ -545,7 +568,10 @@ fun ProclamationScreen(
                         ) {
                             // Decrement -1
                             OutlinedIconButton(
-                                onClick = { viewModel.decrementCounter() },
+                                onClick = {
+                                    HapticHelper.vibrateTick(context)
+                                    viewModel.decrementCounter()
+                                },
                                 modifier = Modifier
                                     .size(44.dp)
                                     .testTag("proclamation_minus_1"),
@@ -558,7 +584,15 @@ fun ProclamationScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 listOf(5, 10, 25, 50).forEach { amt ->
                                     FilledTonalButton(
-                                        onClick = { viewModel.incrementCounter(amt) },
+                                        onClick = {
+                                            val nextCount = counter + amt
+                                            if (nextCount >= targetCount && counter < targetCount) {
+                                                HapticHelper.vibrateMilestone(context)
+                                            } else {
+                                                HapticHelper.vibrateHeavyClick(context)
+                                            }
+                                            viewModel.incrementCounter(amt)
+                                        },
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.testTag("proclamation_plus_$amt")
@@ -570,7 +604,10 @@ fun ProclamationScreen(
 
                             // Reset
                             IconButton(
-                                onClick = { viewModel.resetCounter() },
+                                onClick = {
+                                    HapticHelper.vibrateWarning(context)
+                                    viewModel.resetCounter()
+                                },
                                 modifier = Modifier.size(44.dp)
                             ) {
                                 Icon(Icons.Default.Refresh, contentDescription = "Reset Count")
@@ -629,8 +666,10 @@ fun ProclamationScreen(
                 Button(
                     onClick = {
                         if (counter == 0 && elapsedSeconds == 0L) {
+                            HapticHelper.vibrateWarning(context)
                             showSaveConfirmDialog = true
                         } else {
+                            HapticHelper.vibrateSuccess(context)
                             viewModel.saveSession(onSuccess = { onNavigateBack() })
                         }
                     },

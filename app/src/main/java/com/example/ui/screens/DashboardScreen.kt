@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.core.localization.AppStrings
+import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.PredefinedDomains
 import com.example.ui.components.DuolingoFlame
@@ -53,6 +55,7 @@ fun DashboardScreen(
     onQuickAdd: (String) -> Unit,
     onNavigateToRecentActivity: (AccountabilityEntryEntity) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d"))
     val discipleName = uiState.user?.fullName?.ifBlank { "Disciple" } ?: "Disciple"
 
@@ -716,7 +719,10 @@ fun DashboardScreen(
                             color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, DividerColor),
                             modifier = Modifier
-                                .clickable { onQuickAdd(domain.id) }
+                                .clickable {
+                                    HapticHelper.vibrateClick(context)
+                                    onQuickAdd(domain.id)
+                                }
                                 .testTag("quick_add_${domain.id}")
                         ) {
                             Row(

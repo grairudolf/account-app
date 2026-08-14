@@ -17,10 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.core.localization.AppStrings
+import com.example.core.util.HapticHelper
 import com.example.domain.models.PredefinedDomains
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.GoalWithProgress
@@ -36,6 +38,7 @@ fun GoalsScreen(
     onAddGoal: (userId: String, domainId: String, title: String, target: Double, unit: String, freq: String, startDate: String) -> Unit,
     onDeleteGoal: (String) -> Unit
 ) {
+    val context = LocalContext.current
     var showAddGoalDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -132,7 +135,10 @@ fun GoalsScreen(
                     GoalCard(
                         goalItem = goalItem,
                         strings = strings,
-                        onDelete = { onDeleteGoal(goalItem.goal.id) }
+                        onDelete = {
+                            HapticHelper.vibrateWarning(context)
+                            onDeleteGoal(goalItem.goal.id)
+                        }
                     )
                 }
             }
@@ -146,6 +152,7 @@ fun GoalsScreen(
             onDismiss = { showAddGoalDialog = false },
             onConfirm = { domainId, title, target, unit, freq ->
                 val startDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                HapticHelper.vibrateSuccess(context)
                 onAddGoal("guest_user", domainId, title, target, unit, freq, startDate)
                 showAddGoalDialog = false
             }

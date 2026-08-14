@@ -18,10 +18,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.core.localization.AppStrings
+import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.BibleMetadata
 import com.example.ui.theme.*
@@ -38,6 +40,7 @@ fun DomainDetailScreen(
     onSaveEntry: (AccountabilityEntryEntity) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var selectedDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var notes by remember { mutableStateOf("") }
 
@@ -197,7 +200,10 @@ fun DomainDetailScreen(
                                 }
 
                                 Button(
-                                    onClick = { onNavigateToTimer(domainId) },
+                                    onClick = {
+                                        HapticHelper.vibrateHeavyClick(context)
+                                        onNavigateToTimer(domainId)
+                                    },
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
@@ -721,6 +727,7 @@ fun DomainDetailScreen(
                                         reflection = if (domainId == "ddewg") ddewgInspirationText else ""
                                     )
                                     onSaveEntry(entry)
+                                    HapticHelper.vibrateSuccess(context)
                                     isSaved = true
                                 },
                                 modifier = Modifier

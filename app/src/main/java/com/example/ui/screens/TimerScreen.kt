@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.core.localization.AppStrings
+import com.example.core.util.HapticHelper
 import com.example.data.local.entities.TimerSessionEntity
 import com.example.ui.theme.*
 
@@ -205,7 +206,10 @@ fun TimerScreen(
                     ) {
                         if (activeSession == null) {
                             Button(
-                                onClick = { onStartTimer(domainId) },
+                                onClick = {
+                                    HapticHelper.vibrateHeavyClick(context)
+                                    onStartTimer(domainId)
+                                },
                                 modifier = Modifier
                                     .height(52.dp)
                                     .testTag("timer_start_button"),
@@ -219,7 +223,10 @@ fun TimerScreen(
                         } else {
                             if (activeSession.isPaused) {
                                 Button(
-                                    onClick = onResumeTimer,
+                                    onClick = {
+                                        HapticHelper.vibrateHeavyClick(context)
+                                        onResumeTimer()
+                                    },
                                     modifier = Modifier
                                         .height(52.dp)
                                         .testTag("timer_resume_button"),
@@ -232,7 +239,10 @@ fun TimerScreen(
                                 }
                             } else {
                                 OutlinedButton(
-                                    onClick = onPauseTimer,
+                                    onClick = {
+                                        HapticHelper.vibrateClick(context)
+                                        onPauseTimer()
+                                    },
                                     modifier = Modifier
                                         .height(52.dp)
                                         .testTag("timer_pause_button"),
@@ -246,6 +256,7 @@ fun TimerScreen(
 
                             Button(
                                 onClick = {
+                                    HapticHelper.vibrateClick(context)
                                     if (activeSession != null && !activeSession.isPaused) {
                                         onPauseTimer()
                                     }
@@ -266,7 +277,10 @@ fun TimerScreen(
 
                     if (activeSession != null) {
                         TextButton(
-                            onClick = onDiscardTimer,
+                            onClick = {
+                                HapticHelper.vibrateWarning(context)
+                                onDiscardTimer()
+                            },
                             modifier = Modifier.testTag("timer_discard_button")
                         ) {
                             Text("Discard Session", color = StatusError, fontWeight = FontWeight.SemiBold)
@@ -300,6 +314,7 @@ fun SaveTimerDialog(
     onDismiss: () -> Unit,
     onConfirm: (notes: String, reflection: String) -> Unit
 ) {
+    val context = LocalContext.current
     var notes by remember { mutableStateOf("") }
     var reflection by remember { mutableStateOf("") }
 
@@ -611,6 +626,7 @@ fun SaveTimerDialog(
                         else -> notes
                     }
                     val finalReflection = if (domainId == "ddewg") ddewgInspiration else if (reflection.isNotBlank()) reflection else "Logged via live timer."
+                    HapticHelper.vibrateSuccess(context)
                     onConfirm(finalNotes, finalReflection)
                 }
             ) {
