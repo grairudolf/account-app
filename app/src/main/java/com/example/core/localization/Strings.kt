@@ -249,6 +249,19 @@ interface AppStrings {
     val supportFeedback: String
 
     // Profile & Settings Extra
+    val profileInformation: String
+    val mySubmissions: String
+    val myProgress: String
+    val accountSettings: String
+    val about: String
+    val needHelp: String
+    val needHelpDesc: String
+    val getSupport: String
+    val darkMode: String
+    val completedLabel: String
+    val avgScoreLabel: String
+    val overallLabel: String
+    val houseChurchMemberRole: String
     val spiritualJourney: String
     val discipleProfile: String
     val localAssembly: String
@@ -863,6 +876,19 @@ object EnglishStrings : AppStrings {
     override val termsConditions = "Terms & Conditions"
     override val supportFeedback = "Support & Feedback"
 
+    override val profileInformation = "Profile Information"
+    override val mySubmissions = "My Submissions"
+    override val myProgress = "My Progress"
+    override val accountSettings = "Account Settings"
+    override val about = "About"
+    override val needHelp = "Need Help?"
+    override val needHelpDesc = "Contact your house church leader or view documentation"
+    override val getSupport = "Get Support"
+    override val darkMode = "Dark Mode"
+    override val completedLabel = "Completed"
+    override val avgScoreLabel = "Avg Score"
+    override val overallLabel = "Overall"
+    override val houseChurchMemberRole = "House Church Member"
     override val spiritualJourney = "Spiritual Journey"
     override val discipleProfile = "Disciple Profile"
     override val localAssembly = "Local Assembly"
@@ -1296,6 +1322,19 @@ object FrenchStrings : AppStrings {
     override val termsConditions = "Conditions Générales"
     override val supportFeedback = "Support & Commentaires"
 
+    override val profileInformation = "Informations du Profil"
+    override val mySubmissions = "Mes Enregistrements"
+    override val myProgress = "Mon Progrès"
+    override val accountSettings = "Paramètres du Compte"
+    override val about = "À Propos"
+    override val needHelp = "Besoin d'Aide ?"
+    override val needHelpDesc = "Contactez votre responsable d'assemblée de maison ou consultez la documentation."
+    override val getSupport = "Obtenir du Support"
+    override val darkMode = "Mode Sombre"
+    override val completedLabel = "Complétées"
+    override val avgScoreLabel = "Score Moyen"
+    override val overallLabel = "Global"
+    override val houseChurchMemberRole = "Membre d'Assemblée de Maison"
     override val spiritualJourney = "Parcours Spirituel"
     override val discipleProfile = "Profil du Disciple"
     override val localAssembly = "Assemblée Locale"

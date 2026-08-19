@@ -82,7 +82,15 @@ fun TimerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${strings.liveTimerMode.uppercase()} - ${strings.getDomainTitleById(domainId).uppercase()}", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = strings.getDomainTitleById(domainId).uppercase(),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("timer_back_button")) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

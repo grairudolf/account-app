@@ -127,359 +127,376 @@ fun SettingsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-        item {
-            Box(modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        text = strings.settings,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // Disciple Profile & Spiritual Age Card
+        // Top Profile Banner Card
         item {
             Surface(
                 shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
+                color = PrimaryBlueDark,
                 modifier = Modifier
                     .widthIn(max = 840.dp)
                     .fillMaxWidth()
                     .testTag("settings_profile_card")
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // Decorative Canvas Circles
+                    androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.05f),
+                            radius = size.width * 0.4f,
+                            center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.2f)
+                        )
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.03f),
+                            radius = size.width * 0.5f,
+                            center = androidx.compose.ui.geometry.Offset(size.width * 0.1f, size.height * 0.8f)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        // Large Avatar Box with Camera Overlay
+                        Box(
+                            modifier = Modifier
+                                .size(92.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .clickable { photoPickerLauncher.launch("image/*") }
+                                .testTag("profile_image_picker"),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(LightBlueContainer)
-                                    .clickable { photoPickerLauncher.launch("image/*") }
-                                    .testTag("profile_image_picker"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (!user?.profileImageUri.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model = user?.profileImageUri,
-                                        contentDescription = "Profile Photo",
-                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountCircle,
-                                        contentDescription = null,
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier.size(42.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = CircleShape,
-                                    color = PrimaryBlue,
-                                    modifier = Modifier.align(Alignment.BottomEnd).size(20.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CameraAlt,
-                                        contentDescription = "Change photo",
-                                        tint = Color.White,
-                                        modifier = Modifier.padding(3.dp)
-                                    )
-                                }
+                            if (!user?.profileImageUri.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = user?.profileImageUri,
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(64.dp)
+                                )
                             }
-                            Column {
-                                Text(
-                                    text = user?.fullName?.ifBlank { strings.discipleProfile } ?: strings.discipleProfile,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "${strings.localAssembly}: ${user?.localAssembly?.ifBlank { strings.notSet } ?: strings.notSet}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "${strings.discipleMakerName}: ${user?.discipleMaker?.ifBlank { strings.notSet } ?: strings.notSet}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Surface(
+                                shape = CircleShape,
+                                color = PrimaryBlue,
+                                border = BorderStroke(2.dp, Color.White),
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(26.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = "Change photo",
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(4.dp)
                                 )
                             }
                         }
-                        IconButton(
-                            onClick = { showProfileDialog = true },
-                            modifier = Modifier.testTag("edit_profile_button")
+
+                        // User Name
+                        Text(
+                            text = user?.fullName?.ifBlank { strings.discipleProfile } ?: strings.discipleProfile,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        // Subtitle Location & Conversion Date Info (if set)
+                        if (!user?.localAssembly.isNullOrBlank() || !user?.conversionDate.isNullOrBlank()) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (!user?.localAssembly.isNullOrBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                                        Text(
+                                            text = user!!.localAssembly,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
+
+                                if (!user?.conversionDate.isNullOrBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                                        Text(
+                                            text = user!!.conversionDate,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Profile Information Card
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, DividerColor),
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = strings.profileInformation,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Email Row
+                        if (!user?.email.isNullOrBlank()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(strings.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = user!!.email,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                        }
+
+                        // Local Assembly Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = PrimaryBlue)
+                            Text(strings.localAssembly, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = user?.localAssembly?.ifBlank { strings.notSet } ?: strings.notSet,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+
+                        // Disciple Maker Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(strings.discipleMakerName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = user?.discipleMaker?.ifBlank { strings.notSet } ?: strings.notSet,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+
+                        // Date of Conversion Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(strings.conversionDate, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = user?.conversionDate?.ifBlank { strings.notSet } ?: strings.notSet,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        if (!user?.phoneNumber.isNullOrBlank()) {
+                            HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                            // Phone Number Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(strings.phoneNumber, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = user!!.phoneNumber,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    OutlinedButton(
+                        onClick = { showProfileDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_profile_button"),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.editProfile, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // Settings Section Card (Language & Dark Mode)
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, DividerColor),
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
+                    .testTag("settings_options_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = strings.settings,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    // Language Selector Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { languageDropdownExpanded = true },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(LightBlueContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Translate, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                            }
+                            Text(strings.language, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Box {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.testTag("language_dropdown_trigger")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(if (currentLanguage == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧")
+                                    Text(currentLanguage.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = languageDropdownExpanded,
+                                onDismissRequest = { languageDropdownExpanded = false }
+                            ) {
+                                AppLanguage.entries.forEach { lang ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(if (lang == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧")
+                                                Text(lang.displayName)
+                                            }
+                                        },
+                                        onClick = {
+                                            onUpdateLanguage(lang)
+                                            languageDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 
                     HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
 
-                    // Conversion Date / Spiritual Age
+                    // Dark Mode Toggle Row
+                    val isDark = currentTheme == ThemeMode.DARK
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = StreakGold,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = strings.spiritualJourney,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = spiritualAgeText,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        TextButton(onClick = { showProfileDialog = true }) {
-                            Text(strings.setDate, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Language Selector Dropdown Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(26.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("settings_language_card")
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(PastelLavenderContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Translate,
-                                contentDescription = null,
-                                tint = DarkPillBackground,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.language,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = currentLanguage.displayName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Dropdown Container
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, DividerColor),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { languageDropdownExpanded = true }
-                                .testTag("language_dropdown_trigger")
-                        ) {
-                            Row(
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDark) PrimaryBlueDark else LightBlueContainer),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLanguage == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧",
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = currentLanguage.displayName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
                                 Icon(
-                                    imageVector = if (languageDropdownExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                    contentDescription = "Select Language",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                    contentDescription = null,
+                                    tint = if (isDark) StreakGold else PrimaryBlue,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
+                            Text(strings.darkMode, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                         }
 
-                        DropdownMenu(
-                            expanded = languageDropdownExpanded,
-                            onDismissRequest = { languageDropdownExpanded = false },
-                            modifier = Modifier.fillMaxWidth(0.85f)
-                        ) {
-                            AppLanguage.entries.forEach { lang ->
-                                val isSelected = currentLanguage == lang
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            Text(if (lang == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧")
-                                            Text(
-                                                text = lang.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isSelected) BrandDarkNavy else MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                    },
-                                    trailingIcon = {
-                                        if (isSelected) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = BrandDarkNavy,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        onUpdateLanguage(lang)
-                                        languageDropdownExpanded = false
-                                    },
-                                    modifier = Modifier.testTag("lang_menu_item_${lang.code}")
-                                )
-                            }
-                        }
+                        Switch(
+                            checked = isDark,
+                            onCheckedChange = { checked ->
+                                onUpdateTheme(if (checked) ThemeMode.DARK else ThemeMode.LIGHT)
+                            },
+                            modifier = Modifier.testTag("dark_mode_switch")
+                        )
                     }
                 }
             }
         }
 
-        // Theme Toggle Switch Card
-        item {
-            val isDark = currentTheme == ThemeMode.DARK
-            Surface(
-                shape = RoundedCornerShape(26.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("settings_theme_card")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(if (isDark) BrandDarkNavy else BrandBrightYellow.copy(alpha = 0.3f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = null,
-                                tint = if (isDark) BrandBrightYellow else BrandDarkNavy,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Dark Mode",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (isDark) "Dark background active" else "Light background active",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Switch(
-                        checked = isDark,
-                        onCheckedChange = { checked ->
-                            onUpdateTheme(if (checked) ThemeMode.DARK else ThemeMode.LIGHT)
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = BrandBrightYellow,
-                            checkedTrackColor = BrandDarkNavy,
-                            uncheckedThumbColor = BrandDarkNavy,
-                            uncheckedTrackColor = DividerColor
-                        ),
-                        modifier = Modifier.testTag("dark_mode_switch")
-                    )
-                }
-            }
-        }
-
-        // Reminders Section with full CRUD
+        // Reminders Section Header & List
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -490,7 +507,7 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = null,
-                        tint = BrandDarkNavy,
+                        tint = PrimaryBlue,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
@@ -506,7 +523,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.testTag("add_reminder_button")
                 ) {
-                    Icon(Icons.Default.AddAlarm, contentDescription = "Add Reminder", tint = BrandDarkNavy)
+                    Icon(Icons.Default.AddAlarm, contentDescription = "Add Reminder", tint = PrimaryBlue)
                 }
             }
         }
@@ -514,26 +531,29 @@ fun SettingsScreen(
         if (reminders.isEmpty()) {
             item {
                 Surface(
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, DividerColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .widthIn(max = 840.dp)
+                        .fillMaxWidth()
                 ) {
                     Text(
                         text = strings.noActiveReminders,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(24.dp)
+                        modifier = Modifier.padding(20.dp)
                     )
                 }
             }
         } else {
             items(reminders, key = { it.id }) { rem ->
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, if (rem.isEnabled) BrandDarkNavy.copy(alpha = 0.3f) else DividerColor),
+                    border = BorderStroke(1.dp, if (rem.isEnabled) PrimaryBlue.copy(alpha = 0.3f) else DividerColor),
                     modifier = Modifier
+                        .widthIn(max = 840.dp)
                         .fillMaxWidth()
                         .clickable {
                             editingReminder = rem
@@ -555,13 +575,13 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(if (rem.isEnabled) BrandDarkNavy else DividerColor),
+                                    .background(if (rem.isEnabled) PrimaryBlue else DividerColor),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Alarm,
                                     contentDescription = null,
-                                    tint = if (rem.isEnabled) BrandBrightYellow else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -589,10 +609,6 @@ fun SettingsScreen(
                                 onCheckedChange = { isChecked ->
                                     onToggleReminder(context, rem, isChecked)
                                 },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = BrandBrightYellow,
-                                    checkedTrackColor = BrandDarkNavy
-                                ),
                                 modifier = Modifier.testTag("toggle_reminder_${rem.id}")
                             )
                             IconButton(onClick = { onDeleteReminder(context, rem.id) }) {
@@ -609,84 +625,135 @@ fun SettingsScreen(
             }
         }
 
-        // Legal & Support Options
+        // Legal & Support Dialog Action Card
         item {
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     ListItem(
                         headlineContent = { Text(strings.privacyPolicy, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier.clickable { showPrivacyDialog = true }.testTag("settings_privacy_policy")
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        modifier = Modifier
+                            .clickable { showPrivacyDialog = true }
+                            .testTag("settings_privacy_policy")
                     )
                     HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
                     ListItem(
                         headlineContent = { Text(strings.termsConditions, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.Gavel, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier.clickable { showTermsDialog = true }.testTag("settings_terms_conditions")
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        modifier = Modifier
+                            .clickable { showTermsDialog = true }
+                            .testTag("settings_terms_conditions")
                     )
                     HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
                     ListItem(
                         headlineContent = { Text(strings.supportFeedback, fontWeight = FontWeight.SemiBold) },
                         leadingContent = { Icon(Icons.Default.HelpCenter, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier.clickable { showSupportDialog = true }.testTag("settings_support_feedback")
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        modifier = Modifier
+                            .clickable { showSupportDialog = true }
+                            .testTag("settings_support_feedback")
                     )
+                }
+            }
+        }
+
+        // Need Help? Support CTA Card
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = LightBlueContainer,
+                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.2f)),
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = strings.needHelp,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlueDark
+                    )
+                    Text(
+                        text = strings.needHelpDesc,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { showSupportDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlueDark),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Icon(Icons.Default.SupportAgent, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.getSupport, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
 
         // Account Status & Sign Out
         item {
-            Spacer(modifier = Modifier.height(12.dp))
-            if (user?.isGuest == true) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = PrimaryBlue.copy(alpha = 0.08f),
-                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+            Box(modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
+                if (user?.isGuest == true) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = PrimaryBlue.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(Icons.Default.OfflinePin, contentDescription = null, tint = PrimaryBlue)
-                            Column {
-                                Text("Guest Mode Active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PrimaryBlue)
-                                Text("Your entries are saved locally on this device.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.OfflinePin, contentDescription = null, tint = PrimaryBlue)
+                                Column {
+                                    Text("Guest Mode Active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                                    Text("Your entries are saved locally on this device.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Button(
+                                onClick = onSignOut,
+                                modifier = Modifier.fillMaxWidth().height(42.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            ) {
+                                Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Sign In / Create Account", fontWeight = FontWeight.Bold)
                             }
                         }
-                        Button(
-                            onClick = onSignOut,
-                            modifier = Modifier.fillMaxWidth().height(42.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) {
-                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sign In / Create Account", fontWeight = FontWeight.Bold)
-                        }
                     }
-                }
-            } else {
-                OutlinedButton(
-                    onClick = onSignOut,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("sign_out_button"),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+                } else {
+                    OutlinedButton(
+                        onClick = onSignOut,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("sign_out_button"),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

@@ -177,7 +177,10 @@ fun DomainDetailScreen(
                     title = {
                         Text(
                             text = strings.getDomainTitleById(domainId).uppercase(),
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     },
                     navigationIcon = {
@@ -291,15 +294,14 @@ fun DomainDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    OutlinedButton(
+                                    OutlinedIconButton(
                                         onClick = {
                                             val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
                                             selectedDateIso = current.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
                                         },
-                                        shape = RoundedCornerShape(20.dp)
+                                        modifier = Modifier.size(40.dp)
                                     ) {
                                         Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
-                                        Text(strings.prevDay)
                                     }
 
                                     Surface(
@@ -307,23 +309,28 @@ fun DomainDetailScreen(
                                         color = LightBlueContainer,
                                         modifier = Modifier.testTag("entry_date_selector")
                                     ) {
-                                        Text(
-                                            text = selectedDateIso,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PrimaryBlueDark,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        ) {
+                                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                            Text(
+                                                text = selectedDateIso,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryBlueDark
+                                            )
+                                        }
                                     }
 
-                                    OutlinedButton(
+                                    OutlinedIconButton(
                                         onClick = {
                                             val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
                                             selectedDateIso = current.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
                                         },
-                                        shape = RoundedCornerShape(20.dp)
+                                        modifier = Modifier.size(40.dp)
                                     ) {
-                                        Text(strings.nextDay)
                                         Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
                                     }
                                 }
@@ -333,11 +340,11 @@ fun DomainDetailScreen(
                             if (domainId != "fasting" && domainId != "giving") {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(strings.timeAndDuration, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                         OutlinedTextField(
                                             value = startTimeText,
                                             onValueChange = { startTimeText = it },
-                                            label = { Text(strings.startTimePlaceholder) },
+                                            label = { Text(strings.startTimePlaceholder, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_start_time"),
@@ -346,7 +353,7 @@ fun DomainDetailScreen(
                                         OutlinedTextField(
                                             value = stopTimeText,
                                             onValueChange = { stopTimeText = it },
-                                            label = { Text(strings.stopTimePlaceholder) },
+                                            label = { Text(strings.stopTimePlaceholder, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_stop_time"),
