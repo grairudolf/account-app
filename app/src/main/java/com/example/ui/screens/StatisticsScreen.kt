@@ -72,27 +72,78 @@ fun StatisticsScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Section Tabs: Overview vs History Calendar
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = PrimaryBlue,
+            // Section Tabs: Overview vs History Calendar (Sleek Dark / Light Pill Design)
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .fillMaxWidth()
                     .testTag("statistics_tab_row")
             ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { onTabSelected(0) },
-                    text = { Text(strings.analyticsOverview, fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.BarChart, contentDescription = null) }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { onTabSelected(1) },
-                    text = { Text(strings.historyAndCalendar, fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) }
-                )
+                Row(
+                    modifier = Modifier.padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val overviewActive = selectedTab == 0
+                    val historyActive = selectedTab == 1
+
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (overviewActive) DarkPillBackground else Color.Transparent,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onTabSelected(0) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.BarChart,
+                                contentDescription = null,
+                                tint = if (overviewActive) Color.White else TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.analyticsOverview,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (overviewActive) Color.White else TextSecondary
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (historyActive) DarkPillBackground else Color.Transparent,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onTabSelected(1) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = if (historyActive) Color.White else TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.historyAndCalendar,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (historyActive) Color.White else TextSecondary
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -618,7 +669,7 @@ fun MetricCard(
     testTag: String
 ) {
     Surface(
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(26.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, DividerColor),
         modifier = modifier.testTag(testTag)
@@ -629,16 +680,16 @@ fun MetricCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(42.dp)
+                    .clip(CircleShape)
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                Icon(imageVector = icon, contentDescription = null, tint = DarkPillBackground, modifier = Modifier.size(22.dp))
             }
-            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, fontWeight = FontWeight.Medium)
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = TextMuted)
         }
     }
 }

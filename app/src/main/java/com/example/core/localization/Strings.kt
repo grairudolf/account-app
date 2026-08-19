@@ -360,6 +360,10 @@ interface AppStrings {
     val domainNamePrompt: String
     val descriptionPrompt: String
     val measurementUnitPrompt: String
+    val haveYouSpentTimeWithGod: String
+    val timeWithGodSubtitle: String
+    val exploreDisciplines: String
+    val editReminderTitle: String
 
 
     fun getBibleBookName(englishName: String): String {
@@ -874,6 +878,10 @@ object EnglishStrings : AppStrings {
     override val domainNamePrompt = "Domain Name"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Measurement Unit (e.g., Pages, Minutes)"
+    override val haveYouSpentTimeWithGod = "Have you spent time with God today?"
+    override val timeWithGodSubtitle = "Reflect on your spiritual walk and record your devotional activities for today."
+    override val exploreDisciplines = "Record Disciplines"
+    override val editReminderTitle = "Edit Daily Reminder"
 }
 
 object FrenchStrings : AppStrings {
@@ -1210,4 +1218,8 @@ object FrenchStrings : AppStrings {
     override val domainNamePrompt = "Nom du Domaine"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Unité de Mesure (ex. Pages, Minutes)"
+    override val haveYouSpentTimeWithGod = "Avez-vous passé du temps avec Dieu aujourd'hui ?"
+    override val timeWithGodSubtitle = "Méditez sur votre marche spirituelle et enregistrez vos activités de dévotion aujourd'hui."
+    override val exploreDisciplines = "Enregistrer les disciplines"
+    override val editReminderTitle = "Modifier le rappel quotidien"
 }

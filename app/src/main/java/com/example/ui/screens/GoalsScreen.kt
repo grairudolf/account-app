@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -64,24 +65,33 @@ fun GoalsScreen(
         ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Frequency Selector Filter Chips
+        // Frequency Selector Filter Chips (Dark Pill Active States)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             listOf("ALL", "DAILY", "WEEKLY", "MONTHLY").forEach { freq ->
                 val selected = selectedFrequency == freq
-                FilterChip(
-                    selected = selected,
-                    onClick = { onFrequencySelected(freq) },
-                    label = { Text(freq) },
+                val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
+                val contentColor = if (selected) Color.White else TextSecondary
+                val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
+
+                Surface(
                     shape = RoundedCornerShape(20.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = PrimaryBlue,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.testTag("filter_freq_$freq")
-                )
+                    color = containerBg,
+                    border = borderStroke,
+                    modifier = Modifier
+                        .clickable { onFrequencySelected(freq) }
+                        .testTag("filter_freq_$freq")
+                ) {
+                    Text(
+                        text = freq,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
             }
         }
 
@@ -189,27 +199,29 @@ fun GoalCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(LightBlueContainer),
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(PastelLavenderContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Flag,
                             contentDescription = null,
-                            tint = PrimaryBlue
+                            tint = DarkPillBackground,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                     Column {
                         Text(
                             text = goalItem.goal.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
                         Text(
                             text = "${goalItem.goal.frequency} • ${goalItem.goal.domainId.replace("_", " ").uppercase()}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = TextSecondary
                         )
                     }
                 }
@@ -233,16 +245,17 @@ fun GoalCard(
                 Text(
                     text = "Current: ${goalItem.currentProgress.toInt()} ${goalItem.goal.unit}  •  Target: ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
                 )
                 
                 val isAchieved = goalItem.currentProgress >= goalItem.goal.targetValue
                 val statusText = if (isAchieved) "Achieved" else if (goalItem.progressPercentage >= 50) "On Track" else "Needs Focus"
-                val statusBg = if (isAchieved) AccentMintContainer else if (goalItem.progressPercentage >= 50) LightBlueContainer else StreakGoldContainer
-                val statusColor = if (isAchieved) StatusSuccess else if (goalItem.progressPercentage >= 50) PrimaryBlue else StreakGoldDark
+                val statusBg = if (isAchieved) PastelMintContainer else if (goalItem.progressPercentage >= 50) PastelSkyContainer else PastelPeachContainer
+                val statusColor = if (isAchieved) PastelMintDark else if (goalItem.progressPercentage >= 50) PastelSkyDark else PastelPeachDark
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = statusBg
                 ) {
                     Text(
@@ -250,7 +263,7 @@ fun GoalCard(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = statusColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -259,10 +272,10 @@ fun GoalCard(
                 progress = { (goalItem.progressPercentage / 100f).coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
+                    .height(8.dp)
                     .clip(CircleShape),
-                color = if (goalItem.currentProgress >= goalItem.goal.targetValue) StatusSuccess else PrimaryBlue,
-                trackColor = LightBlueContainer
+                color = DarkPillBackground,
+                trackColor = SurfaceVariantLight
             )
 
             // Goal vs Progress Comparison Text Delta

@@ -1,21 +1,16 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,15 +19,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.R
 import com.example.core.localization.AppLanguage
-import com.example.ui.theme.PrimaryBlue
-import com.example.ui.theme.PrimaryBlueDark
+import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,20 +44,22 @@ fun CmfiTopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PrimaryBlueDark)
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
     ) {
         TopAppBar(
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Profile avatar button to Settings
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(42.dp)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.5.dp, DividerColor, CircleShape)
                             .clickable { onProfileClick() }
                             .testTag("top_bar_profile_avatar"),
                         contentAlignment = Alignment.Center
@@ -80,37 +74,44 @@ fun CmfiTopBar(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Text(
-                                text = userName.take(1).uppercase(),
-                                color = PrimaryBlueDark,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(LightBlueContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = userName.take(1).uppercase(),
+                                    color = PrimaryBlue,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
                         }
                     }
 
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             },
             actions = {
-                // Language Switcher Dropdown
+                // Language Switcher Dropdown (Pill Badge)
                 Box {
                     Surface(
                         onClick = { showLanguageMenu = true },
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.2f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, DividerColor),
                         modifier = Modifier
-                            .padding(end = 4.dp)
+                            .padding(end = 6.dp)
                             .testTag("top_bar_language_selector")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
@@ -120,22 +121,23 @@ fun CmfiTopBar(
                             }
                             Text(
                                 text = langPillText,
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Select Language",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
                     DropdownMenu(
                         expanded = showLanguageMenu,
-                        onDismissRequest = { showLanguageMenu = false }
+                        onDismissRequest = { showLanguageMenu = false },
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         val languageList = listOf(
                             Triple("🇬🇧", AppLanguage.ENGLISH, "English"),
@@ -165,49 +167,76 @@ fun CmfiTopBar(
                     }
                 }
 
-                IconButton(
-                    onClick = onSearchClick,
-                    modifier = Modifier.testTag("top_bar_search_button")
+                // Rounded Icon Action Buttons
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, DividerColor),
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.White
-                    )
-                }
-                IconButton(
-                    onClick = onNotificationClick,
-                    modifier = Modifier.testTag("top_bar_notification_button")
-                ) {
-                    BadgedBox(
-                        badge = {
-                            if (unreadCount > 0) {
-                                Badge(
-                                    containerColor = Color.Red,
-                                    contentColor = Color.White
-                                ) {
-                                    Text(
-                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            }
-                        }
+                    IconButton(
+                        onClick = onSearchClick,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("top_bar_search_button")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
-                            tint = Color.White
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, DividerColor),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(end = 4.dp)
+                ) {
+                    IconButton(
+                        onClick = onNotificationClick,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("top_bar_notification_button")
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (unreadCount > 0) {
+                                    Badge(
+                                        containerColor = StatusError,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(
+                                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = PrimaryBlueDark,
-                titleContentColor = Color.White,
-                actionIconContentColor = Color.White
+                containerColor = Color.Transparent,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground
             )
         )
     }
 }
+
 

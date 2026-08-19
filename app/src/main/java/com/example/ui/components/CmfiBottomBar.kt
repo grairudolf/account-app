@@ -1,5 +1,12 @@
 package com.example.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
@@ -8,14 +15,19 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.core.localization.AppStrings
+import com.example.ui.theme.*
 
 enum class BottomTab(
     val route: String,
@@ -35,38 +47,112 @@ fun CmfiBottomBar(
     strings: AppStrings,
     onTabSelected: (BottomTab) -> Unit
 ) {
-    Surface(
+    val selectedIndex = remember(currentRoute) {
+        val idx = BottomTab.entries.indexOfFirst { it.route == currentRoute }
+        if (idx >= 0) idx else 0
+    }
+
+    Box(
         modifier = Modifier
-            .shadow(12.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .testTag("main_bottom_navigation_bar"),
+        contentAlignment = Alignment.Center
     ) {
-        NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.testTag("main_bottom_navigation_bar")
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp)
+                .shadow(16.dp, RoundedCornerShape(34.dp), ambientColor = BrandDarkNavy, spotColor = Color(0x99000000))
+                .clip(RoundedCornerShape(34.dp)),
+            color = DarkNavBarBackground
         ) {
-            BottomTab.entries.forEach { tab ->
-                val selected = currentRoute == tab.route
-                NavigationBarItem(
-                    selected = selected,
-                    onClick = { onTabSelected(tab) },
-                    icon = {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.getTitle(strings)
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = tab.getTitle(strings),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    modifier = Modifier.testTag("nav_tab_${tab.route}")
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            ) {
+                val tabCount = BottomTab.entries.size
+                val tabWidth = maxWidth / tabCount
+                val pillWidth = (tabWidth - 8.dp).coerceAtLeast(46.dp)
+
+                // Smooth sliding active pill indicator
+                val targetOffset = tabWidth * selectedIndex + (tabWidth - pillWidth) / 2
+                val animatedPillOffset by animateDpAsState(
+                    targetValue = targetOffset,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "pill_slide"
                 )
+
+                // The sliding active background pill
+                Box(
+                    modifier = Modifier
+                        .offset(x = animatedPillOffset)
+                        .size(width = pillWidth, height = 48.dp)
+                        .align(Alignment.CenterStart)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(BrandWarmGold, BrandVibrantYellow, BrandBrightYellow)
+                            )
+                        )
+                )
+
+                // Tab items layer
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BottomTab.entries.forEachIndexed { index, tab ->
+                        val isSelected = selectedIndex == index
+
+                        // Scale animation for active tab icon
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.18f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            ),
+                            label = "icon_scale_${tab.route}"
+                        )
+
+                        val iconColor by animateColorAsState(
+                            targetValue = if (isSelected) BrandDarkNavy else BrandLightText,
+                            animationSpec = tween(200),
+                            label = "icon_color_${tab.route}"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(24.dp))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = ripple(bounded = true, color = BrandVibrantYellow.copy(alpha = 0.2f))
+                                ) { onTabSelected(tab) }
+                                .testTag("nav_tab_${tab.route}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.getTitle(strings),
+                                tint = iconColor,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .scale(iconScale)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
+
 

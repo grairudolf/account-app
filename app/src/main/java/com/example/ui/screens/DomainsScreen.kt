@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -134,8 +135,20 @@ fun DomainCard(
     strings: AppStrings,
     onClick: () -> Unit
 ) {
+    val (iconBg, iconTint) = when (domain.id) {
+        "ddewg" -> Pair(BrandDarkNavy, BrandBrightYellow)
+        "bible_reading" -> Pair(BrandSlateBlue, BrandBrightYellow)
+        "prayer_alone" -> Pair(BrandMutedGold, BrandBrightYellow)
+        "prayer_with_others" -> Pair(BrandDarkNavy, BrandVibrantYellow)
+        "proclamation_importunity" -> Pair(BrandSlateBlue, BrandBrightYellow)
+        "fasting" -> Pair(BrandDarkNavy, BrandBrightYellow)
+        "soul_winning" -> Pair(BrandMutedGold, BrandBrightYellow)
+        "giving" -> Pair(BrandDarkNavy, BrandBrightYellow)
+        else -> Pair(BrandSlateBlue, BrandBrightYellow)
+    }
+
     Surface(
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, DividerColor),
         modifier = Modifier
@@ -144,15 +157,15 @@ fun DomainCard(
             .testTag("domain_card_${domain.id}")
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (domain.isCustom) PurpleContainer else LightBlueContainer),
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -167,8 +180,8 @@ fun DomainCard(
                         else -> Icons.Default.Bookmark
                     },
                     contentDescription = null,
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(24.dp)
+                    tint = iconTint,
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
@@ -179,7 +192,7 @@ fun DomainCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = strings.getDomainDesc(domain.descKey),
                     style = MaterialTheme.typography.bodyMedium,
@@ -187,11 +200,23 @@ fun DomainCard(
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = BrandDarkNavy,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }

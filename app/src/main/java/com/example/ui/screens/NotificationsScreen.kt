@@ -135,69 +135,12 @@ fun NotificationsScreen(
                     center = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.85f)
                 )
             }
-
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // OS Push Notifications Status Banner
-                item {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (hasNotificationPermission) LightBlueContainer else Color(0xFFFFF3E0),
-                        border = BorderStroke(1.dp, if (hasNotificationPermission) PrimaryBlue.copy(alpha = 0.3f) else Color(0xFFFF9800).copy(alpha = 0.5f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (hasNotificationPermission) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                                    contentDescription = null,
-                                    tint = if (hasNotificationPermission) PrimaryBlue else Color(0xFFE65100),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (hasNotificationPermission) "OS Push Notifications Active" else "Allow System Notifications",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (hasNotificationPermission) PrimaryBlueDark else Color(0xFFBF360C)
-                                    )
-                                    Text(
-                                        text = if (hasNotificationPermission) {
-                                            "All spiritual transactions, live session timers, reports, goals, and reminders are actively sent as Android OS system notifications."
-                                        } else {
-                                            "Notifications are currently disabled. Tap 'Allow Notifications' so live countdown timers and reminders can appear on your phone."
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                Button(
-                                    onClick = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Allow Notifications", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

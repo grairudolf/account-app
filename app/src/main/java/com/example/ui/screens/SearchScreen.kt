@@ -18,8 +18,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.AccountabilityEntryEntity
@@ -35,6 +39,7 @@ fun SearchScreen(
     onBack: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
 
     val filteredDomains = remember(query, strings) {
         if (query.isBlank()) emptyList()
@@ -95,7 +100,9 @@ fun SearchScreen(
                     .fillMaxWidth()
                     .testTag("global_search_input"),
                 shape = RoundedCornerShape(28.dp),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
             )
 
             Spacer(modifier = Modifier.height(16.dp))

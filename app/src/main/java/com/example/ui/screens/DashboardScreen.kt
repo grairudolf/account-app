@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.core.localization.AppStrings
 import com.example.core.util.HapticHelper
+import com.example.core.util.QuoteImageSharer
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.PredefinedDomains
 import com.example.ui.components.DuolingoFlame
@@ -51,6 +52,7 @@ fun DashboardScreen(
     strings: AppStrings,
     uiState: DashboardUiState,
     onNavigateToDomain: (String) -> Unit,
+    onNavigateToDomains: () -> Unit = {},
     onNavigateToGoals: () -> Unit,
     onQuickAdd: (String) -> Unit,
     onNavigateToRecentActivity: (AccountabilityEntryEntity) -> Unit = {}
@@ -186,7 +188,7 @@ fun DashboardScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text(strings.searchDomains, style = MaterialTheme.typography.bodyMedium) },
+                placeholder = { Text(strings.searchDomains, style = MaterialTheme.typography.bodyMedium, color = TextMuted) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -217,6 +219,132 @@ fun DashboardScreen(
                 ),
                 singleLine = true
             )
+        }
+
+        // 7-Day Week Capsule Strip (with Streak Header)
+        item {
+            val startOfWeek = remember { LocalDate.now().minusDays(LocalDate.now().dayOfWeek.value.toLong() % 7) }
+            val currentDayOfMonth = remember { LocalDate.now().dayOfMonth }
+            val daysOfWeek = remember(startOfWeek) {
+                (0..6).map { startOfWeek.plusDays(it.toLong()) }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, DividerColor),
+                modifier = Modifier.fillMaxWidth().testTag("dashboard_weekly_calendar_strip")
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = BrandDarkNavy,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = strings.calendar,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Prominent Streak Badge in Calendar Header
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (uiState.streakStats.currentStreakDays > 0) BrandVibrantYellow.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                            border = BorderStroke(1.dp, if (uiState.streakStats.currentStreakDays > 0) BrandMutedGold else DividerColor)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                DuolingoFlame(
+                                    size = 18.dp,
+                                    isActive = uiState.streakStats.currentStreakDays > 0
+                                )
+                                Text(
+                                    text = "${uiState.streakStats.currentStreakDays} ${strings.days} ${strings.currentStreak}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (uiState.streakStats.currentStreakDays > 0) BrandDarkNavy else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        daysOfWeek.forEach { date ->
+                            val isToday = date.dayOfMonth == currentDayOfMonth
+                            val dayName = date.format(DateTimeFormatter.ofPattern("EEE"))
+                            val dayNumber = date.dayOfMonth.toString()
+                            val hasEntryForDay = uiState.allEntries.any { it.dateIso == date.format(DateTimeFormatter.ISO_LOCAL_DATE) }
+
+                            val capsuleBg = if (isToday) BrandDarkNavy else if (hasEntryForDay) BrandSlateBlue.copy(alpha = 0.12f) else Color.Transparent
+                            val capsuleBorder = if (isToday) BorderStroke(0.dp, Color.Transparent) else if (hasEntryForDay) BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.4f)) else BorderStroke(1.dp, DividerColor)
+                            val textCol = if (isToday) BrandBrightYellow else if (hasEntryForDay) BrandDarkNavy else MaterialTheme.colorScheme.onSurfaceVariant
+                            val numCol = if (isToday) Color.White else if (hasEntryForDay) BrandDarkNavy else MaterialTheme.colorScheme.onSurface
+                            val dotCol = if (isToday) BrandBrightYellow else if (hasEntryForDay) BrandMutedGold else Color.Transparent
+
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = capsuleBg,
+                                border = capsuleBorder,
+                                modifier = Modifier
+                                    .width(44.dp)
+                                    .height(68.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(vertical = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = dayName,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = textCol
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(dotCol)
+                                    )
+                                    Text(
+                                        text = dayNumber,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = numCol
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (searchQuery.isNotBlank()) {
@@ -330,369 +458,458 @@ fun DashboardScreen(
             }
         } else {
 
-        // Feature Highlight Hero Banner with Vector Graphic Elements
+        // Claymorphic 3D "Today's Progress" Section
         item {
-            Box(
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = SurfaceDarkCard,
+                border = BorderStroke(1.5.dp, Brush.linearGradient(listOf(BrandSlateBlue.copy(alpha = 0.7f), Color(0xFF2A3E7E)))),
+                shadowElevation = 12.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(185.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(LightBlueContainer, LightBlueContainer.copy(alpha = 0.8f))
-                        )
-                    )
-                    .border(1.dp, PrimaryBlue.copy(alpha = 0.2f), RoundedCornerShape(28.dp))
                     .testTag("dashboard_hero_card")
             ) {
-                // Background Vector Graphic Overlay
-                val path = remember { Path() }
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-
-                    drawCircle(
-                        color = PrimaryBlue.copy(alpha = 0.08f),
-                        radius = h * 0.9f,
-                        center = androidx.compose.ui.geometry.Offset(w * 0.9f, h * 0.2f)
-                    )
-                    drawCircle(
-                        color = AccentPurple.copy(alpha = 0.06f),
-                        radius = h * 0.6f,
-                        center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.9f)
-                    )
-
-                    path.reset()
-                    path.moveTo(0f, h * 0.7f)
-                    path.cubicTo(w * 0.3f, h * 0.5f, w * 0.6f, h * 0.9f, w, h * 0.6f)
-                    path.lineTo(w, h)
-                    path.lineTo(0f, h)
-                    path.close()
-                    drawPath(path, color = PrimaryBlue.copy(alpha = 0.04f))
-                }
-
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = PrimaryBlue
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0xFF1F3168),
+                                    Color(0xFF14214C)
                                 )
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Top Header Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = BrandDarkNavy,
+                                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = BrandVibrantYellow,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = strings.todaysProgress.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = BrandVibrantYellow,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = BrandVibrantYellow
+                            ) {
                                 Text(
-                                    text = strings.todaysProgress,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                    text = "${uiState.dailyProgress.progressPercentage}%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = BrandDarkNavy,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
                         }
+
+                        // Middle Content Row with 3D Clay Target Illustration
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "${uiState.dailyProgress.completedDomainsCount} of ${uiState.dailyProgress.totalActiveDomainsCount} Completed",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (uiState.dailyProgress.progressPercentage >= 100)
+                                        "All spiritual disciplines fulfilled today!"
+                                    else
+                                        "Pressing toward the mark of high calling",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BrandLightText
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // 3D Clay Target Image
+                            Box(
+                                modifier = Modifier
+                                    .size(88.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        Brush.radialGradient(
+                                            listOf(BrandSlateBlue.copy(alpha = 0.3f), Color.Transparent)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_clay_target_1787141918662),
+                                    contentDescription = "Daily Goal Target",
+                                    modifier = Modifier
+                                        .size(84.dp)
+                                        .clip(RoundedCornerShape(18.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                        }
+
+                        // Custom High Contrast Progress Bar
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.8f)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF0D1636))
+                                .border(1.dp, BrandSlateBlue.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
                         ) {
-                            Text(
-                                text = "${uiState.dailyProgress.progressPercentage}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(fraction = animatedProgress.coerceIn(0.02f, 1f))
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(BrandWarmGold, BrandVibrantYellow, BrandBrightYellow)
+                                        )
+                                    )
                             )
                         }
-                    }
-
-                    Column {
-                        Text(
-                            text = "${uiState.dailyProgress.completedDomainsCount} of ${uiState.dailyProgress.totalActiveDomainsCount} Disciplines Completed",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = PrimaryBlueDark,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(CircleShape),
-                            color = PrimaryBlue,
-                            trackColor = Color.White.copy(alpha = 0.7f)
-                        )
                     }
                 }
             }
         }
 
-        // Daily Spiritual Encouragement Card (3B Prophetic Messages Quotes)
+        // Daily Spiritual Encouragement Devotional Card (Image Background + Overlay + Share Action)
         item {
             val quotes = remember(strings) { strings.dailyQuotes }
-            var quoteIndex by remember { mutableStateOf(LocalDate.now().dayOfYear % quotes.size) }
+            val currentQuote = remember(quotes) {
+                val dayIndex = (LocalDate.now().dayOfYear) % quotes.size
+                quotes.getOrElse(dayIndex) { quotes.firstOrNull() ?: "" }
+            }
 
             Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = AccentPurpleContainer,
-                border = BorderStroke(1.dp, AccentPurple.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(24.dp),
+                color = SurfaceDark,
+                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.4f)),
+                shadowElevation = 6.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("dashboard_encouragement_card")
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(listOf(AccentPurple, PrimaryBlue))),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FormatQuote,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Text(
-                                text = strings.dailyWordTitle,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = AccentPurple
-                            )
-                        }
-                        TextButton(onClick = { quoteIndex = (quoteIndex + 1) % quotes.size }) {
-                            Text(strings.nextQuote, style = MaterialTheme.typography.labelSmall, color = PrimaryBlue)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = quotes.getOrElse(quoteIndex) { quotes.firstOrNull() ?: "" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        // Sliding Check-In Notification Banner for Incomplete Disciplines (One aspect at a time)
-        item {
-            val todayIso = remember { LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) }
-            val completedTodayDomains = remember(uiState.recentActivities) {
-                uiState.recentActivities.filter { it.dateIso == todayIso }.map { it.domainId }.toSet()
-            }
-            val incompleteDisciplines = remember(completedTodayDomains) {
-                PredefinedDomains.ALL.filter { !completedTodayDomains.contains(it.id) }
-            }
-            var activeCheckinIndex by remember { mutableStateOf(0) }
-
-            if (incompleteDisciplines.isNotEmpty() && activeCheckinIndex < incompleteDisciplines.size) {
-                val currentIncomplete = incompleteDisciplines[activeCheckinIndex]
-                val currentTitle = strings.getDomainTitle(currentIncomplete.titleKey)
-
-                AnimatedVisibility(
-                    visible = true,
-                    enter = slideInVertically(initialOffsetY = { -50 }) + fadeIn()
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(28.dp),
-                        color = AccentMintContainer,
-                        border = BorderStroke(1.dp, AccentMint),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("dashboard_checkin_card")
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.NotificationsActive,
-                                        contentDescription = null,
-                                        tint = AccentMint,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Text(
-                                        text = String.format(strings.dailyCheckInPrompt, currentTitle),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = { onQuickAdd(currentIncomplete.id) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentMint),
-                                    shape = RoundedCornerShape(20.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(String.format(strings.logAction, currentTitle))
-                                }
-                                OutlinedButton(
-                                    onClick = { activeCheckinIndex++ },
-                                    shape = RoundedCornerShape(20.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(strings.nextAspect)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Stats Grid Cards - Sleek rounded 28.dp cards with Duolingo Burning Fire Flame
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Streak Card (Yellow Gold Color with Duolingo Animated Fire Flame)
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(StreakGoldContainer)
-                        .border(1.dp, StreakGold, RoundedCornerShape(28.dp))
-                        .padding(18.dp)
-                        .testTag("dashboard_streak_card")
+                        .fillMaxWidth()
+                        .heightIn(min = 160.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            DuolingoFlame(
-                                size = 48.dp,
-                                isActive = uiState.streakStats.currentStreakDays > 0
+                    // Inspirational Devotional Background Image
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.devotional_quote_bg_1787144263336),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    // Readability Dark Gradient Overlay
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        BrandDarkNavy.copy(alpha = 0.84f),
+                                        Color(0xFF0D1636).copy(alpha = 0.94f)
+                                    )
+                                )
                             )
-                            if (uiState.streakStats.currentStreakDays > 0) {
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f, fill = false),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(BrandMutedGold),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FormatQuote,
+                                        contentDescription = null,
+                                        tint = BrandBrightYellow,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Text(
+                                    text = strings.dailyWordTitle.uppercase(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = BrandVibrantYellow,
+                                    letterSpacing = 0.5.sp,
+                                    maxLines = 1
+                                )
+                            }
+
+                            // Inline Share Action Button
+                            Surface(
+                                shape = CircleShape,
+                                color = BrandDarkNavy.copy(alpha = 0.8f),
+                                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        QuoteImageSharer.shareQuoteImage(
+                                            context = context,
+                                            quoteText = currentQuote,
+                                            title = strings.dailyWordTitle
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .testTag("share_quote_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share Quote",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "“$currentQuote”",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            lineHeight = 24.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // Streamlined Check-In Prompt Card
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.3f)),
+                shadowElevation = 2.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("dashboard_checkin_card")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(BrandDarkNavy, BrandSlateBlue)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = BrandBrightYellow,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = strings.haveYouSpentTimeWithGod,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = strings.timeWithGodSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Button(
+                            onClick = onNavigateToDomains,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BrandDarkNavy,
+                                contentColor = BrandBrightYellow
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.testTag("log_disciplines_prompt_button")
+                        ) {
+                            Icon(
+                                Icons.Default.AddCircleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = BrandBrightYellow
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = strings.exploreDisciplines,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Goal Progress & Overview Card
+        item {
+            val hasGoals = uiState.goalsWithProgress.isNotEmpty()
+            val avgGoalProgress = if (hasGoals) {
+                uiState.goalsWithProgress.map { it.progressPercentage }.average().toInt()
+            } else 0
+
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, DividerColor),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToGoals() }
+                    .testTag("dashboard_goals_card")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(BrandDarkNavy),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = BrandVibrantYellow,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = strings.goalProgress,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (hasGoals) {
                                 Surface(
-                                    shape = CircleShape,
-                                    color = StreakGold
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = BrandMutedGold.copy(alpha = 0.2f)
                                 ) {
                                     Text(
-                                        text = strings.onFire,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
+                                        text = "$avgGoalProgress%",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = BrandDarkNavy,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                     )
                                 }
                             }
                         }
-                        Text(
-                            text = strings.currentStreak,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = StreakGoldDark
-                        )
-                        Text(
-                            text = "${uiState.streakStats.currentStreakDays} ${strings.days}",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = StreakGoldDark
-                        )
-                    }
-                }
 
-                // Goal Completion Card
-                val hasGoals = uiState.goalsWithProgress.isNotEmpty()
-                val avgGoalProgress = if (hasGoals) {
-                    uiState.goalsWithProgress.map { it.progressPercentage }.average().toInt()
-                } else 0
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(SurfaceVariantLight)
-                        .border(1.dp, DividerColor, RoundedCornerShape(28.dp))
-                        .clickable { onNavigateToGoals() }
-                        .padding(18.dp)
-                        .testTag("dashboard_goals_card")
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(LightBlueContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Text(
-                            text = strings.goalProgress,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                         if (hasGoals) {
+                            LinearProgressIndicator(
+                                progress = { (avgGoalProgress / 100f).coerceIn(0f, 1f) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = BrandDarkNavy,
+                                trackColor = DividerColor
+                            )
                             Text(
-                                text = "$avgGoalProgress%",
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                text = "${uiState.goalsWithProgress.count { it.progressPercentage >= 100 }}/${uiState.goalsWithProgress.size} goals completed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             Text(
                                 text = strings.noGoalsSet,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = strings.tapToSetGoals,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PrimaryBlue,
-                                fontWeight = FontWeight.SemiBold
+                                color = BrandDarkNavy,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

@@ -15,23 +15,24 @@ val googleFontProvider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-val poppinsFont = GoogleFont("Poppins")
-val montserratFont = GoogleFont("Montserrat")
+val plusJakartaSansFont = GoogleFont("Plus Jakarta Sans")
+val interFont = GoogleFont("Inter")
 
-// Poppins for Headings
+// Plus Jakarta Sans for Headings & Titles
 val HeadingFontFamily = FontFamily(
-    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
-    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
-    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = poppinsFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
+    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
+    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Bold),
+    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.ExtraBold)
 )
 
-// Montserrat for Body text
+// Inter for Body text & Labels
 val BodyFontFamily = FontFamily(
-    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
-    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
-    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = montserratFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
+    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
+    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
 )
 
 val Typography = Typography(
@@ -56,6 +57,13 @@ val Typography = Typography(
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
+    headlineLarge = TextStyle(
+        fontFamily = HeadingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.sp
+    ),
     headlineMedium = TextStyle(
         fontFamily = HeadingFontFamily,
         fontWeight = FontWeight.SemiBold,
@@ -63,18 +71,32 @@ val Typography = Typography(
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
-    titleLarge = TextStyle(
+    headlineSmall = TextStyle(
         fontFamily = HeadingFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
         lineHeight = 22.sp,
         letterSpacing = 0.1.sp
     ),
+    titleLarge = TextStyle(
+        fontFamily = HeadingFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.1.sp
+    ),
     titleMedium = TextStyle(
         fontFamily = HeadingFontFamily,
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
+        fontSize = 15.sp,
+        lineHeight = 21.sp,
+        letterSpacing = 0.1.sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = HeadingFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.1.sp
     ),
     bodyLarge = TextStyle(
@@ -104,6 +126,13 @@ val Typography = Typography(
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = BodyFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.3.sp
     ),
     labelSmall = TextStyle(
         fontFamily = BodyFontFamily,

@@ -47,14 +47,18 @@ fun SettingsScreen(
     onUpdateProfileImage: (String) -> Unit = {},
     onUpdateProfile: (fullName: String, email: String, assembly: String, maker: String, phone: String, conversionDate: String, accountabilityDays: String) -> Unit,
     onAddReminder: (context: Context, domainId: String, title: String, msg: String, h: Int, m: Int) -> Unit,
+    onEditReminder: (context: Context, domainId: String, title: String, msg: String, h: Int, m: Int, id: String) -> Unit = { _, _, _, _, _, _, _ -> },
+    onToggleReminder: (context: Context, ReminderEntity, Boolean) -> Unit = { _, _, _ -> },
     onDeleteReminder: (context: Context, String) -> Unit,
     onSignOut: () -> Unit
 ) {
     var showProfileDialog by remember { mutableStateOf(false) }
     var showReminderDialog by remember { mutableStateOf(false) }
+    var editingReminder by remember { mutableStateOf<ReminderEntity?>(null) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showSupportDialog by remember { mutableStateOf(false) }
+    var languageDropdownExpanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val isFrench = currentLanguage == AppLanguage.FRENCH
@@ -271,10 +275,10 @@ fun SettingsScreen(
             }
         }
 
-        // Language Selector Card
+        // Language Selector Dropdown Card
         item {
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(26.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
@@ -289,106 +293,190 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Translate,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = strings.language,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        listOf(AppLanguage.ENGLISH, AppLanguage.FRENCH).forEach { lang ->
-                            FilterChip(
-                                selected = currentLanguage == lang,
-                                onClick = { onUpdateLanguage(lang) },
-                                label = { Text(lang.displayName) },
-                                shape = RoundedCornerShape(20.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                modifier = Modifier.testTag("lang_chip_${lang.code}")
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(PastelLavenderContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Translate,
+                                contentDescription = null,
+                                tint = DarkPillBackground,
+                                modifier = Modifier.size(20.dp)
                             )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.language,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = currentLanguage.displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Dropdown Container
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { languageDropdownExpanded = true }
+                                .testTag("language_dropdown_trigger")
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = if (currentLanguage == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = currentLanguage.displayName,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Icon(
+                                    imageVector = if (languageDropdownExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Language",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = languageDropdownExpanded,
+                            onDismissRequest = { languageDropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            AppLanguage.entries.forEach { lang ->
+                                val isSelected = currentLanguage == lang
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Text(if (lang == AppLanguage.FRENCH) "🇫🇷" else "🇬🇧")
+                                            Text(
+                                                text = lang.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) BrandDarkNavy else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    },
+                                    trailingIcon = {
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = BrandDarkNavy,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        onUpdateLanguage(lang)
+                                        languageDropdownExpanded = false
+                                    },
+                                    modifier = Modifier.testTag("lang_menu_item_${lang.code}")
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Theme Selector Card
+        // Theme Toggle Switch Card
         item {
+            val isDark = currentTheme == ThemeMode.DARK
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(26.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, DividerColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("settings_theme_card")
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = strings.theme,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        ThemeMode.entries.forEach { mode ->
-                            val (icon, label) = when (mode) {
-                                ThemeMode.LIGHT -> Icons.Default.LightMode to "Light"
-                                ThemeMode.DARK -> Icons.Default.DarkMode to "Dark"
-                                ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto to "System"
-                            }
-                            FilterChip(
-                                selected = currentTheme == mode,
-                                onClick = { onUpdateTheme(mode) },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                },
-                                label = { Text(label, fontWeight = FontWeight.SemiBold) },
-                                shape = RoundedCornerShape(20.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                modifier = Modifier.testTag("theme_chip_${mode.name}")
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(if (isDark) BrandDarkNavy else BrandBrightYellow.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                contentDescription = null,
+                                tint = if (isDark) BrandBrightYellow else BrandDarkNavy,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Dark Mode",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isDark) "Dark background active" else "Light background active",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+
+                    Switch(
+                        checked = isDark,
+                        onCheckedChange = { checked ->
+                            onUpdateTheme(if (checked) ThemeMode.DARK else ThemeMode.LIGHT)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = BrandBrightYellow,
+                            checkedTrackColor = BrandDarkNavy,
+                            uncheckedThumbColor = BrandDarkNavy,
+                            uncheckedTrackColor = DividerColor
+                        ),
+                        modifier = Modifier.testTag("dark_mode_switch")
+                    )
                 }
             }
         }
 
-        // Reminders Section
+        // Reminders Section with full CRUD
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -402,7 +490,7 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = null,
-                        tint = PrimaryBlue,
+                        tint = BrandDarkNavy,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
@@ -412,10 +500,13 @@ fun SettingsScreen(
                     )
                 }
                 IconButton(
-                    onClick = { showReminderDialog = true },
+                    onClick = {
+                        editingReminder = null
+                        showReminderDialog = true
+                    },
                     modifier = Modifier.testTag("add_reminder_button")
                 ) {
-                    Icon(Icons.Default.AddAlarm, contentDescription = "Add Reminder", tint = PrimaryBlue)
+                    Icon(Icons.Default.AddAlarm, contentDescription = "Add Reminder", tint = BrandDarkNavy)
                 }
             }
         }
@@ -437,28 +528,81 @@ fun SettingsScreen(
                 }
             }
         } else {
-            items(reminders) { rem ->
+            items(reminders, key = { it.id }) { rem ->
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
-                    modifier = Modifier.fillMaxWidth()
+                    border = BorderStroke(1.dp, if (rem.isEnabled) BrandDarkNavy.copy(alpha = 0.3f) else DividerColor),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            editingReminder = rem
+                            showReminderDialog = true
+                        }
+                        .testTag("reminder_item_${rem.id}")
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
-                            Text(rem.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text(
-                                String.format("%02d:%02d • %s", rem.hour, rem.minute, rem.message),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(if (rem.isEnabled) BrandDarkNavy else DividerColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Alarm,
+                                    contentDescription = null,
+                                    tint = if (rem.isEnabled) BrandBrightYellow else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = rem.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (rem.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = String.format("%02d:%02d • %s", rem.hour, rem.minute, rem.message),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        IconButton(onClick = { onDeleteReminder(context, rem.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Reminder", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Switch(
+                                checked = rem.isEnabled,
+                                onCheckedChange = { isChecked ->
+                                    onToggleReminder(context, rem, isChecked)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = BrandBrightYellow,
+                                    checkedTrackColor = BrandDarkNavy
+                                ),
+                                modifier = Modifier.testTag("toggle_reminder_${rem.id}")
+                            )
+                            IconButton(onClick = { onDeleteReminder(context, rem.id) }) {
+                                Icon(
+                                    Icons.Default.DeleteOutline,
+                                    contentDescription = "Delete Reminder",
+                                    tint = StatusError,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -562,12 +706,21 @@ fun SettingsScreen(
     }
 
     if (showReminderDialog) {
-        AddReminderDialog(
+        AddOrEditReminderDialog(
             strings = strings,
-            onDismiss = { showReminderDialog = false },
-            onConfirm = { domainId, title, msg, h, m ->
-                onAddReminder(context, domainId, title, msg, h, m)
+            initialReminder = editingReminder,
+            onDismiss = {
                 showReminderDialog = false
+                editingReminder = null
+            },
+            onConfirm = { domainId, title, msg, h, m ->
+                if (editingReminder != null) {
+                    onEditReminder(context, domainId, title, msg, h, m, editingReminder!!.id)
+                } else {
+                    onAddReminder(context, domainId, title, msg, h, m)
+                }
+                showReminderDialog = false
+                editingReminder = null
             }
         )
     }
@@ -633,36 +786,66 @@ fun EditProfileDialog(
 }
 
 @Composable
-fun AddReminderDialog(
+fun AddOrEditReminderDialog(
     strings: AppStrings,
+    initialReminder: ReminderEntity? = null,
     onDismiss: () -> Unit,
     onConfirm: (domainId: String, title: String, msg: String, hour: Int, minute: Int) -> Unit
 ) {
-    var title by remember { mutableStateOf("Daily DDEWG") }
-    var msg by remember { mutableStateOf("Time for daily encounter with God!") }
-    var hourText by remember { mutableStateOf("06") }
-    var minText by remember { mutableStateOf("00") }
+    var title by remember { mutableStateOf(initialReminder?.title ?: "Daily DDEWG") }
+    var msg by remember { mutableStateOf(initialReminder?.message ?: "Time for daily encounter with God!") }
+    var hourText by remember { mutableStateOf(String.format("%02d", initialReminder?.hour ?: 6)) }
+    var minText by remember { mutableStateOf(String.format("%02d", initialReminder?.minute ?: 0)) }
+
+    val isEditing = initialReminder != null
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.addReminderTitle) },
+        title = { Text(if (isEditing) strings.editReminderTitle else strings.addReminderTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(strings.reminderTitleLabel) })
-                OutlinedTextField(value = msg, onValueChange = { msg = it }, label = { Text(strings.messageLabel) })
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = hourText, onValueChange = { hourText = it }, label = { Text(strings.hourLabel) }, modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = minText, onValueChange = { minText = it }, label = { Text(strings.minuteLabel) }, modifier = Modifier.weight(1f))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(strings.reminderTitleLabel) },
+                    modifier = Modifier.fillMaxWidth().testTag("reminder_title_input")
+                )
+                OutlinedTextField(
+                    value = msg,
+                    onValueChange = { msg = it },
+                    label = { Text(strings.messageLabel) },
+                    modifier = Modifier.fillMaxWidth().testTag("reminder_message_input")
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = hourText,
+                        onValueChange = { hourText = it },
+                        label = { Text(strings.hourLabel) },
+                        modifier = Modifier.weight(1f).testTag("reminder_hour_input")
+                    )
+                    OutlinedTextField(
+                        value = minText,
+                        onValueChange = { minText = it },
+                        label = { Text(strings.minuteLabel) },
+                        modifier = Modifier.weight(1f).testTag("reminder_min_input")
+                    )
                 }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val h = hourText.toIntOrNull() ?: 6
-                val m = minText.toIntOrNull() ?: 0
-                onConfirm("ddewg", title, msg, h, m)
-            }) {
-                Text(strings.save)
+            Button(
+                onClick = {
+                    val h = hourText.toIntOrNull()?.coerceIn(0, 23) ?: 6
+                    val m = minText.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                    onConfirm(initialReminder?.domainId ?: "ddewg", title, msg, h, m)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = BrandDarkNavy, contentColor = BrandBrightYellow),
+                modifier = Modifier.testTag("save_reminder_button")
+            ) {
+                Text(strings.save, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

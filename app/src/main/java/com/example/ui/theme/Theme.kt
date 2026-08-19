@@ -2,44 +2,63 @@ package com.example.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
-private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBlue,
+val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(16.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp)
+)
+
+private val LightAppColorScheme = lightColorScheme(
+    primary = BrandDarkNavy,
     onPrimary = Color.White,
-    primaryContainer = LightBlueContainer,
-    onPrimaryContainer = PrimaryBlueDark,
-    secondary = SecondaryBlue,
-    onSecondary = Color.White,
+    primaryContainer = BrandDarkNavy,
+    onPrimaryContainer = Color.White,
+    secondary = BrandWarmGold,
+    onSecondary = BrandDarkNavy,
+    secondaryContainer = LightBlueContainer,
+    onSecondaryContainer = BrandDarkNavy,
+    tertiary = BrandVibrantYellow,
+    onTertiary = BrandDarkNavy,
     background = AppBackgroundLight,
     onBackground = TextPrimary,
     surface = SurfaceLight,
     onSurface = TextPrimary,
-    surfaceVariant = VeryLightBlue,
-    onSurfaceVariant = TextSecondary,
-    outline = DividerColor,
+    surfaceVariant = SurfaceVariantLight,
+    onSurfaceVariant = BrandSlateBlue,
+    outline = SurfaceBorderLight,
     error = StatusError,
     onError = Color.White
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryBlueNight,
-    onPrimary = Color(0xFF00325B),
-    primaryContainer = Color(0xFF004881),
-    onPrimaryContainer = Color(0xFFD1E4FF),
-    secondary = PrimaryBlueNight,
-    onSecondary = Color(0xFF00325B),
+private val DarkAppColorScheme = darkColorScheme(
+    primary = BrandVibrantYellow,
+    onPrimary = BrandDarkNavy,
+    primaryContainer = BrandDarkNavy,
+    onPrimaryContainer = Color.White,
+    secondary = BrandWarmGold,
+    onSecondary = BrandDarkNavy,
+    secondaryContainer = BrandMutedGold,
+    onSecondaryContainer = BrandLightText,
+    tertiary = BrandBrightYellow,
+    onTertiary = BrandDarkNavy,
     background = AppBackgroundDark,
-    onBackground = TextPrimaryNight,
+    onBackground = Color.White,
     surface = SurfaceDark,
-    onSurface = TextPrimaryNight,
+    onSurface = Color.White,
     surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = TextSecondaryNight,
-    outline = SurfaceVariantDark,
+    onSurfaceVariant = BrandLightText,
+    outline = SurfaceBorderDark,
     error = StatusError,
     onError = Color.White
 )
@@ -53,16 +72,19 @@ fun CmfiTheme(
     themeMode: ThemeMode = ThemeMode.LIGHT,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (themeMode) {
+    val isDark = when (themeMode) {
+        ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
-        else -> false // Light theme by default unless explicitly set to DARK
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = if (isDark) DarkAppColorScheme else LightAppColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }
+

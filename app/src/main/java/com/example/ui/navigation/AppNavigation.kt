@@ -6,14 +6,15 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,9 +30,11 @@ import com.example.ui.components.CmfiTopBar
 import com.example.ui.screens.*
 import com.example.ui.theme.CmfiTheme
 import com.example.ui.viewmodels.*
+import kotlinx.coroutines.launch
 
 object NavRoutes {
     const val AUTH = "auth"
+    const val MAIN_PAGER = "main_pager"
     const val DASHBOARD = "dashboard"
     const val DOMAINS = "domains"
     const val DOMAIN_DETAIL = "domain_detail/{domainId}"
@@ -49,10 +52,12 @@ object NavRoutes {
     fun timer(domainId: String) = "timer/$domainId"
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainApp() {
     val context = LocalContext.current
     val factory = remember { ViewModelFactory.getInstance(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
@@ -69,26 +74,37 @@ fun MainApp() {
     CmfiTheme(themeMode = currentTheme) {
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route ?: NavRoutes.DASHBOARD
+        val currentNavRoute = navBackStackEntry?.destination?.route ?: NavRoutes.MAIN_PAGER
 
-        val isMainBottomBarVisible = currentRoute in listOf(
-            NavRoutes.DASHBOARD, NavRoutes.DOMAINS, NavRoutes.GOALS,
-            NavRoutes.STATISTICS, NavRoutes.REPORTS
+        val pagerState = rememberPagerState(
+            initialPage = 0,
+            pageCount = { BottomTab.entries.size }
         )
 
-        val isTopBarVisible = currentRoute != NavRoutes.AUTH
+        val isMainPagerActive = currentNavRoute == NavRoutes.MAIN_PAGER
+        val currentTab = BottomTab.entries.getOrElse(pagerState.currentPage) { BottomTab.DASHBOARD }
+        val activeRouteName = if (isMainPagerActive) currentTab.route else currentNavRoute
 
-        val topBarTitle = when (currentRoute) {
-            NavRoutes.DASHBOARD -> strings.appName
-            NavRoutes.DOMAINS -> strings.domains
-            NavRoutes.GOALS -> strings.goals
-            NavRoutes.STATISTICS -> strings.statistics
-            NavRoutes.REPORTS -> strings.reports
-            NavRoutes.SETTINGS -> strings.settings
-            NavRoutes.SEARCH -> strings.search
-            NavRoutes.NOTIFICATIONS -> "Notifications"
-            NavRoutes.CALENDAR -> "Spiritual Calendar"
-            else -> strings.appName
+        val isMainBottomBarVisible = isMainPagerActive
+        val isTopBarVisible = currentNavRoute != NavRoutes.AUTH
+
+        val topBarTitle = if (isMainPagerActive) {
+            when (pagerState.currentPage) {
+                0 -> strings.appName
+                1 -> strings.domains
+                2 -> strings.goals
+                3 -> strings.statistics
+                4 -> strings.reports
+                else -> strings.appName
+            }
+        } else {
+            when (currentNavRoute) {
+                NavRoutes.SETTINGS -> strings.settings
+                NavRoutes.SEARCH -> strings.search
+                NavRoutes.NOTIFICATIONS -> "Notifications"
+                NavRoutes.CALENDAR -> "Spiritual Calendar"
+                else -> strings.appName
+            }
         }
 
         Scaffold(
@@ -104,17 +120,17 @@ fun MainApp() {
                             settingsViewModel.updateLanguage(newLang)
                         },
                         onProfileClick = {
-                            if (currentRoute != NavRoutes.SETTINGS) {
+                            if (currentNavRoute != NavRoutes.SETTINGS) {
                                 navController.navigate(NavRoutes.SETTINGS)
                             }
                         },
                         onNotificationClick = {
-                            if (currentRoute != NavRoutes.NOTIFICATIONS) {
+                            if (currentNavRoute != NavRoutes.NOTIFICATIONS) {
                                 navController.navigate(NavRoutes.NOTIFICATIONS)
                             }
                         },
                         onSearchClick = {
-                            if (currentRoute != NavRoutes.SEARCH) {
+                            if (currentNavRoute != NavRoutes.SEARCH) {
                                 navController.navigate(NavRoutes.SEARCH)
                             }
                         }
@@ -124,152 +140,206 @@ fun MainApp() {
             bottomBar = {
                 if (isMainBottomBarVisible) {
                     CmfiBottomBar(
-                        currentRoute = currentRoute,
+                        currentRoute = activeRouteName,
                         strings = strings,
                         onTabSelected = { tab ->
-                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    page = tab.ordinal,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
                             }
                         }
                     )
                 }
             }
         ) { innerPadding ->
-            val mainTabsList = remember {
-                listOf(
-                    NavRoutes.DASHBOARD,
-                    NavRoutes.DOMAINS,
-                    NavRoutes.GOALS,
-                    NavRoutes.STATISTICS,
-                    NavRoutes.REPORTS
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .pointerInput(currentRoute) {
-                        if (isMainBottomBarVisible) {
-                            var totalDrag = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { totalDrag = 0f },
-                                onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
-                                onDragEnd = {
-                                    val idx = mainTabsList.indexOf(currentRoute)
-                                    if (totalDrag < -50f && idx in 0 until mainTabsList.size - 1) {
-                                        navController.navigate(mainTabsList[idx + 1]) {
-                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    } else if (totalDrag > 50f && idx > 0) {
-                                        navController.navigate(mainTabsList[idx - 1]) {
-                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
+            NavHost(
+                navController = navController,
+                startDestination = NavRoutes.MAIN_PAGER,
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = {
+                    fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                    slideInHorizontally(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                        initialOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
+                    )
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                    slideOutHorizontally(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                        targetOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                    slideInHorizontally(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                        initialOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                    slideOutHorizontally(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+                        targetOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
+                    )
+                }
             ) {
-                NavHost(
-                    navController = navController,
-                    startDestination = NavRoutes.DASHBOARD,
-                    enterTransition = {
-                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
-                        slideInHorizontally(
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
-                            initialOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                        slideOutHorizontally(
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
-                            targetOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
-                        slideInHorizontally(
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
-                            initialOffsetX = { fullWidth -> (-fullWidth * 0.35f).toInt() }
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                        slideOutHorizontally(
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
-                            targetOffsetX = { fullWidth -> (fullWidth * 0.35f).toInt() }
-                        )
-                    }
-                ) {
                 composable(NavRoutes.AUTH) {
                     AuthScreen(
                         strings = strings,
                         onContinueAsGuest = {
                             authViewModel.continueAsGuest()
-                            navController.navigate(NavRoutes.DASHBOARD) {
+                            navController.navigate(NavRoutes.MAIN_PAGER) {
                                 popUpTo(NavRoutes.AUTH) { inclusive = true }
                             }
                         },
                         onSignInWithAccount = { id, name, email ->
                             authViewModel.signInWithAccount(id, name, email, migrateLocalData = true)
-                            navController.navigate(NavRoutes.DASHBOARD) {
+                            navController.navigate(NavRoutes.MAIN_PAGER) {
                                 popUpTo(NavRoutes.AUTH) { inclusive = true }
                             }
                         }
                     )
                 }
 
-                composable(NavRoutes.DASHBOARD) {
+                // Main Swipeable Tab Container (Dashboard, Domains, Goals, Statistics, Reports)
+                composable(NavRoutes.MAIN_PAGER) {
                     val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
                     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                     val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
-                    DashboardScreen(
-                        strings = strings,
-                        uiState = dashboardUiState,
-                        onNavigateToDomain = { domainId ->
-                            navController.navigate(NavRoutes.domainDetail(domainId))
-                        },
-                        onNavigateToGoals = {
-                            navController.navigate(NavRoutes.GOALS)
-                        },
-                        onQuickAdd = { domainId ->
-                            navController.navigate(NavRoutes.domainDetail(domainId))
-                        },
-                        onNavigateToRecentActivity = { entry ->
-                            statisticsViewModel.selectRecentActivity(entry.dateIso)
-                            navController.navigate(NavRoutes.STATISTICS) {
-                                launchSingleTop = true
+                    val domainsViewModel: DomainsViewModel = viewModel(factory = factory)
+                    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
+                    val reportsViewModel: ReportsViewModel = viewModel(factory = factory)
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        userScrollEnabled = true,
+                        key = { it }
+                    ) { page ->
+                        when (page) {
+                            0 -> {
+                                DashboardScreen(
+                                    strings = strings,
+                                    uiState = dashboardUiState,
+                                    onNavigateToDomain = { domainId ->
+                                        navController.navigate(NavRoutes.domainDetail(domainId))
+                                    },
+                                    onNavigateToDomains = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(BottomTab.DOMAINS.ordinal)
+                                        }
+                                    },
+                                    onNavigateToGoals = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(BottomTab.GOALS.ordinal)
+                                        }
+                                    },
+                                    onQuickAdd = { domainId ->
+                                        navController.navigate(NavRoutes.domainDetail(domainId))
+                                    },
+                                    onNavigateToRecentActivity = { entry ->
+                                        statisticsViewModel.selectRecentActivity(entry.dateIso)
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(BottomTab.STATISTICS.ordinal)
+                                        }
+                                    }
+                                )
+                            }
+                            1 -> {
+                                val searchDomainQuery by domainsViewModel.searchQuery.collectAsStateWithLifecycle()
+                                val domainsList by domainsViewModel.allDomainsFlow.collectAsStateWithLifecycle()
+                                DomainsScreen(
+                                    strings = strings,
+                                    domains = domainsList,
+                                    searchQuery = searchDomainQuery,
+                                    onSearchQueryChange = { domainsViewModel.onSearchQueryChange(it) },
+                                    onDomainClick = { domainId ->
+                                        navController.navigate(NavRoutes.domainDetail(domainId))
+                                    },
+                                    onAddCustomDomain = { name, desc, icon, unit ->
+                                        domainsViewModel.addCustomDomain(name, desc, icon, unit)
+                                    }
+                                )
+                            }
+                            2 -> {
+                                val goalsWithProgress by goalsViewModel.goalsWithProgressFlow.collectAsStateWithLifecycle()
+                                val selectedGoalFreq by goalsViewModel.selectedFrequency.collectAsStateWithLifecycle()
+                                GoalsScreen(
+                                    strings = strings,
+                                    goalsWithProgress = goalsWithProgress,
+                                    selectedFrequency = selectedGoalFreq,
+                                    onFrequencySelected = { goalsViewModel.onFrequencySelected(it) },
+                                    onAddGoal = { uId, dId, title, target, unit, freq, startDate ->
+                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate)
+                                    },
+                                    onDeleteGoal = { goalsViewModel.deleteGoal(it) }
+                                )
+                            }
+                            3 -> {
+                                val statsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
+                                val selectedDate by statisticsViewModel.selectedDate.collectAsStateWithLifecycle()
+                                val currentMonth by statisticsViewModel.currentMonth.collectAsStateWithLifecycle()
+                                val monthDaysCompletion by statisticsViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
+                                val selectedDateEntries by statisticsViewModel.selectedDateEntries.collectAsStateWithLifecycle()
+                                val allEntries by statisticsViewModel.allEntries.collectAsStateWithLifecycle()
+                                val selectedTab by statisticsViewModel.selectedTab.collectAsStateWithLifecycle()
+
+                                StatisticsScreen(
+                                    strings = strings,
+                                    uiState = statsUiState,
+                                    selectedDate = selectedDate,
+                                    currentMonth = currentMonth,
+                                    monthDaysCompletion = monthDaysCompletion,
+                                    selectedDateEntries = selectedDateEntries,
+                                    allEntries = allEntries,
+                                    selectedTab = selectedTab,
+                                    onTabSelected = { statisticsViewModel.setSelectedTab(it) },
+                                    onSelectDate = { statisticsViewModel.selectDate(it) },
+                                    onNextMonth = { statisticsViewModel.nextMonth() },
+                                    onPreviousMonth = { statisticsViewModel.previousMonth() },
+                                    onGoToToday = { statisticsViewModel.goToToday() },
+                                    onUpdateEntry = { statisticsViewModel.updateEntry(it) },
+                                    onDeleteEntry = { statisticsViewModel.deleteEntry(it) }
+                                )
+                            }
+                            4 -> {
+                                val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
+                                val selectedDomains by reportsViewModel.selectedDomains.collectAsStateWithLifecycle()
+                                val targetDate by reportsViewModel.targetDate.collectAsStateWithLifecycle()
+                                val startDate by reportsViewModel.startDate.collectAsStateWithLifecycle()
+                                val endDate by reportsViewModel.endDate.collectAsStateWithLifecycle()
+                                val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
+                                ReportsScreen(
+                                    strings = strings,
+                                    user = currentUser,
+                                    selectedReportType = selectedReportType,
+                                    selectedDomains = selectedDomains,
+                                    targetDate = targetDate,
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    reportHistory = reportHistory,
+                                    onSelectReportType = { reportsViewModel.selectReportType(it) },
+                                    onToggleDomainFilter = { reportsViewModel.toggleDomainFilter(it) },
+                                    onSelectAllDomains = { reportsViewModel.selectAllDomains() },
+                                    onSetTargetDate = { reportsViewModel.setTargetDate(it) },
+                                    onSetDateRange = { start, end -> reportsViewModel.setDateRange(start, end) },
+                                    onGeneratePdfReport = { ctx, onFile ->
+                                        reportsViewModel.generatePdfReport(ctx, onFile)
+                                    },
+                                    onDeleteReport = { reportId ->
+                                        reportsViewModel.deleteReport(reportId)
+                                    }
+                                )
                             }
                         }
-                    )
-                }
-
-                composable(NavRoutes.DOMAINS) {
-                    val domainsViewModel: DomainsViewModel = viewModel(factory = factory)
-                    val searchDomainQuery by domainsViewModel.searchQuery.collectAsStateWithLifecycle()
-                    val domainsList by domainsViewModel.allDomainsFlow.collectAsStateWithLifecycle()
-                    DomainsScreen(
-                        strings = strings,
-                        domains = domainsList,
-                        searchQuery = searchDomainQuery,
-                        onSearchQueryChange = { domainsViewModel.onSearchQueryChange(it) },
-                        onDomainClick = { domainId ->
-                            navController.navigate(NavRoutes.domainDetail(domainId))
-                        },
-                        onAddCustomDomain = { name, desc, icon, unit ->
-                            domainsViewModel.addCustomDomain(name, desc, icon, unit)
-                        }
-                    )
+                    }
                 }
 
                 composable(
@@ -294,10 +364,7 @@ fun MainApp() {
                             },
                             onSaveEntry = { entry ->
                                 entryViewModel.saveEntry(context, entry)
-                                navController.navigate(NavRoutes.DOMAINS) {
-                                    popUpTo(NavRoutes.DOMAINS)
-                                    launchSingleTop = true
-                                }
+                                navController.popBackStack()
                             },
                             onBack = { navController.popBackStack() }
                         )
@@ -310,22 +377,6 @@ fun MainApp() {
                         viewModel = proclamationViewModel,
                         strings = strings,
                         onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable(NavRoutes.GOALS) {
-                    val goalsViewModel: GoalsViewModel = viewModel(factory = factory)
-                    val goalsWithProgress by goalsViewModel.goalsWithProgressFlow.collectAsStateWithLifecycle()
-                    val selectedGoalFreq by goalsViewModel.selectedFrequency.collectAsStateWithLifecycle()
-                    GoalsScreen(
-                        strings = strings,
-                        goalsWithProgress = goalsWithProgress,
-                        selectedFrequency = selectedGoalFreq,
-                        onFrequencySelected = { goalsViewModel.onFrequencySelected(it) },
-                        onAddGoal = { uId, dId, title, target, unit, freq, startDate ->
-                            goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate)
-                        },
-                        onDeleteGoal = { goalsViewModel.deleteGoal(it) }
                     )
                 }
 
@@ -345,66 +396,6 @@ fun MainApp() {
                         onNextMonth = { calendarViewModel.nextMonth() },
                         onPreviousMonth = { calendarViewModel.previousMonth() },
                         onGoToToday = { calendarViewModel.goToToday() }
-                    )
-                }
-
-                composable(NavRoutes.STATISTICS) {
-                    val statisticsViewModel: StatisticsViewModel = viewModel(factory = factory)
-                    val statsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
-                    val selectedDate by statisticsViewModel.selectedDate.collectAsStateWithLifecycle()
-                    val currentMonth by statisticsViewModel.currentMonth.collectAsStateWithLifecycle()
-                    val monthDaysCompletion by statisticsViewModel.monthDaysCompletionFlow.collectAsStateWithLifecycle()
-                    val selectedDateEntries by statisticsViewModel.selectedDateEntries.collectAsStateWithLifecycle()
-                    val allEntries by statisticsViewModel.allEntries.collectAsStateWithLifecycle()
-                    val selectedTab by statisticsViewModel.selectedTab.collectAsStateWithLifecycle()
-
-                    StatisticsScreen(
-                        strings = strings,
-                        uiState = statsUiState,
-                        selectedDate = selectedDate,
-                        currentMonth = currentMonth,
-                        monthDaysCompletion = monthDaysCompletion,
-                        selectedDateEntries = selectedDateEntries,
-                        allEntries = allEntries,
-                        selectedTab = selectedTab,
-                        onTabSelected = { statisticsViewModel.setSelectedTab(it) },
-                        onSelectDate = { statisticsViewModel.selectDate(it) },
-                        onNextMonth = { statisticsViewModel.nextMonth() },
-                        onPreviousMonth = { statisticsViewModel.previousMonth() },
-                        onGoToToday = { statisticsViewModel.goToToday() },
-                        onUpdateEntry = { statisticsViewModel.updateEntry(it) },
-                        onDeleteEntry = { statisticsViewModel.deleteEntry(it) }
-                    )
-                }
-
-                composable(NavRoutes.REPORTS) {
-                    val reportsViewModel: ReportsViewModel = viewModel(factory = factory)
-                    val selectedReportType by reportsViewModel.selectedReportType.collectAsStateWithLifecycle()
-                    val selectedDomains by reportsViewModel.selectedDomains.collectAsStateWithLifecycle()
-                    val targetDate by reportsViewModel.targetDate.collectAsStateWithLifecycle()
-                    val startDate by reportsViewModel.startDate.collectAsStateWithLifecycle()
-                    val endDate by reportsViewModel.endDate.collectAsStateWithLifecycle()
-                    val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
-                    ReportsScreen(
-                        strings = strings,
-                        user = currentUser,
-                        selectedReportType = selectedReportType,
-                        selectedDomains = selectedDomains,
-                        targetDate = targetDate,
-                        startDate = startDate,
-                        endDate = endDate,
-                        reportHistory = reportHistory,
-                        onSelectReportType = { reportsViewModel.selectReportType(it) },
-                        onToggleDomainFilter = { reportsViewModel.toggleDomainFilter(it) },
-                        onSelectAllDomains = { reportsViewModel.selectAllDomains() },
-                        onSetTargetDate = { reportsViewModel.setTargetDate(it) },
-                        onSetDateRange = { start, end -> reportsViewModel.setDateRange(start, end) },
-                        onGeneratePdfReport = { ctx, onFile ->
-                            reportsViewModel.generatePdfReport(ctx, onFile)
-                        },
-                        onDeleteReport = { reportId ->
-                            reportsViewModel.deleteReport(reportId)
-                        }
                     )
                 }
 
@@ -436,6 +427,12 @@ fun MainApp() {
                         },
                         onAddReminder = { ctx, dId, title, msg, h, m ->
                             settingsViewModel.addOrUpdateReminder(ctx, dId, title, msg, h, m)
+                        },
+                        onEditReminder = { ctx, dId, title, msg, h, m, id ->
+                            settingsViewModel.addOrUpdateReminder(ctx, dId, title, msg, h, m, id)
+                        },
+                        onToggleReminder = { ctx, rem, isEnabled ->
+                            settingsViewModel.toggleReminder(ctx, rem, isEnabled)
                         },
                         onDeleteReminder = { ctx, id -> settingsViewModel.deleteReminder(ctx, id) },
                         onSignOut = {
@@ -480,15 +477,11 @@ fun MainApp() {
                         onResumeTimer = { timerViewModel.resumeTimer() },
                         onStopAndSaveTimer = { notes, reflection ->
                             timerViewModel.stopAndSaveTimer(notes, reflection)
-                            navController.navigate(NavRoutes.DOMAINS) {
-                                popUpTo(NavRoutes.DOMAINS)
-                                launchSingleTop = true
-                            }
+                            navController.popBackStack()
                         },
                         onDiscardTimer = { timerViewModel.discardTimer() },
                         onBack = { navController.popBackStack() }
                     )
-                }
                 }
             }
         }

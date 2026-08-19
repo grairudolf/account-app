@@ -63,11 +63,11 @@ class SettingsViewModel(
         }
     }
 
-    fun addOrUpdateReminder(context: Context, domainId: String, title: String, message: String, hour: Int, minute: Int) {
+    fun addOrUpdateReminder(context: Context, domainId: String, title: String, message: String, hour: Int, minute: Int, id: String? = null) {
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
             val reminder = ReminderEntity(
-                id = UUID.randomUUID().toString(),
+                id = id ?: UUID.randomUUID().toString(),
                 userId = user.id,
                 domainId = domainId,
                 title = title,
@@ -78,6 +78,18 @@ class SettingsViewModel(
             )
             accountabilityRepository.saveReminder(reminder)
             ReminderManager.scheduleReminder(context, reminder)
+        }
+    }
+
+    fun toggleReminder(context: Context, reminder: ReminderEntity, isEnabled: Boolean) {
+        viewModelScope.launch {
+            val updated = reminder.copy(isEnabled = isEnabled)
+            accountabilityRepository.saveReminder(updated)
+            if (isEnabled) {
+                ReminderManager.scheduleReminder(context, updated)
+            } else {
+                ReminderManager.cancelReminder(context, updated.id)
+            }
         }
     }
 

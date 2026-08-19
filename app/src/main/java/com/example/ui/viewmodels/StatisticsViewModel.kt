@@ -40,7 +40,7 @@ class StatisticsViewModel(
     private val _currentMonth = MutableStateFlow(YearMonth.now())
     val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
-    private val _selectedTab = MutableStateFlow(0)
+    private val _selectedTab = MutableStateFlow(1)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
     val allEntries: StateFlow<List<AccountabilityEntryEntity>> = accountabilityRepository.allEntriesFlow

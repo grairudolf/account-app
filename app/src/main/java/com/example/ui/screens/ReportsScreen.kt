@@ -7,9 +7,11 @@ import androidx.core.content.FileProvider
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -175,9 +177,11 @@ fun ReportsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Period selector chips
+                    // Period selector chips (Scrollable Row with Dark Pill Active States for internationalization)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf("DAILY", "WEEKLY", "MONTHLY", "CUSTOM").forEach { type ->
@@ -187,17 +191,28 @@ fun ReportsScreen(
                                 "MONTHLY" -> strings.monthlyReport
                                 else -> type
                             }
-                            FilterChip(
-                                selected = selectedReportType == type,
-                                onClick = { onSelectReportType(type) },
-                                label = { Text(chipLabel) },
+                            val selected = selectedReportType == type
+                            val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
+                            val contentColor = if (selected) Color.White else TextSecondary
+                            val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
+
+                            Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                modifier = Modifier.testTag("report_type_chip_$type")
-                            )
+                                color = containerBg,
+                                border = borderStroke,
+                                modifier = Modifier
+                                    .clickable { onSelectReportType(type) }
+                                    .testTag("report_type_chip_$type")
+                            ) {
+                                Text(
+                                    text = chipLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = contentColor,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
                         }
                     }
 
@@ -265,10 +280,14 @@ fun ReportsScreen(
                                 Text(
                                     text = strings.selectDomainsToInclude,
                                     style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
-                                TextButton(onClick = onSelectAllDomains) {
-                                    Text(strings.selectAll, style = MaterialTheme.typography.labelSmall)
+                                TextButton(
+                                    onClick = onSelectAllDomains,
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(strings.selectAll, style = MaterialTheme.typography.labelSmall, maxLines = 1)
                                 }
                             }
 
@@ -319,23 +338,23 @@ fun ReportsScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(52.dp)
                             .testTag("generate_pdf_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkPillBackground),
+                        shape = RoundedCornerShape(26.dp),
                         enabled = !isGenerating
                     ) {
                         if (isGenerating) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = Color.White,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
                             val btnText = String.format(strings.generatePdfButton, selectedReportType)
-                            Text(btnText, fontWeight = FontWeight.Bold)
+                            Text(btnText, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
 
