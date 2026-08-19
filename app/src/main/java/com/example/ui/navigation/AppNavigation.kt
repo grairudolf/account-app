@@ -7,15 +7,25 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.ui.theme.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -62,12 +72,15 @@ fun MainApp() {
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
     val notificationsViewModel: NotificationsViewModel = viewModel(factory = factory)
+    val globalTimerViewModel: TimerViewModel = viewModel(factory = factory)
 
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val currentLanguage by settingsViewModel.currentLanguage.collectAsStateWithLifecycle()
     val currentTheme by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
     val notificationsList by notificationsViewModel.notifications.collectAsStateWithLifecycle()
     val unreadNotificationsCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
+    val globalActiveTimer by globalTimerViewModel.activeSession.collectAsStateWithLifecycle()
+    val globalTimerElapsedSeconds by globalTimerViewModel.elapsedSeconds.collectAsStateWithLifecycle()
 
     val strings = LocalizationManager.getStrings(currentLanguage)
 
@@ -138,22 +151,87 @@ fun MainApp() {
                 }
             },
             bottomBar = {
-                if (isMainBottomBarVisible) {
-                    CmfiBottomBar(
-                        currentRoute = activeRouteName,
-                        strings = strings,
-                        onTabSelected = { tab ->
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    page = tab.ordinal,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
+                Column {
+                    val activeTimer = globalActiveTimer
+                    if (activeTimer != null && currentNavRoute != NavRoutes.TIMER) {
+                        val hours = globalTimerElapsedSeconds / 3600
+                        val minutes = (globalTimerElapsedSeconds % 3600) / 60
+                        val seconds = globalTimerElapsedSeconds % 60
+                        val timeStr = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+                        Surface(
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                            color = PrimaryBlueDark,
+                            contentColor = Color.White,
+                            shadowElevation = 6.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .clickable {
+                                    navController.navigate(NavRoutes.timer(activeTimer.domainId))
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(CircleShape)
+                                            .background(if (activeTimer.isRunning) StatusSuccess else AccentPurple)
                                     )
-                                )
+                                    Text(
+                                        text = "${strings.getDomainTitleById(activeTimer.domainId).uppercase()}: $timeStr",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = strings.resumeTimer,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = LightBlueContainer,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Open Timer",
+                                        tint = LightBlueContainer,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
-                    )
+                    }
+
+                    if (isMainBottomBarVisible) {
+                        CmfiBottomBar(
+                            currentRoute = activeRouteName,
+                            strings = strings,
+                            onTabSelected = { tab ->
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        page = tab.ordinal,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioNoBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
         ) { innerPadding ->
@@ -475,8 +553,8 @@ fun MainApp() {
                         },
                         onPauseTimer = { timerViewModel.pauseTimer() },
                         onResumeTimer = { timerViewModel.resumeTimer() },
-                        onStopAndSaveTimer = { notes, reflection ->
-                            timerViewModel.stopAndSaveTimer(notes, reflection)
+                        onStopAndSaveTimer = { entry ->
+                            timerViewModel.saveEntryAndStopTimer(entry)
                             navController.popBackStack()
                         },
                         onDiscardTimer = { timerViewModel.discardTimer() },

@@ -95,6 +95,8 @@ interface AppStrings {
     val soulWinningDesc: String
     val proclamationTitle: String
     val proclamationDesc: String
+    val retreatsTitle: String
+    val retreatsDesc: String
     val customDomain: String
     val addCustomDomain: String
 
@@ -329,6 +331,7 @@ interface AppStrings {
     val liveTimerDesc: String
     val startLiveSessionTimer: String
     val logActivityRecord: String
+    val manualLogging: String
     val dateOfActivity: String
     val prevDay: String
     val nextDay: String
@@ -364,6 +367,96 @@ interface AppStrings {
     val timeWithGodSubtitle: String
     val exploreDisciplines: String
     val editReminderTitle: String
+
+    // Multi-Book Bible Reading
+    val addAnotherBook: String
+    val removeBookSegment: String
+    val bookSegment: String
+    val totalChaptersCalculated: String
+
+    // Prayer Focus Types & Inputs
+    val prayerTypePersonalSupplication: String
+    val prayerTypeSpiritualWarfare: String
+    val prayerTypePraise: String
+    val prayerTypePrayerNight: String
+    val prayerTypePrayerSiege: String
+    val prayerTypeCellGroup: String
+    val prayerTypeFamilyAltar: String
+    val prayerTypeCorporateAssembly: String
+    val prayerTypeIntercessoryChain: String
+    val prayerTypeCustom: String
+    val customPrayerFocusPrompt: String
+
+    // Giving to God
+    val amountEarnedLabel: String
+    val amountGivenLabel: String
+    val givingPercentageCalculated: String
+    val titheTargetLabel: String
+    val givingTypeFirstFruits: String
+    val givingTypeAlms: String
+    val givingTypeBuilding: String
+
+    // Christian Literature
+    val startPageLabel: String
+    val endPageLabel: String
+    val totalPagesCalculated: String
+
+    // Spiritual Retreats
+    val retreatFocusLabel: String
+    val retreatActivitiesChecklist: String
+    val retreatSolitude: String
+    val retreatFasting: String
+    val retreatExtendedPrayer: String
+    val retreatWordStudy: String
+    val retreatMeditation: String
+    val retreatExamination: String
+    val retreatWaitingSpirit: String
+
+    // Goal Creation Dropdowns & Localization
+    val targetPeriod: String
+    val goalDomain: String
+    val goalAspect: String
+    val targetUnit: String
+    val customGoalTitlePrompt: String
+    val goalAchievedExceeded: String
+    val goalRemainingProgress: String
+    val unitChapters: String
+    val unitPages: String
+    val unitHours: String
+    val unitMinutes: String
+    val unitSessions: String
+    val unitDays: String
+    val unitSouls: String
+    val unitConverts: String
+    val unitPercentage: String
+    val unitAmount: String
+
+    // Calendar & Day Localization
+    val dayMon: String
+    val dayTue: String
+    val dayWed: String
+    val dayThu: String
+    val dayFri: String
+    val daySat: String
+    val daySun: String
+    val today: String
+    val allPeriod: String
+
+    // Persistent Live Timer Bar
+    val activeTimerRunning: String
+    val activeTimerPaused: String
+    val tapToOpenTimer: String
+
+    // Reports Totals & Aggregates Summary Section
+    val totalsAndAggregates: String
+    val totalPrayerTimeSummary: String
+    val totalBibleChaptersSummary: String
+    val totalLiteraturePagesSummary: String
+    val totalGivingSummary: String
+    val totalRetreatHoursSummary: String
+    val totalSoulWinningSummary: String
+    val totalFastingSummary: String
+    val consistencyStreakSummary: String
 
 
     fun getBibleBookName(englishName: String): String {
@@ -474,6 +567,7 @@ interface AppStrings {
             "christianLitMemTitle" -> christianLitMemTitle
             "bibleMemTitle" -> bibleMemTitle
             "soulWinningTitle" -> soulWinningTitle
+            "retreatsTitle" -> retreatsTitle
             else -> key
         }
     }
@@ -492,6 +586,7 @@ interface AppStrings {
             "bible_memory", "bible_mem" -> bibleMemTitle
             "soul_winning" -> soulWinningTitle
             "proclamation_importunity", "proclamation" -> proclamationTitle
+            "retreats" -> retreatsTitle
             else -> id.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
         }
     }
@@ -510,6 +605,7 @@ interface AppStrings {
             "christianLitMemDesc" -> christianLitMemDesc
             "bibleMemDesc" -> bibleMemDesc
             "soulWinningDesc" -> soulWinningDesc
+            "retreatsDesc" -> retreatsDesc
             else -> key
         }
     }
@@ -517,6 +613,11 @@ interface AppStrings {
     fun formatActivitySummary(entry: AccountabilityEntryEntity): String {
         return when (entry.domainId) {
             "bible_reading" -> "${entry.bibleBook} Ch. ${entry.startChapter}-${entry.endChapter}"
+            "retreats" -> {
+                val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
+                val focusStr = if (entry.retreatFocus.isNotBlank()) "${entry.retreatFocus} - " else ""
+                if (mins >= 60) "$focusStr${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$focusStr$mins $minutesUnit"
+            }
             "ddewg", "prayer_alone", "prayer_with_others" -> {
                 val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
                 if (mins >= 60) "${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$mins $minutesUnit"
@@ -618,6 +719,8 @@ object EnglishStrings : AppStrings {
     override val soulWinningDesc = "Evangelism, outreach, conversions, and baptisms."
     override val proclamationTitle = "Proclamation & Importunity"
     override val proclamationDesc = "Persistent proclamation and repeated importunate prayer for specific spiritual topics."
+    override val retreatsTitle = "Spiritual Retreats"
+    override val retreatsDesc = "Solitude, extended prayer, fasting, and deep communion with God."
     override val customDomain = "Custom Domain"
     override val addCustomDomain = "Add Custom Domain"
 
@@ -847,6 +950,7 @@ object EnglishStrings : AppStrings {
     override val liveTimerDesc = "Track your session in real time with precise duration logging."
     override val startLiveSessionTimer = "Start Live Session Timer"
     override val logActivityRecord = "Log Activity Record"
+    override val manualLogging = "Manual Logging"
     override val dateOfActivity = "Date of Activity:"
     override val prevDay = "Prev Day"
     override val nextDay = "Next Day"
@@ -882,6 +986,96 @@ object EnglishStrings : AppStrings {
     override val timeWithGodSubtitle = "Reflect on your spiritual walk and record your devotional activities for today."
     override val exploreDisciplines = "Record Disciplines"
     override val editReminderTitle = "Edit Daily Reminder"
+
+    // Multi-Book Bible Reading
+    override val addAnotherBook = "+ Add Another Book Segment"
+    override val removeBookSegment = "Remove Segment"
+    override val bookSegment = "Book Segment"
+    override val totalChaptersCalculated = "Total Chapters Read: %d"
+
+    // Prayer Focus Types & Inputs
+    override val prayerTypePersonalSupplication = "Personal Supplication"
+    override val prayerTypeSpiritualWarfare = "Spiritual Warfare"
+    override val prayerTypePraise = "Praise & Adoration"
+    override val prayerTypePrayerNight = "Prayer Night"
+    override val prayerTypePrayerSiege = "Prayer Siege"
+    override val prayerTypeCellGroup = "Cell Group / House Fellowship"
+    override val prayerTypeFamilyAltar = "Family Altar"
+    override val prayerTypeCorporateAssembly = "Corporate Assembly"
+    override val prayerTypeIntercessoryChain = "Intercessory Chain"
+    override val prayerTypeCustom = "Custom Prayer Focus"
+    override val customPrayerFocusPrompt = "Specify Custom Prayer Focus"
+
+    // Giving to God
+    override val amountEarnedLabel = "Gross Income / Amount Earned"
+    override val amountGivenLabel = "Amount Given / Offering"
+    override val givingPercentageCalculated = "Giving Percentage: %.1f%%"
+    override val titheTargetLabel = "Biblical Tithe Benchmark: 10.0%"
+    override val givingTypeFirstFruits = "First Fruits"
+    override val givingTypeAlms = "Alms & Poor Relief"
+    override val givingTypeBuilding = "Building & Missions Fund"
+
+    // Christian Literature
+    override val startPageLabel = "Start Page"
+    override val endPageLabel = "End Page"
+    override val totalPagesCalculated = "Total Pages Read: %d"
+
+    // Spiritual Retreats
+    override val retreatFocusLabel = "Retreat Focus / Purpose"
+    override val retreatActivitiesChecklist = "Retreat Activities Checklist"
+    override val retreatSolitude = "Solitude & Silence"
+    override val retreatFasting = "Complete Fasting"
+    override val retreatExtendedPrayer = "Extended Prayer & Intercession"
+    override val retreatWordStudy = "Intensive Word Study"
+    override val retreatMeditation = "Meditation & Journaling"
+    override val retreatExamination = "Spiritual Examination & Repentance"
+    override val retreatWaitingSpirit = "Waiting on the Holy Spirit"
+
+    // Goal Creation Dropdowns & Localization
+    override val targetPeriod = "Target Period"
+    override val goalDomain = "Goal Domain"
+    override val goalAspect = "Goal Aspect / Title"
+    override val targetUnit = "Target Unit"
+    override val customGoalTitlePrompt = "Custom Goal Title"
+    override val goalAchievedExceeded = "Goal achieved! Exceeded target by %s %s."
+    override val goalRemainingProgress = "%s %s remaining to reach target for this %s period."
+    override val unitChapters = "Chapters"
+    override val unitPages = "Pages"
+    override val unitHours = "Hours"
+    override val unitMinutes = "Minutes"
+    override val unitSessions = "Sessions"
+    override val unitDays = "Days"
+    override val unitSouls = "People Preached To"
+    override val unitConverts = "Converts Won"
+    override val unitPercentage = "Percentage (%)"
+    override val unitAmount = "Amount ($)"
+
+    // Calendar & Day Localization
+    override val dayMon = "Mon"
+    override val dayTue = "Tue"
+    override val dayWed = "Wed"
+    override val dayThu = "Thu"
+    override val dayFri = "Fri"
+    override val daySat = "Sat"
+    override val daySun = "Sun"
+    override val today = "Today"
+    override val allPeriod = "All"
+
+    // Persistent Live Timer Bar
+    override val activeTimerRunning = "Active Session Running"
+    override val activeTimerPaused = "Session Paused"
+    override val tapToOpenTimer = "Tap to return to live timer"
+
+    // Reports Totals & Aggregates Summary Section
+    override val totalsAndAggregates = "TOTALS & AGGREGATES SUMMARY"
+    override val totalPrayerTimeSummary = "Total Prayer & Communion Time"
+    override val totalBibleChaptersSummary = "Total Bible Chapters Read"
+    override val totalLiteraturePagesSummary = "Total Literature Pages Read"
+    override val totalGivingSummary = "Total Giving to God"
+    override val totalRetreatHoursSummary = "Total Spiritual Retreat Time"
+    override val totalSoulWinningSummary = "Total People Preached / Won"
+    override val totalFastingSummary = "Total Fasting Days"
+    override val consistencyStreakSummary = "Consistency & Active Streak"
 }
 
 object FrenchStrings : AppStrings {
@@ -958,6 +1152,8 @@ object FrenchStrings : AppStrings {
     override val soulWinningDesc = "Évangélisation, témoignage, conversions et baptêmes."
     override val proclamationTitle = "Proclamation & Importunité"
     override val proclamationDesc = "Proclamation persistante et prière importune répétée pour des sujets de prière spécifiques."
+    override val retreatsTitle = "Retraites Spirituelles"
+    override val retreatsDesc = "Solitude, prière prolongée, jeûne et communion profonde avec Dieu."
     override val customDomain = "Domaine Personnalisé"
     override val addCustomDomain = "Ajouter un Domaine Personnalisé"
 
@@ -1187,6 +1383,7 @@ object FrenchStrings : AppStrings {
     override val liveTimerDesc = "Suivez votre session en temps réel avec un enregistrement précis de la durée."
     override val startLiveSessionTimer = "Démarrer le Minuteur de Session"
     override val logActivityRecord = "Enregistrer une Discipline"
+    override val manualLogging = "Saisie Manuelle"
     override val dateOfActivity = "Date de l'Activité :"
     override val prevDay = "Jour Préc."
     override val nextDay = "Jour Suiv."
@@ -1222,4 +1419,94 @@ object FrenchStrings : AppStrings {
     override val timeWithGodSubtitle = "Méditez sur votre marche spirituelle et enregistrez vos activités de dévotion aujourd'hui."
     override val exploreDisciplines = "Enregistrer les disciplines"
     override val editReminderTitle = "Modifier le rappel quotidien"
+
+    // Multi-Book Bible Reading
+    override val addAnotherBook = "+ Ajouter un Autre Livre"
+    override val removeBookSegment = "Supprimer le Segment"
+    override val bookSegment = "Segment de Livre"
+    override val totalChaptersCalculated = "Total des Chapitres Lus : %d"
+
+    // Prayer Focus Types & Inputs
+    override val prayerTypePersonalSupplication = "Supplication Personnelle"
+    override val prayerTypeSpiritualWarfare = "Combat Spirituel"
+    override val prayerTypePraise = "Louange & Adoration"
+    override val prayerTypePrayerNight = "Nuit de Prière"
+    override val prayerTypePrayerSiege = "Siège de Prière"
+    override val prayerTypeCellGroup = "Groupe de Maison / Cellule"
+    override val prayerTypeFamilyAltar = "Autel Familial"
+    override val prayerTypeCorporateAssembly = "Assemblée Générale"
+    override val prayerTypeIntercessoryChain = "Chaîne d'Intercession"
+    override val prayerTypeCustom = "Autre Sujet Personnalisé"
+    override val customPrayerFocusPrompt = "Précisez votre Sujet de Prière"
+
+    // Giving to God
+    override val amountEarnedLabel = "Revenu Brut / Montant Gagné"
+    override val amountGivenLabel = "Montant Donné / Offrande"
+    override val givingPercentageCalculated = "Pourcentage Donné : %.1f%%"
+    override val titheTargetLabel = "Référence Biblique de la Dîme : 10,0%"
+    override val givingTypeFirstFruits = "Prémices"
+    override val givingTypeAlms = "Aumônes & Secours"
+    override val givingTypeBuilding = "Fonds de Construction & Missions"
+
+    // Christian Literature
+    override val startPageLabel = "Page de Début"
+    override val endPageLabel = "Page de Fin"
+    override val totalPagesCalculated = "Total des Pages Lues : %d"
+
+    // Spiritual Retreats
+    override val retreatFocusLabel = "Thème / Objectif de la Retraite"
+    override val retreatActivitiesChecklist = "Activités Réalisées durant la Retraite"
+    override val retreatSolitude = "Solitude & Silence"
+    override val retreatFasting = "Jeûne Complet"
+    override val retreatExtendedPrayer = "Prière Prolongée & Intercession"
+    override val retreatWordStudy = "Étude Approfondie de la Parole"
+    override val retreatMeditation = "Méditation & Journal Personnel"
+    override val retreatExamination = "Examen Spirituel & Repentance"
+    override val retreatWaitingSpirit = "Attente du Saint-Esprit"
+
+    // Goal Creation Dropdowns & Localization
+    override val targetPeriod = "Période Cible"
+    override val goalDomain = "Domaine de l'Objectif"
+    override val goalAspect = "Aspect / Titre de l'Objectif"
+    override val targetUnit = "Unité de Mesure"
+    override val customGoalTitlePrompt = "Titre Personnalisé de l'Objectif"
+    override val goalAchievedExceeded = "Objectif atteint ! Objectif dépassé de %s %s."
+    override val goalRemainingProgress = "Il reste %s %s pour atteindre l'objectif de cette période (%s)."
+    override val unitChapters = "Chapitres"
+    override val unitPages = "Pages"
+    override val unitHours = "Heures"
+    override val unitMinutes = "Minutes"
+    override val unitSessions = "Sessions"
+    override val unitDays = "Jours"
+    override val unitSouls = "Personnes Évangélisées"
+    override val unitConverts = "Âmes Converties"
+    override val unitPercentage = "Pourcentage (%)"
+    override val unitAmount = "Montant ($)"
+
+    // Calendar & Day Localization
+    override val dayMon = "Lun"
+    override val dayTue = "Mar"
+    override val dayWed = "Mer"
+    override val dayThu = "Jeu"
+    override val dayFri = "Ven"
+    override val daySat = "Sam"
+    override val daySun = "Dim"
+    override val today = "Aujourd'hui"
+    override val allPeriod = "Tous"
+
+    // Persistent Live Timer Bar
+    override val activeTimerRunning = "Session en Cours"
+    override val activeTimerPaused = "Session en Pause"
+    override val tapToOpenTimer = "Appuyez pour revenir au chronomètre"
+
+    // Reports Totals & Aggregates Summary Section
+    override val totalsAndAggregates = "RÉSUMÉ DES TOTAUX & AGRÉGATS"
+    override val totalPrayerTimeSummary = "Temps Total de Prière & Communion"
+    override val totalBibleChaptersSummary = "Total des Chapitres Bibliques Lus"
+    override val totalLiteraturePagesSummary = "Total des Pages de Littérature Lues"
+    override val totalGivingSummary = "Total des Dons & Dîmes Donnés"
+    override val totalRetreatHoursSummary = "Temps Total de Retraite Spirituelle"
+    override val totalSoulWinningSummary = "Total Évangélisés / Convertis"
+    override val totalFastingSummary = "Total des Jours de Jeûne"
+    override val consistencyStreakSummary = "Assiduité & Série Active"
 }

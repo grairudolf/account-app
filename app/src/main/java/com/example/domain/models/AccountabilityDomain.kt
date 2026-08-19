@@ -13,6 +13,7 @@ enum class DomainType {
     BIBLE_MEM,
     SOUL_WINNING,
     PROCLAMATION_IMPORTUNITY,
+    RETREATS,
     CUSTOM
 }
 
@@ -38,6 +39,7 @@ object PredefinedDomains {
         AccountabilityDomainModel("christian_lit", DomainType.CHRISTIAN_LITERATURE, "christianLitTitle", "christianLitDesc", "book"),
         AccountabilityDomainModel("christian_lit_mem", DomainType.CHRISTIAN_LIT_MEM, "christianLitMemTitle", "christianLitMemDesc", "psychology"),
         AccountabilityDomainModel("bible_mem", DomainType.BIBLE_MEM, "bibleMemTitle", "bibleMemDesc", "bookmark_added"),
-        AccountabilityDomainModel("soul_winning", DomainType.SOUL_WINNING, "soulWinningTitle", "soulWinningDesc", "nature_people")
+        AccountabilityDomainModel("soul_winning", DomainType.SOUL_WINNING, "soulWinningTitle", "soulWinningDesc", "nature_people"),
+        AccountabilityDomainModel("retreats", DomainType.RETREATS, "retreatsTitle", "retreatsDesc", "landscape")
     )
 }

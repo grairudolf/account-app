@@ -572,13 +572,11 @@ fun DashboardScreen(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_clay_target_1787141918662),
+                                Icon(
+                                    imageVector = Icons.Default.Flag,
                                     contentDescription = "Daily Goal Target",
-                                    modifier = Modifier
-                                        .size(84.dp)
-                                        .clip(RoundedCornerShape(18.dp)),
-                                    contentScale = ContentScale.Fit
+                                    tint = BrandWarmGold,
+                                    modifier = Modifier.size(52.dp)
                                 )
                             }
                         }

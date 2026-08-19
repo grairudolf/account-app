@@ -72,7 +72,9 @@ class TimerViewModel(
         }
     }
 
-    fun stopAndSaveTimer(notes: String, reflection: String, prayerType: String = "", participantsCount: Int = 1) {
+    fun stopAndSaveTimer(
+        entryBuilder: (session: TimerSessionEntity, durationSeconds: Long, startFormatted: String, endFormatted: String, endMs: Long) -> AccountabilityEntryEntity
+    ) {
         viewModelScope.launch {
             val session = activeSession.value ?: return@launch
             val durationMs = timerServiceManager.stopTimer(session)
@@ -83,7 +85,20 @@ class TimerViewModel(
             val startFormatted = timeFormatter.format(java.util.Date(session.startTimestampMs))
             val endFormatted = timeFormatter.format(java.util.Date(endMs))
 
-            val entry = AccountabilityEntryEntity(
+            val entry = entryBuilder(session, durationSeconds, startFormatted, endFormatted, endMs)
+
+            if (entry.domainId == "proclamation_importunity") {
+                accountabilityRepository.recordProclamationSession(entry)
+            } else {
+                accountabilityRepository.saveEntry(entry)
+            }
+            TimerNotificationReceiver.cancelTimerNotification(context)
+        }
+    }
+
+    fun stopAndSaveTimer(notes: String, reflection: String, prayerType: String = "", participantsCount: Int = 1) {
+        stopAndSaveTimer { session, durationSeconds, startFormatted, endFormatted, endMs ->
+            AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
                 userId = session.userId,
                 domainId = session.domainId,
@@ -98,8 +113,18 @@ class TimerViewModel(
                 prayerType = prayerType,
                 prayerParticipantsCount = participantsCount
             )
+        }
+    }
 
-            accountabilityRepository.saveEntry(entry)
+    fun saveEntryAndStopTimer(entry: AccountabilityEntryEntity) {
+        viewModelScope.launch {
+            val session = activeSession.value ?: return@launch
+            timerServiceManager.stopTimer(session)
+            if (entry.domainId == "proclamation_importunity") {
+                accountabilityRepository.recordProclamationSession(entry)
+            } else {
+                accountabilityRepository.saveEntry(entry)
+            }
             TimerNotificationReceiver.cancelTimerNotification(context)
         }
     }

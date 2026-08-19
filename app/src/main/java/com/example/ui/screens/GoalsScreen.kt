@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,8 +29,6 @@ import com.example.core.util.HapticHelper
 import com.example.domain.models.PredefinedDomains
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.GoalWithProgress
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun GoalsScreen(
@@ -63,107 +63,105 @@ fun GoalsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Frequency Selector Filter Chips (Dark Pill Active States)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("ALL", "DAILY", "WEEKLY", "MONTHLY").forEach { freq ->
-                val selected = selectedFrequency == freq
-                val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
-                val contentColor = if (selected) Color.White else TextSecondary
-                val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
+            // Frequency Selector Filter Chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("ALL" to strings.allPeriod, "DAILY" to strings.daily, "WEEKLY" to strings.weekly, "MONTHLY" to strings.monthly).forEach { (freqKey, freqLabel) ->
+                    val selected = selectedFrequency == freqKey
+                    val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
+                    val contentColor = if (selected) Color.White else TextSecondary
+                    val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
 
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = containerBg,
-                    border = borderStroke,
-                    modifier = Modifier
-                        .clickable { onFrequencySelected(freq) }
-                        .testTag("filter_freq_$freq")
-                ) {
-                    Text(
-                        text = freq,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = containerBg,
+                        border = borderStroke,
+                        modifier = Modifier
+                            .clickable { onFrequencySelected(freqKey) }
+                            .testTag("filter_freq_$freqKey")
+                    ) {
+                        Text(
+                            text = freqLabel.uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = contentColor,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = strings.spiritualGoals,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            FloatingActionButton(
-                onClick = { showAddGoalDialog = true },
-                containerColor = PrimaryBlue,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .size(44.dp)
-                    .testTag("add_goal_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = strings.addGoal)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (goalsWithProgress.isEmpty()) {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = strings.noGoalsFound,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp)
+                    text = strings.spiritualGoals,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
+                FloatingActionButton(
+                    onClick = { showAddGoalDialog = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("add_goal_fab")
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = strings.addGoal)
+                }
             }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(goalsWithProgress) { goalItem ->
-                    GoalCard(
-                        goalItem = goalItem,
-                        strings = strings,
-                        onDelete = {
-                            HapticHelper.vibrateWarning(context)
-                            onDeleteGoal(goalItem.goal.id)
-                        }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (goalsWithProgress.isEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, DividerColor),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = strings.noGoalsFound,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp)
                     )
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(goalsWithProgress) { goalItem ->
+                        GoalCard(
+                            goalItem = goalItem,
+                            strings = strings,
+                            onDelete = {
+                                HapticHelper.vibrateWarning(context)
+                                onDeleteGoal(goalItem.goal.id)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
-}
 
     if (showAddGoalDialog) {
         AddGoalDialog(
             strings = strings,
             onDismiss = { showAddGoalDialog = false },
             onConfirm = { domainId, title, target, unit, freq ->
-                val startDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                HapticHelper.vibrateSuccess(context)
-                onAddGoal("guest_user", domainId, title, target, unit, freq, startDate)
+                onAddGoal("guest_user", domainId, title, target, unit, freq, java.time.LocalDate.now().toString())
                 showAddGoalDialog = false
             }
         )
@@ -180,13 +178,14 @@ fun GoalCard(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, DividerColor),
+        shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
             .testTag("goal_card_${goalItem.goal.id}")
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -194,44 +193,45 @@ fun GoalCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(PastelLavenderContainer),
+                            .background(LightBlueContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Flag,
                             contentDescription = null,
-                            tint = DarkPillBackground,
-                            modifier = Modifier.size(22.dp)
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
+
                     Column {
                         Text(
                             text = goalItem.goal.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${goalItem.goal.frequency} • ${goalItem.goal.domainId.replace("_", " ").uppercase()}",
+                            text = "${strings.getDomainTitleById(goalItem.goal.domainId)} • ${goalItem.goal.frequency}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier.testTag("delete_goal_${goalItem.goal.id}")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Goal",
+                        contentDescription = strings.delete,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -240,15 +240,15 @@ fun GoalCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = "Current: ${goalItem.currentProgress.toInt()} ${goalItem.goal.unit}  •  Target: ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    text = "${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlueDark
                 )
-                
+
                 val isAchieved = goalItem.currentProgress >= goalItem.goal.targetValue
                 val statusText = if (isAchieved) "Achieved" else if (goalItem.progressPercentage >= 50) "On Track" else "Needs Focus"
                 val statusBg = if (isAchieved) PastelMintContainer else if (goalItem.progressPercentage >= 50) PastelSkyContainer else PastelPeachContainer
@@ -278,12 +278,11 @@ fun GoalCard(
                 trackColor = SurfaceVariantLight
             )
 
-            // Goal vs Progress Comparison Text Delta
             val diff = (goalItem.goal.targetValue - goalItem.currentProgress).toInt()
             val comparisonNote = if (diff <= 0) {
-                "Goal achieved! Exceeded target by ${-diff} ${goalItem.goal.unit}."
+                String.format(strings.goalAchievedExceeded, (-diff).toString(), goalItem.goal.unit)
             } else {
-                "$diff ${goalItem.goal.unit} remaining to reach your target for this ${goalItem.goal.frequency.lowercase()} period."
+                String.format(strings.goalRemainingProgress, diff.toString(), goalItem.goal.unit, goalItem.goal.frequency.lowercase())
             }
 
             Text(
@@ -295,102 +294,229 @@ fun GoalCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGoalDialog(
     strings: AppStrings,
     onDismiss: () -> Unit,
     onConfirm: (domainId: String, title: String, target: Double, unit: String, freq: String) -> Unit
 ) {
-    var selectedDomain by remember { mutableStateOf("ddewg") }
-    var title by remember { mutableStateOf("") }
-    var target by remember { mutableStateOf("30") }
-    var unit by remember { mutableStateOf("Minutes") }
+    var selectedDomain by remember { mutableStateOf("bible_reading") }
+    var selectedAspect by remember { mutableStateOf("Chapters Read") }
+    var customTitle by remember { mutableStateOf("") }
+    var target by remember { mutableStateOf("10") }
+    var selectedUnit by remember { mutableStateOf(strings.unitChapters) }
     var frequency by remember { mutableStateOf("DAILY") }
 
-    val domainOptions = listOf(
-        "ddewg" to "DDEWG (Daily Encounter)",
-        "bible_reading" to "Bible Reading",
-        "prayer_alone" to "Prayer Alone",
-        "prayer_with_others" to "Prayer With Others",
-        "proclamation_importunity" to "Proclamation & Importunity",
-        "fasting" to "Fasting",
-        "giving" to "Giving & Tithes",
-        "christian_lit" to "Christian Literature",
-        "soul_winning" to "Soul Winning"
+    val allDomains = remember { PredefinedDomains.ALL }
+
+    val domainAspects = remember(selectedDomain) {
+        when (selectedDomain) {
+            "bible_reading" -> listOf("Chapters Read", "Complete Whole Bible", "Gospel Study", "Epistles Study", "Custom")
+            "ddewg" -> listOf("Daily Encounter (Min)", "Consistent Morning Watch", "Custom")
+            "prayer_alone" -> listOf("Secret Place Devotion", "Intercession Hours", "Prayer Night Vigils", "15-Min Retreats", "Custom")
+            "prayer_with_others" -> listOf("Corporate Prayer Sessions", "Prayer Siege Hours", "Family Altar Sessions", "Custom")
+            "proclamation_importunity" -> listOf("Proclamation Repetitions", "Topic Breakthrough Target", "Custom")
+            "retreats" -> listOf("Spiritual Retreat Hours", "Monthly Retreat Days", "Solitude & Silence", "Custom")
+            "christian_lit" -> listOf("Pages Read", "Books Completed", "Custom")
+            "christian_lit_mem" -> listOf("Pages Memorized", "Quotes Mastered", "Custom")
+            "bible_mem" -> listOf("Verses Memorized", "Chapters Memorized", "Custom")
+            "fasting" -> listOf("Fasting Days", "21-Day Consecration", "Partial Fast Days", "Custom")
+            "giving" -> listOf("Giving Percentage (10% Tithe)", "Monthly Giving Amount", "First Fruits Pledge", "Custom")
+            "soul_winning" -> listOf("People Preached To", "Converts Won", "Baptisms Target", "Custom")
+            else -> listOf("Discipline Practice", "Custom")
+        }
+    }
+
+    LaunchedEffect(selectedDomain) {
+        selectedAspect = domainAspects.first()
+        when (selectedDomain) {
+            "bible_reading" -> {
+                selectedUnit = strings.unitChapters
+                target = "10"
+            }
+            "ddewg", "prayer_alone", "prayer_with_others" -> {
+                selectedUnit = strings.unitMinutes
+                target = "60"
+            }
+            "proclamation_importunity" -> {
+                selectedUnit = strings.proclamationsMade
+                target = "100"
+            }
+            "retreats" -> {
+                selectedUnit = strings.unitHours
+                target = "24"
+                frequency = "MONTHLY"
+            }
+            "christian_lit", "christian_lit_mem" -> {
+                selectedUnit = strings.unitPages
+                target = "20"
+            }
+            "fasting" -> {
+                selectedUnit = strings.unitDays
+                target = "3"
+                frequency = "MONTHLY"
+            }
+            "giving" -> {
+                selectedUnit = strings.unitPercentage
+                target = "10"
+            }
+            "soul_winning" -> {
+                selectedUnit = strings.unitSouls
+                target = "5"
+                frequency = "WEEKLY"
+            }
+            else -> {
+                selectedUnit = strings.unitSessions
+                target = "1"
+            }
+        }
+    }
+
+    val availableUnits = listOf(
+        strings.unitChapters,
+        strings.unitPages,
+        strings.unitHours,
+        strings.unitMinutes,
+        strings.unitSessions,
+        strings.unitDays,
+        strings.unitSouls,
+        strings.unitConverts,
+        strings.unitPercentage,
+        strings.unitAmount
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.addGoal) },
+        title = { Text(strings.addGoal, fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Select Domain:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                
-                // Domain radio/chip list
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp)
-                ) {
-                    items(domainOptions) { (id, label) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedDomain = id
-                                    if (title.isBlank()) title = "Goal: $label"
-                                }
-                                .padding(vertical = 2.dp)
-                        ) {
-                            RadioButton(
-                                selected = selectedDomain == id,
-                                onClick = {
-                                    selectedDomain = id
-                                    if (title.isBlank()) title = "Goal: $label"
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = label, style = MaterialTheme.typography.bodySmall)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Domain Dropdown
+                Column {
+                    Text(strings.goalDomain, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    var domainExp by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(expanded = domainExp, onExpandedChange = { domainExp = !domainExp }) {
+                        OutlinedTextField(
+                            value = strings.getDomainTitleById(selectedDomain),
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(strings.goalDomain) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = domainExp) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(expanded = domainExp, onDismissRequest = { domainExp = false }) {
+                            allDomains.forEach { d ->
+                                DropdownMenuItem(
+                                    text = { Text(strings.getDomainTitleById(d.id)) },
+                                    onClick = {
+                                        selectedDomain = d.id
+                                        domainExp = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
 
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Goal Title") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("add_goal_title_input"),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = target,
-                    onValueChange = { target = it },
-                    label = { Text("Target Value") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("add_goal_target_input"),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = { unit = it },
-                    label = { Text("Unit (Minutes, Chapters, Souls, USD)") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("add_goal_unit_input"),
-                    singleLine = true
-                )
-                Text("Target Period:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("DAILY", "WEEKLY", "MONTHLY").forEach { freq ->
-                        FilterChip(
-                            selected = frequency == freq,
-                            onClick = { frequency = freq },
-                            label = { Text(freq, style = MaterialTheme.typography.labelSmall) }
+                // Goal Aspect / Title Dropdown
+                Column {
+                    Text(strings.goalAspect, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    var aspectExp by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(expanded = aspectExp, onExpandedChange = { aspectExp = !aspectExp }) {
+                        OutlinedTextField(
+                            value = selectedAspect,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(strings.goalAspect) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = aspectExp) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
                         )
+                        ExposedDropdownMenu(expanded = aspectExp, onDismissRequest = { aspectExp = false }) {
+                            domainAspects.forEach { aspect ->
+                                DropdownMenuItem(
+                                    text = { Text(aspect) },
+                                    onClick = {
+                                        selectedAspect = aspect
+                                        aspectExp = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    if (selectedAspect == "Custom") {
+                        OutlinedTextField(
+                            value = customTitle,
+                            onValueChange = { customTitle = it },
+                            label = { Text(strings.customGoalTitlePrompt) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+                }
+
+                // Target Value and Unit Dropdowns
+                Column {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = target,
+                            onValueChange = { target = it },
+                            label = { Text(strings.targetValue) },
+                            modifier = Modifier.weight(1f).testTag("add_goal_target_input"),
+                            singleLine = true
+                        )
+
+                        var unitExp by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = unitExp,
+                            onExpandedChange = { unitExp = !unitExp },
+                            modifier = Modifier.weight(1.3f)
+                        ) {
+                            OutlinedTextField(
+                                value = selectedUnit,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(strings.targetUnit) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExp) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                singleLine = true
+                            )
+                            ExposedDropdownMenu(expanded = unitExp, onDismissRequest = { unitExp = false }) {
+                                availableUnits.forEach { u ->
+                                    DropdownMenuItem(
+                                        text = { Text(u) },
+                                        onClick = {
+                                            selectedUnit = u
+                                            unitExp = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Target Period / Frequency Dropdown
+                Column {
+                    Text(strings.targetPeriod, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("DAILY" to strings.daily, "WEEKLY" to strings.weekly, "MONTHLY" to strings.monthly).forEach { (freqKey, freqLabel) ->
+                            FilterChip(
+                                selected = frequency == freqKey,
+                                onClick = { frequency = freqKey },
+                                label = { Text(freqLabel, style = MaterialTheme.typography.labelSmall) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PrimaryBlue,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -399,17 +525,22 @@ fun AddGoalDialog(
             Button(
                 onClick = {
                     val tVal = target.toDoubleOrNull() ?: 1.0
-                    val finalTitle = title.ifBlank { "Spiritual Goal" }
-                    onConfirm(selectedDomain, finalTitle, tVal, unit, frequency)
+                    val finalTitle = if (selectedAspect == "Custom") {
+                        customTitle.ifBlank { "${strings.getDomainTitleById(selectedDomain)} Goal" }
+                    } else {
+                        selectedAspect
+                    }
+                    onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency)
                 },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 modifier = Modifier.testTag("confirm_add_goal_button")
             ) {
-                Text("Save Goal")
+                Text(strings.save, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancelTimer)
             }
         }
     )

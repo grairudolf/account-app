@@ -51,12 +51,18 @@ data class AccountabilityEntryEntity(
     val bookTitle: String = "",
     val bookAuthor: String = "",
     val totalPages: Int = 0,
+    val startPage: Int = 0,
+    val endPage: Int = 0,
     val pagesRead: Int = 0,
     val bookTimesRead: Int = 1,
     val pagesMemorized: Int = 0,
     val litMemChapter: String = "",
     val litMemPassage: String = "",
     val litMemStatus: String = "", // Learning, Memorized, Reviewing
+
+    // Spiritual Retreats Fields
+    val retreatFocus: String = "",
+    val retreatActivitiesJson: String = "",
 
     // Bible Memorization
     val bibleMemBook: String = "",

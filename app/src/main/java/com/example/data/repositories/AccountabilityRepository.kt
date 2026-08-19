@@ -279,7 +279,7 @@ class AccountabilityRepository(
 
     fun calculateDailyProgress(todayEntries: List<AccountabilityEntryEntity>): DailyProgressStats {
         val uniqueDomainsToday = todayEntries.map { it.domainId }.distinct().size
-        val totalActiveDomains = 11 // standard CMFI domains
+        val totalActiveDomains = 12 // standard CMFI domains including Retreats
         val percentage = ((uniqueDomainsToday.toFloat() / totalActiveDomains) * 100).toInt().coerceIn(0, 100)
         return DailyProgressStats(
             completedDomainsCount = uniqueDomainsToday,
@@ -291,7 +291,7 @@ class AccountabilityRepository(
     fun calculateGoalProgress(goal: GoalEntity, entries: List<AccountabilityEntryEntity>): Double {
         val domainEntries = entries.filter { it.domainId == goal.domainId }
         val now = LocalDate.now()
-        val relevantEntries = when (goal.frequency) {
+        val relevantEntries = when (goal.frequency.uppercase()) {
             "DAILY" -> {
                 val todayIso = now.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 domainEntries.filter { it.dateIso == todayIso }
@@ -319,22 +319,82 @@ class AccountabilityRepository(
             else -> domainEntries
         }
 
-        val totalAchieved = when (goal.domainId) {
-            "bible_reading" -> relevantEntries.sumOf { it.chaptersCount }.toDouble()
-            "ddewg", "prayer_alone", "prayer_with_others" -> relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
+        val u = goal.unit.lowercase()
+
+        return when (goal.domainId) {
+            "bible_reading" -> {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("min")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else {
+                    relevantEntries.sumOf { it.chaptersCount }.toDouble()
+                }
+            }
+            "retreats" -> {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("min")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else if (u.contains("day") || u.contains("jour")) {
+                    relevantEntries.map { it.dateIso }.distinct().size.toDouble()
+                } else {
+                    relevantEntries.size.toDouble()
+                }
+            }
+            "ddewg", "prayer_alone", "prayer_with_others" -> {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("session") || u.contains("time") || u.contains("fois")) {
+                    relevantEntries.size.toDouble()
+                } else {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
+                }
+            }
             "proclamation_importunity" -> {
-                if (goal.unit.contains("min", ignoreCase = true)) {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("min")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
                 } else {
                     relevantEntries.sumOf { it.proclamationCount }.toDouble()
                 }
             }
-            "christian_lit" -> relevantEntries.sumOf { it.pagesRead }.toDouble()
-            "fasting" -> relevantEntries.sumOf { it.fastingDaysCount }.toDouble()
-            "soul_winning" -> relevantEntries.sumOf { it.preachedToCount }.toDouble()
+            "christian_lit", "christian_lit_mem" -> {
+                if (u.contains("book") || u.contains("livre")) {
+                    relevantEntries.map { it.bookTitle }.filter { it.isNotBlank() }.distinct().size.toDouble()
+                } else if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("min")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else {
+                    relevantEntries.sumOf { it.pagesRead }.toDouble()
+                }
+            }
+            "fasting" -> {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else {
+                    relevantEntries.sumOf { it.fastingDaysCount.coerceAtLeast(1) }.toDouble()
+                }
+            }
+            "soul_winning" -> {
+                if (u.contains("convert") || u.contains("âme")) {
+                    relevantEntries.sumOf { it.convertedCount }.toDouble()
+                } else if (u.contains("baptis")) {
+                    relevantEntries.sumOf { it.waterBaptizedCount }.toDouble()
+                } else {
+                    relevantEntries.sumOf { it.preachedToCount }.toDouble()
+                }
+            }
+            "giving" -> {
+                if (u.contains("%") || u.contains("percent") || u.contains("pourcent")) {
+                    if (relevantEntries.isNotEmpty()) relevantEntries.map { it.givingPercentage }.average() else 0.0
+                } else {
+                    relevantEntries.sumOf { it.givingAmount }
+                }
+            }
             else -> relevantEntries.size.toDouble()
         }
-
-        return totalAchieved
     }
 }

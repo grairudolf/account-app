@@ -1,11 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,13 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
@@ -30,6 +31,13 @@ import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+
+data class BibleReadingSegment(
+    val id: String = UUID.randomUUID().toString(),
+    var book: String = "Genesis",
+    var startChapter: Int = 1,
+    var endChapter: Int = 1
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,55 +56,70 @@ fun DomainDetailScreen(
     var startTimeText by remember { mutableStateOf("06:00") }
     var stopTimeText by remember { mutableStateOf("07:00") }
 
-    // Prayer Domain Fields
-    var selectedPrayerType by remember { mutableStateOf("Intercession") } // Thanksgiving, Request, 15-Minute Retreat, Bertoua Message, Intercession, Worship
+    // Multi-Book Bible Reading Segments
+    val bibleSegments = remember {
+        mutableStateListOf(BibleReadingSegment(book = "Genesis", startChapter = 1, endChapter = 1))
+    }
+
+    // Bible Memory
+    var bibleMemBook by remember { mutableStateOf("Romans") }
+    var bibleMemChapter by remember { mutableStateOf(1) }
+    var bibleMemVerse by remember { mutableStateOf("1-12") }
+
+    // Prayer Domains
+    var prayerFocusType by remember {
+        mutableStateOf(
+            if (domainId == "prayer_with_others") "Prayer Night" else "Intercession"
+        )
+    }
+    var customPrayerFocus by remember { mutableStateOf("") }
+    var prayerParticipantsCountText by remember { mutableStateOf("1") }
     var prayerTopicsCountText by remember { mutableStateOf("1") }
 
     // DDEWG Field
     var ddewgInspirationText by remember { mutableStateOf("") }
 
-    // Bible Reading / Bible Mem Dropdowns
-    var selectedBibleBook by remember { mutableStateOf("Genesis") }
-    var selectedStartChapter by remember { mutableStateOf("1") }
-    var selectedEndChapter by remember { mutableStateOf("1") }
-    var bibleMemVerse by remember { mutableStateOf("1-5") }
-
-    var bookBookDropdownExpanded by remember { mutableStateOf(false) }
-    var startChapterDropdownExpanded by remember { mutableStateOf(false) }
-    var endChapterDropdownExpanded by remember { mutableStateOf(false) }
-
-    // Christian Lit Fields
+    // Christian Literature
     var bookTitle by remember { mutableStateOf("") }
     var bookAuthor by remember { mutableStateOf("") }
-    var pagesReadText by remember { mutableStateOf("10") }
+    var startPageText by remember { mutableStateOf("1") }
+    var endPageText by remember { mutableStateOf("10") }
     var timesReadText by remember { mutableStateOf("1") }
     var pagesMemorizedText by remember { mutableStateOf("5") }
 
-    // Fasting Fields
+    // Fasting
     var fastingDaysText by remember { mutableStateOf("1") }
-    var selectedFastingType by remember { mutableStateOf("Complete Fast") } // "Complete Fast" or "Partial Fast"
+    var selectedFastingType by remember { mutableStateOf("Complete Fast") }
+    var fastingPurpose by remember { mutableStateOf("") }
 
-    // Giving Fields
-    var givingAmountText by remember { mutableStateOf("0.0") }
-    var givingIncomeText by remember { mutableStateOf("0.0") }
-    var givingPercentageText by remember { mutableStateOf("10") }
+    // Giving to God
+    var givingIncomeText by remember { mutableStateOf("") }
+    var givingAmountText by remember { mutableStateOf("") }
     var givingType by remember { mutableStateOf("Tithe") }
 
-    // Soul Winning Fields
+    // Soul Winning
     var preachedToCountText by remember { mutableStateOf("1") }
     var convertedCountText by remember { mutableStateOf("0") }
     var waterBaptizedText by remember { mutableStateOf("0") }
     var holySpiritBaptizedText by remember { mutableStateOf("0") }
 
+    // Spiritual Retreats
+    var retreatFocus by remember { mutableStateOf("") }
+    val retreatActivities = remember {
+        mutableStateMapOf(
+            "Solitude & Silence" to false,
+            "Complete Fasting" to false,
+            "Extended Prayer & Intercession" to false,
+            "Intensive Word Study" to false,
+            "Meditation & Journaling" to false,
+            "Spiritual Examination & Repentance" to false,
+            "Waiting on the Holy Spirit" to false
+        )
+    }
+
     var isSaved by remember { mutableStateOf(false) }
 
-    val currentBookInfo = remember(selectedBibleBook) {
-        BibleMetadata.BOOKS.find { it.name.equals(selectedBibleBook, ignoreCase = true) }
-            ?: BibleMetadata.BOOKS.first()
-    }
-    val maxChapters = currentBookInfo.chapters
-
-    // Automatic Duration Calculation from Start & Stop Times
+    // Automatic Duration Calculation
     val calculatedDurationMinutes = remember(startTimeText, stopTimeText) {
         try {
             val startParts = startTimeText.split(":").map { it.trim().toInt() }
@@ -112,8 +135,26 @@ fun DomainDetailScreen(
         }
     }
 
+    // Calculated Literature Pages
+    val calculatedLiteraturePages = remember(startPageText, endPageText) {
+        val s = startPageText.toIntOrNull() ?: 1
+        val e = endPageText.toIntOrNull() ?: s
+        if (e >= s && s > 0) (e - s + 1) else 0
+    }
+
+    // Calculated Bible Chapters Total
+    val calculatedTotalBibleChapters = remember(bibleSegments.toList()) {
+        bibleSegments.sumOf { (it.endChapter - it.startChapter + 1).coerceAtLeast(1) }
+    }
+
+    // Calculated Giving Percentage
+    val calculatedGivingPercentage = remember(givingIncomeText, givingAmountText) {
+        val income = givingIncomeText.toDoubleOrNull() ?: 0.0
+        val amount = givingAmountText.toDoubleOrNull() ?: 0.0
+        if (income > 0.0) (amount / income) * 100.0 else 0.0
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Subtle Background Vector Graphic
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -150,69 +191,72 @@ fun DomainDetailScreen(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             }
-        ) { padding ->
+        ) { paddingValues ->
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                // Live Timer Launcher Card for Prayer, DDEWG, Bible Reading & Christian Literature
-                if (domainId == "ddewg" || domainId.startsWith("prayer") || domainId == "bible_reading" || domainId == "christian_lit") {
-                    item {
-                        Surface(
-                            shape = RoundedCornerShape(28.dp),
-                            color = LightBlueContainer,
-                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
-                            modifier = Modifier.fillMaxWidth()
+                // Header Card with Live Timer CTA
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, DividerColor),
+                        shadowElevation = 1.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(LightBlueContainer),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(PrimaryBlue),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Timer, contentDescription = null, tint = Color.White)
-                                    }
-                                    Column {
-                                        Text(
-                                            text = strings.liveTimerMode,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PrimaryBlueDark
-                                        )
-                                        Text(
-                                            text = strings.liveTimerDesc,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = PrimaryBlue
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.SelfImprovement,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(28.dp)
+                                    )
                                 }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = strings.getDomainTitleById(domainId),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = strings.getDomainDesc(domainId),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
 
+                            if (domainId != "giving") {
                                 Button(
-                                    onClick = {
-                                        HapticHelper.vibrateHeavyClick(context)
-                                        onNavigateToTimer(domainId)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                                    shape = RoundedCornerShape(20.dp),
+                                    onClick = { onNavigateToTimer(domainId) },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .testTag("start_live_timer_button")
+                                        .testTag("start_live_timer_cta"),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                    shape = RoundedCornerShape(16.dp)
                                 ) {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                                    Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(strings.startLiveSessionTimer, fontWeight = FontWeight.Bold)
+                                    Text(strings.startTimer, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -222,24 +266,26 @@ fun DomainDetailScreen(
                 // Manual Entry Form Card
                 item {
                     Surface(
-                        shape = RoundedCornerShape(28.dp),
+                        shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, DividerColor),
+                        shadowElevation = 1.dp,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Text(
-                                text = strings.logActivityRecord,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                text = strings.manualLogging,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlueDark
                             )
 
-                            // Date Selector Bar
+                            // Date Selector
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(strings.dateOfActivity, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Text(strings.date, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -283,8 +329,8 @@ fun DomainDetailScreen(
                                 }
                             }
 
+                            // Time & Duration for duration-based domains
                             if (domainId != "fasting" && domainId != "giving") {
-                                // Start Time & Stop Time Duration Input
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(strings.timeAndDuration, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -316,182 +362,364 @@ fun DomainDetailScreen(
                                 }
                             }
 
-                            // Prayer Domain Specific Fields
-                            if (domainId.startsWith("prayer")) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    val prayerTypes = listOf("Thanksgiving", "Request", "15-Min Retreat", "Bertoua Message", "Intercession", "Worship")
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        prayerTypes.take(3).forEach { pType ->
-                                            FilterChip(
-                                                selected = selectedPrayerType == pType,
-                                                onClick = { selectedPrayerType = pType },
-                                                label = { Text(strings.getPrayerTypeDisplayName(pType), style = MaterialTheme.typography.labelSmall) }
-                                            )
-                                        }
-                                    }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        prayerTypes.drop(3).forEach { pType ->
-                                            FilterChip(
-                                                selected = selectedPrayerType == pType,
-                                                onClick = { selectedPrayerType = pType },
-                                                label = { Text(strings.getPrayerTypeDisplayName(pType), style = MaterialTheme.typography.labelSmall) }
-                                            )
+                            // Domain-Specific Form Fields (Strict Schema Isolation)
+                            when (domainId) {
+                                "bible_reading" -> {
+                                    // Multi-Book Bible Reading Section
+                                    Text(
+                                        text = strings.bibleReading,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    bibleSegments.forEachIndexed { index, segment ->
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = LightBlueContainer.copy(alpha = 0.5f),
+                                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.2f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "${strings.bookSegment} #${index + 1}",
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = PrimaryBlueDark
+                                                    )
+                                                    if (bibleSegments.size > 1) {
+                                                        IconButton(
+                                                            onClick = { bibleSegments.removeAt(index) },
+                                                            modifier = Modifier.size(28.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Delete, contentDescription = strings.removeBookSegment, tint = StatusError)
+                                                        }
+                                                    }
+                                                }
+
+                                                var bookExpanded by remember { mutableStateOf(false) }
+                                                ExposedDropdownMenuBox(
+                                                    expanded = bookExpanded,
+                                                    onExpandedChange = { bookExpanded = !bookExpanded }
+                                                ) {
+                                                    OutlinedTextField(
+                                                        value = strings.getBibleBookName(segment.book),
+                                                        onValueChange = {},
+                                                        readOnly = true,
+                                                        label = { Text(strings.selectBibleBook) },
+                                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookExpanded) },
+                                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                                        singleLine = true
+                                                    )
+                                                    ExposedDropdownMenu(
+                                                        expanded = bookExpanded,
+                                                        onDismissRequest = { bookExpanded = false }
+                                                    ) {
+                                                        BibleMetadata.BOOKS.forEach { b ->
+                                                            DropdownMenuItem(
+                                                                text = { Text("${strings.getBibleBookName(b.name)} (${b.chapters} ch)") },
+                                                                onClick = {
+                                                                    segment.book = b.name
+                                                                    segment.startChapter = 1
+                                                                    segment.endChapter = 1
+                                                                    bookExpanded = false
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                val bookInfo = BibleMetadata.BOOKS.find { it.name.equals(segment.book, ignoreCase = true) } ?: BibleMetadata.BOOKS.first()
+                                                val maxCh = bookInfo.chapters
+
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    var startChExpanded by remember { mutableStateOf(false) }
+                                                    var endChExpanded by remember { mutableStateOf(false) }
+
+                                                    ExposedDropdownMenuBox(
+                                                        expanded = startChExpanded,
+                                                        onExpandedChange = { startChExpanded = !startChExpanded },
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        OutlinedTextField(
+                                                            value = "Ch. ${segment.startChapter}",
+                                                            onValueChange = {},
+                                                            readOnly = true,
+                                                            label = { Text(strings.startChapter) },
+                                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = startChExpanded) },
+                                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                                            singleLine = true
+                                                        )
+                                                        ExposedDropdownMenu(
+                                                            expanded = startChExpanded,
+                                                            onDismissRequest = { startChExpanded = false }
+                                                        ) {
+                                                            (1..maxCh).forEach { ch ->
+                                                                DropdownMenuItem(
+                                                                    text = { Text("Ch. $ch") },
+                                                                    onClick = {
+                                                                        segment.startChapter = ch
+                                                                        if (segment.endChapter < ch) segment.endChapter = ch
+                                                                        startChExpanded = false
+                                                                    }
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+
+                                                    ExposedDropdownMenuBox(
+                                                        expanded = endChExpanded,
+                                                        onExpandedChange = { endChExpanded = !endChExpanded },
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        OutlinedTextField(
+                                                            value = "Ch. ${segment.endChapter}",
+                                                            onValueChange = {},
+                                                            readOnly = true,
+                                                            label = { Text(strings.endChapter) },
+                                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = endChExpanded) },
+                                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                                            singleLine = true
+                                                        )
+                                                        ExposedDropdownMenu(
+                                                            expanded = endChExpanded,
+                                                            onDismissRequest = { endChExpanded = false }
+                                                        ) {
+                                                            (segment.startChapter..maxCh).forEach { ch ->
+                                                                DropdownMenuItem(
+                                                                    text = { Text("Ch. $ch") },
+                                                                    onClick = {
+                                                                        segment.endChapter = ch
+                                                                        endChExpanded = false
+                                                                    }
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
-                                    if (selectedPrayerType == "Thanksgiving" || selectedPrayerType == "Request") {
-                                        OutlinedTextField(
-                                            value = prayerTopicsCountText,
-                                            onValueChange = { prayerTopicsCountText = it },
-                                            label = { Text(strings.numTopicsRecorded) },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .testTag("entry_prayer_topics_count"),
-                                            singleLine = true
+                                    OutlinedButton(
+                                        onClick = {
+                                            bibleSegments.add(BibleReadingSegment(book = "Genesis", startChapter = 1, endChapter = 1))
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Icon(Icons.Default.Add, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(strings.addAnotherBook)
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = LightBlueContainer,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = String.format(strings.totalChaptersCalculated, calculatedTotalBibleChapters),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryBlueDark,
+                                            modifier = Modifier.padding(12.dp)
                                         )
                                     }
                                 }
-                            }
 
-                            when (domainId) {
-                                "ddewg" -> {
-                                    OutlinedTextField(
-                                        value = ddewgInspirationText,
-                                        onValueChange = { ddewgInspirationText = it },
-                                        label = { Text(strings.inspirationForMeditation) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_ddewg_inspiration"),
-                                        singleLine = false,
-                                        minLines = 2
+                                "prayer_alone" -> {
+                                    Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    val aloneTypes = listOf(
+                                        "Intercession" to strings.prayerTypeIntercession,
+                                        "Personal Supplication" to strings.prayerTypePersonalSupplication,
+                                        "Spiritual Warfare" to strings.prayerTypeSpiritualWarfare,
+                                        "Praise & Adoration" to strings.prayerTypePraise,
+                                        "15-Minute Retreat" to strings.prayerType15MinRetreat,
+                                        "Bertoua Message" to strings.prayerTypeBertouaMessage,
+                                        "Thanksgiving" to strings.prayerTypeThanksgiving,
+                                        "Custom" to strings.prayerTypeCustom
                                     )
-                                }
 
-                                "bible_reading", "bible_mem" -> {
-                                    // Book Selection Dropdown
+                                    var prayerDropdownExpanded by remember { mutableStateOf(false) }
                                     ExposedDropdownMenuBox(
-                                        expanded = bookBookDropdownExpanded,
-                                        onExpandedChange = { bookBookDropdownExpanded = !bookBookDropdownExpanded }
+                                        expanded = prayerDropdownExpanded,
+                                        onExpandedChange = { prayerDropdownExpanded = !prayerDropdownExpanded }
                                     ) {
                                         OutlinedTextField(
-                                            value = strings.getBibleBookName(selectedBibleBook),
+                                            value = aloneTypes.find { it.first == prayerFocusType }?.second ?: prayerFocusType,
                                             onValueChange = {},
                                             readOnly = true,
-                                            label = { Text(strings.selectBibleBook) },
-                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookBookDropdownExpanded) },
-                                            modifier = Modifier
-                                                .menuAnchor()
-                                                .fillMaxWidth()
-                                                .testTag("entry_bible_book_select"),
+                                            label = { Text(strings.prayerType) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = prayerDropdownExpanded) },
+                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
                                             singleLine = true
                                         )
                                         ExposedDropdownMenu(
-                                            expanded = bookBookDropdownExpanded,
-                                            onDismissRequest = { bookBookDropdownExpanded = false }
+                                            expanded = prayerDropdownExpanded,
+                                            onDismissRequest = { prayerDropdownExpanded = false }
                                         ) {
-                                            BibleMetadata.BOOKS.forEach { book ->
-                                                val translatedBookName = strings.getBibleBookName(book.name)
+                                            aloneTypes.forEach { (key, label) ->
                                                 DropdownMenuItem(
-                                                    text = { Text("$translatedBookName (${book.chapters} ${strings.chaptersReadLabel.substringBefore("/")})") },
+                                                    text = { Text(label) },
                                                     onClick = {
-                                                        selectedBibleBook = book.name
-                                                        selectedStartChapter = "1"
-                                                        selectedEndChapter = "1"
-                                                        bookBookDropdownExpanded = false
+                                                        prayerFocusType = key
+                                                        prayerDropdownExpanded = false
                                                     }
                                                 )
                                             }
                                         }
                                     }
 
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        // Start Chapter Dropdown
-                                        ExposedDropdownMenuBox(
-                                            expanded = startChapterDropdownExpanded,
-                                            onExpandedChange = { startChapterDropdownExpanded = !startChapterDropdownExpanded },
-                                            modifier = Modifier.weight(1f)
+                                    if (prayerFocusType == "Custom") {
+                                        OutlinedTextField(
+                                            value = customPrayerFocus,
+                                            onValueChange = { customPrayerFocus = it },
+                                            label = { Text(strings.customPrayerFocusPrompt) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                    }
+
+                                    OutlinedTextField(
+                                        value = prayerTopicsCountText,
+                                        onValueChange = { prayerTopicsCountText = it },
+                                        label = { Text(strings.numTopicsRecorded) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
+
+                                "prayer_with_others" -> {
+                                    Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    val groupTypes = listOf(
+                                        "Prayer Night" to strings.prayerTypePrayerNight,
+                                        "Prayer Siege" to strings.prayerTypePrayerSiege,
+                                        "Cell Group" to strings.prayerTypeCellGroup,
+                                        "Family Altar" to strings.prayerTypeFamilyAltar,
+                                        "Corporate Assembly" to strings.prayerTypeCorporateAssembly,
+                                        "Intercessory Chain" to strings.prayerTypeIntercessoryChain,
+                                        "Intercession" to strings.prayerTypeIntercession,
+                                        "Custom" to strings.prayerTypeCustom
+                                    )
+
+                                    var groupDropdownExpanded by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(
+                                        expanded = groupDropdownExpanded,
+                                        onExpandedChange = { groupDropdownExpanded = !groupDropdownExpanded }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = groupTypes.find { it.first == prayerFocusType }?.second ?: prayerFocusType,
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(strings.prayerType) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupDropdownExpanded) },
+                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = groupDropdownExpanded,
+                                            onDismissRequest = { groupDropdownExpanded = false }
                                         ) {
-                                            OutlinedTextField(
-                                                value = "Ch. $selectedStartChapter",
-                                                onValueChange = {},
-                                                readOnly = true,
-                                                label = { Text(strings.startChapter) },
-                                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = startChapterDropdownExpanded) },
-                                                modifier = Modifier
-                                                    .menuAnchor()
-                                                    .fillMaxWidth()
-                                                    .testTag("entry_start_chapter_select"),
-                                                singleLine = true
-                                            )
-                                            ExposedDropdownMenu(
-                                                expanded = startChapterDropdownExpanded,
-                                                onDismissRequest = { startChapterDropdownExpanded = false }
-                                            ) {
-                                                (1..maxChapters).forEach { ch ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(String.format(strings.chapterNumberFormat, ch)) },
-                                                        onClick = {
-                                                            selectedStartChapter = ch.toString()
-                                                            if ((selectedEndChapter.toIntOrNull() ?: 1) < ch) {
-                                                                selectedEndChapter = ch.toString()
-                                                            }
-                                                            startChapterDropdownExpanded = false
-                                                        }
-                                                    )
-                                                }
+                                            groupTypes.forEach { (key, label) ->
+                                                DropdownMenuItem(
+                                                    text = { Text(label) },
+                                                    onClick = {
+                                                        prayerFocusType = key
+                                                        groupDropdownExpanded = false
+                                                    }
+                                                )
                                             }
                                         }
+                                    }
 
-                                        if (domainId == "bible_reading") {
-                                            // End Chapter Dropdown
-                                            ExposedDropdownMenuBox(
-                                                expanded = endChapterDropdownExpanded,
-                                                onExpandedChange = { endChapterDropdownExpanded = !endChapterDropdownExpanded },
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                OutlinedTextField(
-                                                    value = "Ch. $selectedEndChapter",
-                                                    onValueChange = {},
-                                                    readOnly = true,
-                                                    label = { Text(strings.endChapter) },
-                                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = endChapterDropdownExpanded) },
-                                                    modifier = Modifier
-                                                        .menuAnchor()
-                                                        .fillMaxWidth()
-                                                        .testTag("entry_end_chapter_select"),
-                                                    singleLine = true
-                                                )
-                                                ExposedDropdownMenu(
-                                                    expanded = endChapterDropdownExpanded,
-                                                    onDismissRequest = { endChapterDropdownExpanded = false }
-                                                ) {
-                                                    ((selectedStartChapter.toIntOrNull() ?: 1)..maxChapters).forEach { ch ->
-                                                        DropdownMenuItem(
-                                                            text = { Text(String.format(strings.chapterNumberFormat, ch)) },
-                                                            onClick = {
-                                                                selectedEndChapter = ch.toString()
-                                                                endChapterDropdownExpanded = false
-                                                            }
-                                                        )
+                                    if (prayerFocusType == "Custom") {
+                                        OutlinedTextField(
+                                            value = customPrayerFocus,
+                                            onValueChange = { customPrayerFocus = it },
+                                            label = { Text(strings.customPrayerFocusPrompt) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                    }
+
+                                    OutlinedTextField(
+                                        value = prayerParticipantsCountText,
+                                        onValueChange = { prayerParticipantsCountText = it },
+                                        label = { Text(strings.participantsCount) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
+
+                                "giving" -> {
+                                    OutlinedTextField(
+                                        value = givingIncomeText,
+                                        onValueChange = { givingIncomeText = it },
+                                        label = { Text(strings.amountEarnedLabel) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+
+                                    OutlinedTextField(
+                                        value = givingAmountText,
+                                        onValueChange = { givingAmountText = it },
+                                        label = { Text(strings.amountGivenLabel) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+
+                                    val givingTypes = listOf("Tithe", strings.givingTypeFirstFruits, "Free-will Offering", strings.givingTypeAlms, strings.givingTypeBuilding)
+                                    var givingTypeDropdownExpanded by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(
+                                        expanded = givingTypeDropdownExpanded,
+                                        onExpandedChange = { givingTypeDropdownExpanded = !givingTypeDropdownExpanded }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = givingType,
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(strings.givingTypeExtendedPlaceholder) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = givingTypeDropdownExpanded) },
+                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = givingTypeDropdownExpanded,
+                                            onDismissRequest = { givingTypeDropdownExpanded = false }
+                                        ) {
+                                            givingTypes.forEach { type ->
+                                                DropdownMenuItem(
+                                                    text = { Text(type) },
+                                                    onClick = {
+                                                        givingType = type
+                                                        givingTypeDropdownExpanded = false
                                                     }
-                                                }
+                                                )
                                             }
-                                        } else {
-                                            OutlinedTextField(
-                                                value = bibleMemVerse,
-                                                onValueChange = { bibleMemVerse = it },
-                                                label = { Text(strings.versesPrompt) },
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .testTag("entry_bible_mem_verse"),
-                                                singleLine = true
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (calculatedGivingPercentage >= 10.0) LightBlueContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text(
+                                                text = String.format(strings.givingPercentageCalculated, calculatedGivingPercentage),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryBlueDark
+                                            )
+                                            Text(
+                                                text = strings.titheTargetLabel,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
@@ -502,38 +730,43 @@ fun DomainDetailScreen(
                                         value = bookTitle,
                                         onValueChange = { bookTitle = it },
                                         label = { Text(strings.bookTitle) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_christian_lit_title"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = bookAuthor,
                                         onValueChange = { bookAuthor = it },
                                         label = { Text(strings.author) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_christian_lit_author"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         OutlinedTextField(
-                                            value = pagesReadText,
-                                            onValueChange = { pagesReadText = it },
-                                            label = { Text(strings.pagesRead) },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .testTag("entry_pages_read"),
+                                            value = startPageText,
+                                            onValueChange = { startPageText = it },
+                                            label = { Text(strings.startPageLabel) },
+                                            modifier = Modifier.weight(1f),
                                             singleLine = true
                                         )
                                         OutlinedTextField(
-                                            value = timesReadText,
-                                            onValueChange = { timesReadText = it },
-                                            label = { Text(strings.timesReadPrompt) },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .testTag("entry_times_read"),
+                                            value = endPageText,
+                                            onValueChange = { endPageText = it },
+                                            label = { Text(strings.endPageLabel) },
+                                            modifier = Modifier.weight(1f),
                                             singleLine = true
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = LightBlueContainer,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = String.format(strings.totalPagesCalculated, calculatedLiteraturePages),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryBlueDark,
+                                            modifier = Modifier.padding(12.dp)
                                         )
                                     }
                                 }
@@ -543,37 +776,75 @@ fun DomainDetailScreen(
                                         value = bookTitle,
                                         onValueChange = { bookTitle = it },
                                         label = { Text(strings.bookTitle) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_lit_mem_title"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = bookAuthor,
                                         onValueChange = { bookAuthor = it },
                                         label = { Text(strings.author) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_lit_mem_author"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
                                         value = pagesMemorizedText,
                                         onValueChange = { pagesMemorizedText = it },
                                         label = { Text(strings.pagesMemorizedPrompt) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_pages_memorized"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                 }
 
+                                "retreats" -> {
+                                    OutlinedTextField(
+                                        value = retreatFocus,
+                                        onValueChange = { retreatFocus = it },
+                                        label = { Text(strings.retreatFocusLabel) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+
+                                    Text(
+                                        text = strings.retreatActivitiesChecklist,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryBlueDark
+                                    )
+
+                                    val retreatItems = listOf(
+                                        "Solitude & Silence" to strings.retreatSolitude,
+                                        "Complete Fasting" to strings.retreatFasting,
+                                        "Extended Prayer & Intercession" to strings.retreatExtendedPrayer,
+                                        "Intensive Word Study" to strings.retreatWordStudy,
+                                        "Meditation & Journaling" to strings.retreatMeditation,
+                                        "Spiritual Examination & Repentance" to strings.retreatExamination,
+                                        "Waiting on the Holy Spirit" to strings.retreatWaitingSpirit
+                                    )
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        retreatItems.forEach { (key, label) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable { retreatActivities[key] = !(retreatActivities[key] ?: false) }
+                                                    .padding(vertical = 4.dp, horizontal = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Checkbox(
+                                                    checked = retreatActivities[key] ?: false,
+                                                    onCheckedChange = { retreatActivities[key] = it }
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(label, style = MaterialTheme.typography.bodyMedium)
+                                            }
+                                        }
+                                    }
+                                }
+
                                 "fasting" -> {
                                     Text(strings.typeOfFast, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                         listOf("Complete Fast", "Partial Fast").forEach { type ->
                                             FilterChip(
                                                 selected = selectedFastingType == type,
@@ -592,141 +863,313 @@ fun DomainDetailScreen(
                                         value = fastingDaysText,
                                         onValueChange = { fastingDaysText = it },
                                         label = { Text(strings.fastingDurationDays) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_fasting_days"),
-                                        singleLine = true
-                                    )
-                                }
-
-                                "giving" -> {
-                                    OutlinedTextField(
-                                        value = givingAmountText,
-                                        onValueChange = { givingAmountText = it },
-                                        label = { Text(strings.givingAmountLabel) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_giving_amount"),
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                     OutlinedTextField(
-                                        value = givingType,
-                                        onValueChange = { givingType = it },
-                                        label = { Text(strings.givingTypeExtendedPlaceholder) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("entry_giving_type"),
+                                        value = fastingPurpose,
+                                        onValueChange = { fastingPurpose = it },
+                                        label = { Text(strings.purpose) },
+                                        modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
                                 }
 
                                 "soul_winning" -> {
-                                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            OutlinedTextField(
-                                                value = preachedToCountText,
-                                                onValueChange = { preachedToCountText = it },
-                                                label = { Text(strings.peoplePreachedTo) },
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .testTag("entry_preached_to"),
-                                                singleLine = true
-                                            )
-                                            OutlinedTextField(
-                                                value = convertedCountText,
-                                                onValueChange = { convertedCountText = it },
-                                                label = { Text(strings.peopleConverted) },
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .testTag("entry_converts"),
-                                                singleLine = true
-                                            )
-                                        }
-                                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            OutlinedTextField(
-                                                value = waterBaptizedText,
-                                                onValueChange = { waterBaptizedText = it },
-                                                label = { Text(strings.waterBaptized) },
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .testTag("entry_water_baptized"),
-                                                singleLine = true
-                                            )
-                                            OutlinedTextField(
-                                                value = holySpiritBaptizedText,
-                                                onValueChange = { holySpiritBaptizedText = it },
-                                                label = { Text(strings.holySpiritBaptized) },
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .testTag("entry_holy_spirit_baptized"),
-                                                singleLine = true
-                                            )
-                                        }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        OutlinedTextField(
+                                            value = preachedToCountText,
+                                            onValueChange = { preachedToCountText = it },
+                                            label = { Text(strings.peoplePreachedTo) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = convertedCountText,
+                                            onValueChange = { convertedCountText = it },
+                                            label = { Text(strings.peopleConverted) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        OutlinedTextField(
+                                            value = waterBaptizedText,
+                                            onValueChange = { waterBaptizedText = it },
+                                            label = { Text(strings.waterBaptized) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = holySpiritBaptizedText,
+                                            onValueChange = { holySpiritBaptizedText = it },
+                                            label = { Text(strings.holySpiritBaptized) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
                                     }
                                 }
 
-                                else -> {
-                                    // General Activity Details
+                                "ddewg" -> {
+                                    OutlinedTextField(
+                                        value = ddewgInspirationText,
+                                        onValueChange = { ddewgInspirationText = it },
+                                        label = { Text(strings.inspirationForMeditation) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 2
+                                    )
+                                }
+
+                                "bible_mem" -> {
+                                    OutlinedTextField(
+                                        value = bibleMemBook,
+                                        onValueChange = { bibleMemBook = it },
+                                        label = { Text(strings.selectBibleBook) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        OutlinedTextField(
+                                            value = bibleMemChapter.toString(),
+                                            onValueChange = { bibleMemChapter = it.toIntOrNull() ?: 1 },
+                                            label = { Text(strings.startChapter) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = bibleMemVerse,
+                                            onValueChange = { bibleMemVerse = it },
+                                            label = { Text(strings.versesPrompt) },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                    }
                                 }
                             }
 
-                            // Expanded Activity Notes Field
+                            // Activity Notes Field
                             OutlinedTextField(
                                 value = notes,
                                 onValueChange = { notes = it },
                                 label = { Text(strings.activityNotesPrompt) },
                                 minLines = 3,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("entry_notes")
+                                modifier = Modifier.fillMaxWidth().testTag("entry_notes")
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
 
                             Button(
                                 onClick = {
-                                    val sCh = selectedStartChapter.toIntOrNull() ?: 1
-                                    val eCh = selectedEndChapter.toIntOrNull() ?: 1
-                                    val chCount = (eCh - sCh + 1).coerceAtLeast(1)
                                     val durSecs = (calculatedDurationMinutes * 60).toLong()
 
-                                    val entry = AccountabilityEntryEntity(
-                                        id = UUID.randomUUID().toString(),
-                                        userId = "guest_user",
-                                        domainId = domainId,
-                                        dateIso = selectedDateIso,
-                                        timestampMs = System.currentTimeMillis(),
-                                        timezoneId = java.time.ZoneId.systemDefault().id,
-                                        durationSeconds = if (domainId == "fasting" || domainId == "giving") 0L else durSecs,
-                                        startTimeIso = if (domainId == "fasting" || domainId == "giving") "" else startTimeText,
-                                        endTimeIso = if (domainId == "fasting" || domainId == "giving") "" else stopTimeText,
-                                        prayerType = selectedPrayerType,
-                                        prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
-                                        bibleBook = selectedBibleBook,
-                                        startChapter = sCh,
-                                        endChapter = eCh,
-                                        chaptersCount = chCount,
-                                        bibleMemBook = selectedBibleBook,
-                                        bibleMemChapter = sCh,
-                                        bibleMemVerse = bibleMemVerse,
-                                        bookTitle = bookTitle,
-                                        bookAuthor = bookAuthor,
-                                        pagesRead = pagesReadText.toIntOrNull() ?: 0,
-                                        bookTimesRead = timesReadText.toIntOrNull() ?: 1,
-                                        pagesMemorized = pagesMemorizedText.toIntOrNull() ?: 0,
-                                        preachedToCount = preachedToCountText.toIntOrNull() ?: 0,
-                                        convertedCount = convertedCountText.toIntOrNull() ?: 0,
-                                        waterBaptizedCount = waterBaptizedText.toIntOrNull() ?: 0,
-                                        holySpiritBaptizedCount = holySpiritBaptizedText.toIntOrNull() ?: 0,
-                                        givingAmount = givingAmountText.toDoubleOrNull() ?: 0.0,
-                                        givingIncomeReference = givingIncomeText.toDoubleOrNull() ?: 0.0,
-                                        givingPercentage = givingPercentageText.toDoubleOrNull() ?: 0.0,
-                                        givingType = givingType,
-                                        fastingDaysCount = fastingDaysText.toIntOrNull() ?: 1,
-                                        fastingType = selectedFastingType,
-                                        notes = notes,
-                                        reflection = if (domainId == "ddewg") ddewgInspirationText else ""
-                                    )
+                                    // Build isolated entity according to DomainType
+                                    val entry = when (domainId) {
+                                        "bible_reading" -> {
+                                            val combinedBook = bibleSegments.joinToString(", ") { "${it.book} ${it.startChapter}-${it.endChapter}" }
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                bibleBook = combinedBook,
+                                                startChapter = bibleSegments.firstOrNull()?.startChapter ?: 1,
+                                                endChapter = bibleSegments.lastOrNull()?.endChapter ?: 1,
+                                                chaptersCount = calculatedTotalBibleChapters,
+                                                notes = notes
+                                            )
+                                        }
+                                        "prayer_alone" -> {
+                                            val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                prayerType = effectiveFocus,
+                                                prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
+                                                notes = notes
+                                            )
+                                        }
+                                        "prayer_with_others" -> {
+                                            val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                prayerType = effectiveFocus,
+                                                prayerParticipantsCount = prayerParticipantsCountText.toIntOrNull() ?: 1,
+                                                notes = notes
+                                            )
+                                        }
+                                        "giving" -> {
+                                            val inc = givingIncomeText.toDoubleOrNull() ?: 0.0
+                                            val amt = givingAmountText.toDoubleOrNull() ?: 0.0
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = 0L,
+                                                givingAmount = amt,
+                                                givingIncomeReference = inc,
+                                                givingPercentage = calculatedGivingPercentage,
+                                                givingType = givingType,
+                                                notes = notes
+                                            )
+                                        }
+                                        "christian_lit" -> {
+                                            val sPage = startPageText.toIntOrNull() ?: 1
+                                            val ePage = endPageText.toIntOrNull() ?: sPage
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                bookTitle = bookTitle,
+                                                bookAuthor = bookAuthor,
+                                                startPage = sPage,
+                                                endPage = ePage,
+                                                pagesRead = calculatedLiteraturePages,
+                                                bookTimesRead = timesReadText.toIntOrNull() ?: 1,
+                                                notes = notes
+                                            )
+                                        }
+                                        "retreats" -> {
+                                            val selectedActList = retreatActivities.filter { it.value }.keys.toList()
+                                            val actJson = selectedActList.joinToString(";;")
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                retreatFocus = retreatFocus,
+                                                retreatActivitiesJson = actJson,
+                                                notes = notes
+                                            )
+                                        }
+                                        "fasting" -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = 0L,
+                                                fastingDaysCount = fastingDaysText.toIntOrNull() ?: 1,
+                                                fastingType = selectedFastingType,
+                                                notes = if (fastingPurpose.isNotBlank()) "$fastingPurpose\n$notes" else notes
+                                            )
+                                        }
+                                        "soul_winning" -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                preachedToCount = preachedToCountText.toIntOrNull() ?: 0,
+                                                convertedCount = convertedCountText.toIntOrNull() ?: 0,
+                                                waterBaptizedCount = waterBaptizedText.toIntOrNull() ?: 0,
+                                                holySpiritBaptizedCount = holySpiritBaptizedText.toIntOrNull() ?: 0,
+                                                notes = notes
+                                            )
+                                        }
+                                        "ddewg" -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                reflection = ddewgInspirationText,
+                                                notes = notes
+                                            )
+                                        }
+                                        "christian_lit_mem" -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                bookTitle = bookTitle,
+                                                bookAuthor = bookAuthor,
+                                                pagesMemorized = pagesMemorizedText.toIntOrNull() ?: 0,
+                                                notes = notes
+                                            )
+                                        }
+                                        "bible_mem" -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                bibleMemBook = bibleMemBook,
+                                                bibleMemChapter = bibleMemChapter,
+                                                bibleMemVerse = bibleMemVerse,
+                                                notes = notes
+                                            )
+                                        }
+                                        else -> {
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = durSecs,
+                                                startTimeIso = startTimeText,
+                                                endTimeIso = stopTimeText,
+                                                notes = notes
+                                            )
+                                        }
+                                    }
+
                                     onSaveEntry(entry)
                                     HapticHelper.vibrateSuccess(context)
                                     isSaved = true
