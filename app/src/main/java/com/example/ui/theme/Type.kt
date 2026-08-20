@@ -2,37 +2,30 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-val googleFontProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
-)
-
-val plusJakartaSansFont = GoogleFont("Plus Jakarta Sans")
-val interFont = GoogleFont("Inter")
-
-// Plus Jakarta Sans for Headings & Titles
+// Plus Jakarta Sans for Headings & Titles (Bundled Font Family)
 val HeadingFontFamily = FontFamily(
-    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
-    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
-    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.Bold),
-    Font(googleFont = plusJakartaSansFont, fontProvider = googleFontProvider, weight = FontWeight.ExtraBold)
+    Font(R.font.plusjakartasans_light, weight = FontWeight.Light),
+    Font(R.font.plusjakartasans_regular, weight = FontWeight.Normal),
+    Font(R.font.plusjakartasans_medium, weight = FontWeight.Medium),
+    Font(R.font.plusjakartasans_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.plusjakartasans_bold, weight = FontWeight.Bold),
+    Font(R.font.plusjakartasans_extrabold, weight = FontWeight.ExtraBold)
 )
 
-// Inter for Body text & Labels
+// Outfit for Body text & Labels (Bundled Font Family)
 val BodyFontFamily = FontFamily(
-    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
-    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
-    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = interFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+    Font(R.font.outfit_light, weight = FontWeight.Light),
+    Font(R.font.outfit_regular, weight = FontWeight.Normal),
+    Font(R.font.outfit_medium, weight = FontWeight.Medium),
+    Font(R.font.outfit_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.outfit_bold, weight = FontWeight.Bold),
+    Font(R.font.outfit_extrabold, weight = FontWeight.ExtraBold)
 )
 
 val Typography = Typography(
