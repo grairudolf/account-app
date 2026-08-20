@@ -1,6 +1,8 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
 
 // Explicit Brand Color Palette
 val BrandDarkNavy = Color(0xFF14214C)       // Dark blue (#14214c)
@@ -34,7 +36,9 @@ val TextSecondary = Color(0xFF5F6987)
 val TextMuted = Color(0xFF8C98AC)
 val TextPrimaryNight = Color(0xFFFFFFFF)
 val TextSecondaryNight = Color(0xFFCACED7)
-val DividerColor = Color(0xFFE2E6EF)
+val DividerColor: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.outline
 
 // Status Colors
 val StatusSuccess = Color(0xFF10B981)

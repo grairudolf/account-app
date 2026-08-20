@@ -122,7 +122,7 @@ fun ProclamationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = PrimaryBlue.copy(alpha = 0.08f)
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     )
                 ) {
                     Row(
@@ -133,13 +133,13 @@ fun ProclamationScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(PrimaryBlue.copy(alpha = 0.15f)),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Campaign,
                                 contentDescription = null,
-                                tint = PrimaryBlue
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -147,8 +147,8 @@ fun ProclamationScreen(
                             Text(
                                 text = "\"Men ought always to pray, and not to faint.\"",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = PrimaryBlue
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Luke 18:1 • Proclaim until total victory is obtained",
@@ -175,7 +175,7 @@ fun ProclamationScreen(
                             text = strings.topicLabel,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         OutlinedTextField(
@@ -262,7 +262,7 @@ fun ProclamationScreen(
                                         leadingIcon = if (isSelected) {
                                             { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                         } else {
-                                            { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = PrimaryBlue) }
+                                            { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary) }
                                         },
                                         shape = RoundedCornerShape(8.dp)
                                     )
@@ -294,8 +294,8 @@ fun ProclamationScreen(
                         if (isResumedSession && startingCount > 0) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = PrimaryBlue.copy(alpha = 0.1f),
-                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -310,7 +310,7 @@ fun ProclamationScreen(
                                         Icon(
                                             imageVector = Icons.Default.PlayCircle,
                                             contentDescription = null,
-                                            tint = PrimaryBlue,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -320,7 +320,7 @@ fun ProclamationScreen(
                                                 text = "Continuing session from $startingCount",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.Bold,
-                                                color = PrimaryBlue
+                                                color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
                                                 text = "+$addedInSession added in today's session",
@@ -356,7 +356,7 @@ fun ProclamationScreen(
                                 Icon(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = null,
-                                    tint = if (isTimerRunning) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = if (isTimerRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -367,7 +367,7 @@ fun ProclamationScreen(
                                     text = formattedTime,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isTimerRunning) PrimaryBlue else MaterialTheme.colorScheme.onSurface
+                                    color = if (isTimerRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
                             }
 
@@ -419,7 +419,7 @@ fun ProclamationScreen(
                                 .background(
                                     Brush.radialGradient(
                                         colors = listOf(
-                                            PrimaryBlue.copy(alpha = 0.15f),
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                         )
                                     )
@@ -428,10 +428,10 @@ fun ProclamationScreen(
                                     width = 3.dp,
                                     brush = Brush.sweepGradient(
                                         colors = listOf(
-                                            PrimaryBlue,
+                                            MaterialTheme.colorScheme.primary,
                                             AccentPurple,
-                                            SecondaryBlue,
-                                            PrimaryBlue
+                                            BrandSlateBlue,
+                                            MaterialTheme.colorScheme.primary
                                         )
                                     ),
                                     shape = CircleShape
@@ -453,7 +453,7 @@ fun ProclamationScreen(
                                         fontSize = 54.sp,
                                         fontWeight = FontWeight.Black
                                     ),
-                                    color = PrimaryBlue
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     text = "Target: $targetCount",
@@ -493,13 +493,14 @@ fun ProclamationScreen(
                                 Text(
                                     text = "$counter / $targetCount Proclamations",
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "${(progress * 100).toInt()}%",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (progress >= 1f) Color(0xFF2E7D32) else PrimaryBlue
+                                    color = if (progress >= 1f) StatusSuccess else MaterialTheme.colorScheme.primary
                                 )
                             }
                             LinearProgressIndicator(
@@ -508,7 +509,7 @@ fun ProclamationScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
-                                color = if (progress >= 1f) Color(0xFF2E7D32) else PrimaryBlue,
+                                color = if (progress >= 1f) StatusSuccess else MaterialTheme.colorScheme.primary,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         }
@@ -540,7 +541,8 @@ fun ProclamationScreen(
                             shape = RoundedCornerShape(16.dp),
                             interactionSource = interactionSource,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = PrimaryBlue
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             elevation = ButtonDefaults.buttonElevation(
                                 defaultElevation = 4.dp,
@@ -631,7 +633,7 @@ fun ProclamationScreen(
                             text = "Spiritual Notes & Impressions",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         OutlinedTextField(
@@ -678,7 +680,10 @@ fun ProclamationScreen(
                         .height(54.dp)
                         .testTag("save_proclamation_session_button"),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -765,12 +770,13 @@ fun ProclamationScreen(
                         Checkbox(
                             checked = asStartingBase,
                             onCheckedChange = { asStartingBase = it },
-                            colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Set as session starting baseline (only count additional repetitions toward today's log)",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -803,7 +809,7 @@ fun ProclamationScreen(
             onDismissRequest = { showInfoDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Campaign, contentDescription = null, tint = PrimaryBlue)
+                    Icon(Icons.Default.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Proclamation & Importunity", fontWeight = FontWeight.Bold)
                 }
@@ -817,11 +823,12 @@ fun ProclamationScreen(
                         text = "1. Proclamation of Faith",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Speaking God's word aloud repeatedly until faith fills the spirit and spiritual opposition is broken (Hebrews 4:14, Revelation 12:11).",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -829,11 +836,12 @@ fun ProclamationScreen(
                         text = "2. Importunity in Prayer",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Persistent, shameless, and untiring prayer for a specific topic until the answer comes (Luke 11:8, Luke 18:1-8).",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -841,11 +849,12 @@ fun ProclamationScreen(
                         text = "3. Practical Tips",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "• Set clear biblical topics.\n• Use the counter to maintain focused repetition.\n• Let your prayers be audible, firm, and filled with the Holy Spirit.",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
@@ -920,12 +929,12 @@ private fun TopicHistoryCard(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = PrimaryBlue.copy(alpha = 0.15f)
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
                                 text = "${topic.cumulativeCount} Proclamations",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PrimaryBlue,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -968,7 +977,10 @@ private fun TopicHistoryCard(
                     onClick = onResume,
                     modifier = Modifier.weight(1.3f),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Icon(

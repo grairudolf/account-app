@@ -348,7 +348,7 @@ fun SettingsScreen(
                                     text = spiritualAgeText,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = PrimaryBlueDark
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -424,10 +424,10 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(LightBlueContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Translate, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             }
                             Text(strings.language, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                         }
@@ -485,13 +485,13 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(if (isDark) PrimaryBlueDark else LightBlueContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
                                     contentDescription = null,
-                                    tint = if (isDark) StreakGold else PrimaryBlue,
+                                    tint = if (isDark) StreakGold else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -526,23 +526,42 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = null,
-                        tint = PrimaryBlue,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
                         text = strings.dailyReminders,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                IconButton(
-                    onClick = {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.clickable {
                         editingReminder = null
                         showReminderDialog = true
-                    },
-                    modifier = Modifier.testTag("add_reminder_button")
+                    }.testTag("add_reminder_button")
                 ) {
-                    Icon(Icons.Default.AddAlarm, contentDescription = "Add Reminder", tint = PrimaryBlue)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAlarm,
+                            contentDescription = "Add Reminder",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = strings.addReminderBtn,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
             }
         }
@@ -550,19 +569,54 @@ fun SettingsScreen(
         if (reminders.isEmpty()) {
             item {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     modifier = Modifier
                         .widthIn(max = 840.dp)
                         .fillMaxWidth()
                 ) {
-                    Text(
-                        text = strings.noActiveReminders,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(20.dp)
-                    )
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsNone,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Text(
+                            text = strings.noActiveReminders,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Button(
+                            onClick = {
+                                editingReminder = null
+                                showReminderDialog = true
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(Icons.Default.AddAlarm, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.dailyReminders, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         } else {
@@ -570,7 +624,7 @@ fun SettingsScreen(
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, if (rem.isEnabled) PrimaryBlue.copy(alpha = 0.3f) else DividerColor),
+                    border = BorderStroke(1.dp, if (rem.isEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
                     modifier = Modifier
                         .widthIn(max = 840.dp)
                         .fillMaxWidth()
@@ -588,23 +642,23 @@ fun SettingsScreen(
                         Row(
                             modifier = Modifier.weight(1f),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(if (rem.isEnabled) PrimaryBlue else DividerColor),
+                                    .background(if (rem.isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Alarm,
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = if (rem.isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
-                            Column {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
                                     text = rem.title,
                                     style = MaterialTheme.typography.titleMedium,
@@ -642,6 +696,7 @@ fun SettingsScreen(
                     }
                 }
             }
+
         }
 
         // Legal & Support Dialog Action Card
@@ -649,34 +704,34 @@ fun SettingsScreen(
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                 modifier = Modifier
                     .widthIn(max = 840.dp)
                     .fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     ListItem(
-                        headlineContent = { Text(strings.privacyPolicy, fontWeight = FontWeight.SemiBold) },
-                        leadingContent = { Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = PrimaryBlue) },
-                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        headlineContent = { Text(strings.privacyPolicy, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) },
+                        leadingContent = { Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier
                             .clickable { showPrivacyDialog = true }
                             .testTag("settings_privacy_policy")
                     )
-                    HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     ListItem(
-                        headlineContent = { Text(strings.termsConditions, fontWeight = FontWeight.SemiBold) },
-                        leadingContent = { Icon(Icons.Default.Gavel, contentDescription = null, tint = PrimaryBlue) },
-                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        headlineContent = { Text(strings.termsConditions, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) },
+                        leadingContent = { Icon(Icons.Default.Gavel, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier
                             .clickable { showTermsDialog = true }
                             .testTag("settings_terms_conditions")
                     )
-                    HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     ListItem(
-                        headlineContent = { Text(strings.supportFeedback, fontWeight = FontWeight.SemiBold) },
-                        leadingContent = { Icon(Icons.Default.HelpCenter, contentDescription = null, tint = PrimaryBlue) },
-                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        headlineContent = { Text(strings.supportFeedback, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface) },
+                        leadingContent = { Icon(Icons.Default.HelpCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier
                             .clickable { showSupportDialog = true }
                             .testTag("settings_support_feedback")
@@ -685,12 +740,12 @@ fun SettingsScreen(
             }
         }
 
-        // Need Help? Support CTA Card
+        // Need Help? Support CTA Card (High-Contrast in both Light & Dark Theme)
         item {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = LightBlueContainer,
-                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.2f)),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                 modifier = Modifier
                     .widthIn(max = 840.dp)
                     .fillMaxWidth()
@@ -703,7 +758,7 @@ fun SettingsScreen(
                         text = strings.needHelp,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryBlueDark
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = strings.needHelpDesc,
@@ -712,7 +767,10 @@ fun SettingsScreen(
                     )
                     Button(
                         onClick = { showSupportDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlueDark),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {

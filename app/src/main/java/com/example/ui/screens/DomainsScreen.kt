@@ -70,8 +70,8 @@ fun DomainsScreen(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = DividerColor
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
 
@@ -89,7 +89,7 @@ fun DomainsScreen(
             )
             FloatingActionButton(
                 onClick = { showAddDialog = true },
-                containerColor = PrimaryBlue,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier
@@ -135,13 +135,13 @@ fun DomainCard(
     strings: AppStrings,
     onClick: () -> Unit
 ) {
-    val iconBg = BrandDarkNavy
-    val iconTint = BrandBrightYellow
+    val iconBg = MaterialTheme.colorScheme.primaryContainer
+    val iconTint = MaterialTheme.colorScheme.primary
 
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, DividerColor),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -199,7 +199,7 @@ fun DomainCard(
 
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(36.dp)
             ) {
                 Box(
@@ -209,7 +209,7 @@ fun DomainCard(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = BrandDarkNavy,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }

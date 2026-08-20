@@ -130,14 +130,14 @@ fun SearchScreen(
                                 text = strings.spiritualDisciplines,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         items(filteredDomains) { domain ->
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
                                 color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, DividerColor),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { onNavigateToDomain(domain.id) }
@@ -151,13 +151,13 @@ fun SearchScreen(
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(CircleShape)
-                                            .background(LightBlueContainer),
+                                            .background(MaterialTheme.colorScheme.primaryContainer),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.AutoAwesome,
                                             contentDescription = null,
-                                            tint = PrimaryBlue,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }

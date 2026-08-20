@@ -130,8 +130,8 @@ fun TimerScreen(
                 if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = LightBlueContainer,
-                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.4f)),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
@@ -144,7 +144,7 @@ fun TimerScreen(
                             Icon(
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(28.dp)
                             )
                             Column(modifier = Modifier.weight(1f)) {
@@ -152,17 +152,20 @@ fun TimerScreen(
                                     text = "Enable Live Notifications",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlueDark
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
                                     text = "Allow notifications to keep track of this session across background navigation.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
                             }
                             Button(
                                 onClick = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                             ) {
@@ -175,7 +178,7 @@ fun TimerScreen(
                 Surface(
                     shape = RoundedCornerShape(32.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     shadowElevation = 2.dp,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,13 +193,13 @@ fun TimerScreen(
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(CircleShape)
-                                .background(LightBlueContainer),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Timer,
                                 contentDescription = null,
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(36.dp)
                             )
                         }
@@ -212,7 +215,7 @@ fun TimerScreen(
                             text = formattedTime,
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryBlueDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             letterSpacing = 2.sp
                         )
 
@@ -226,7 +229,10 @@ fun TimerScreen(
                                         HapticHelper.vibrateSuccess(context)
                                         onStartTimer(domainId)
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
@@ -242,7 +248,10 @@ fun TimerScreen(
                                         HapticHelper.vibrateClick(context)
                                         onPauseTimer()
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
@@ -258,7 +267,10 @@ fun TimerScreen(
                                         HapticHelper.vibrateSuccess(context)
                                         showSaveDialog = true
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = StatusSuccess),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
@@ -274,7 +286,10 @@ fun TimerScreen(
                                         HapticHelper.vibrateClick(context)
                                         onResumeTimer()
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
@@ -290,7 +305,10 @@ fun TimerScreen(
                                         HapticHelper.vibrateSuccess(context)
                                         showSaveDialog = true
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = StatusSuccess),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
@@ -311,7 +329,7 @@ fun TimerScreen(
                                 },
                                 modifier = Modifier.testTag("timer_discard_button")
                             ) {
-                                Text(strings.discardSession, color = StatusError, fontWeight = FontWeight.SemiBold)
+                                Text(strings.discardSession, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -429,13 +447,13 @@ fun SaveTimerDialog(
                         text = strings.sessionComplete,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryBlueDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "${strings.duration}: $formattedTime",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -449,8 +467,8 @@ fun SaveTimerDialog(
                             val segment = bibleSegments[index]
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = LightBlueContainer.copy(alpha = 0.5f),
-                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.2f)),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -459,7 +477,7 @@ fun SaveTimerDialog(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("${strings.bookSegment} #${index + 1}", fontWeight = FontWeight.Bold, color = PrimaryBlueDark)
+                                        Text("${strings.bookSegment} #${index + 1}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                         if (bibleSegments.size > 1) {
                                             IconButton(onClick = { bibleSegments.removeAt(index) }, modifier = Modifier.size(28.dp)) {
                                                 Icon(Icons.Default.Delete, contentDescription = strings.removeBookSegment, tint = StatusError)
@@ -555,12 +573,12 @@ fun SaveTimerDialog(
                                 Text(strings.addAnotherBook)
                             }
                             Spacer(modifier = Modifier.height(6.dp))
-                            Surface(shape = RoundedCornerShape(12.dp), color = LightBlueContainer, modifier = Modifier.fillMaxWidth()) {
+                            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = String.format(strings.totalChaptersCalculated, calculatedTotalBibleChapters),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlueDark,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(10.dp)
                                 )
                             }
@@ -614,13 +632,15 @@ fun SaveTimerDialog(
                                     singleLine = true
                                 )
                             }
-                            OutlinedTextField(
-                                value = prayerTopicsCountText,
-                                onValueChange = { prayerTopicsCountText = it },
-                                label = { Text(strings.numTopicsRecorded) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
+                            if (prayerFocusType == "Personal Supplication" || prayerFocusType == "Request" || prayerFocusType == "Requests" || prayerFocusType == "Thanksgiving" || prayerFocusType == "Custom") {
+                                OutlinedTextField(
+                                    value = prayerTopicsCountText,
+                                    onValueChange = { prayerTopicsCountText = it },
+                                    label = { Text(strings.numTopicsRecorded) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                            }
                         }
                     }
 
@@ -713,12 +733,12 @@ fun SaveTimerDialog(
                                     singleLine = true
                                 )
                             }
-                            Surface(shape = RoundedCornerShape(12.dp), color = LightBlueContainer, modifier = Modifier.fillMaxWidth()) {
+                            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = String.format(strings.totalPagesCalculated, calculatedLiteraturePages),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlueDark,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(10.dp)
                                 )
                             }
@@ -738,7 +758,7 @@ fun SaveTimerDialog(
                                 text = strings.retreatActivitiesChecklist,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlueDark
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             val retreatItems = listOf(
                                 "Solitude & Silence" to strings.retreatSolitude,
@@ -785,12 +805,12 @@ fun SaveTimerDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
-                            Surface(shape = RoundedCornerShape(12.dp), color = LightBlueContainer, modifier = Modifier.fillMaxWidth()) {
+                            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = String.format(strings.givingPercentageCalculated, calculatedGivingPercentage),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlueDark,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(10.dp)
                                 )
                             }
@@ -1022,7 +1042,10 @@ fun SaveTimerDialog(
 
                                 onConfirm(entry)
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
                             modifier = Modifier.testTag("save_timer_confirm_button")
                         ) {
                             Text(strings.save, fontWeight = FontWeight.Bold)

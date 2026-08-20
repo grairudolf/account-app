@@ -154,7 +154,7 @@ fun NotificationsScreen(
                         )
                         if (unreadCount > 0) {
                             TextButton(onClick = onMarkAllAsRead) {
-                                Text("Mark all as read", color = PrimaryBlue)
+                                Text("Mark all as read", color = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -165,7 +165,7 @@ fun NotificationsScreen(
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, DividerColor),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
@@ -260,10 +260,10 @@ fun NotificationCard(
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = if (!notification.isRead) LightBlueContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
+        color = if (!notification.isRead) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             width = if (!notification.isRead) 1.5.dp else 1.dp,
-            color = if (!notification.isRead) PrimaryBlue else DividerColor
+            color = if (!notification.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
         ),
         modifier = Modifier
             .fillMaxWidth()

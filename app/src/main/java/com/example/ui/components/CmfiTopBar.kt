@@ -77,12 +77,12 @@ fun CmfiTopBar(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(LightBlueContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = userName.take(1).uppercase(),
-                                    color = PrimaryBlue,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
                                 )

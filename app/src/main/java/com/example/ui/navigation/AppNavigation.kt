@@ -161,8 +161,8 @@ fun MainApp() {
 
                         Surface(
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                            color = PrimaryBlueDark,
-                            contentColor = Color.White,
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                             shadowElevation = 6.dp,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -180,7 +180,8 @@ fun MainApp() {
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -191,23 +192,27 @@ fun MainApp() {
                                     Text(
                                         text = "${strings.getDomainTitleById(activeTimer.domainId).uppercase()}: $timeStr",
                                         fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
                                 }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.wrapContentWidth()
                                 ) {
                                     Text(
                                         text = strings.resumeTimer,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = LightBlueContainer,
-                                        fontWeight = FontWeight.Bold
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
                                     )
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
                                         contentDescription = "Open Timer",
-                                        tint = LightBlueContainer,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }

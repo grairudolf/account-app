@@ -119,12 +119,13 @@ fun ReportsScreen(
         context.startActivity(chooser)
     }
 
+    val primaryCanvasColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
             drawCircle(
-                color = PrimaryBlue.copy(alpha = 0.05f),
+                color = primaryCanvasColor,
                 radius = w * 0.5f,
                 center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.15f)
             )
@@ -194,9 +195,9 @@ fun ReportsScreen(
                                 else -> type
                             }
                             val selected = selectedReportType == type
-                            val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
-                            val contentColor = if (selected) Color.White else TextSecondary
-                            val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
+                            val containerBg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                            val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
@@ -232,7 +233,7 @@ fun ReportsScreen(
                                 text = strings.exactDateSelection,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -319,7 +320,10 @@ fun ReportsScreen(
                                     Checkbox(
                                         checked = checked,
                                         onCheckedChange = { onToggleDomainFilter(id) },
-                                        colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = MaterialTheme.colorScheme.primary,
+                                            uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
@@ -344,21 +348,24 @@ fun ReportsScreen(
                             .fillMaxWidth()
                             .height(52.dp)
                             .testTag("generate_pdf_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = DarkPillBackground),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
                         shape = RoundedCornerShape(26.dp),
                         enabled = !isGenerating
                     ) {
                         if (isGenerating) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White)
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                             Spacer(modifier = Modifier.width(8.dp))
                             val btnText = String.format(strings.generatePdfButton, selectedReportType)
-                            Text(btnText, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(btnText, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
 
@@ -366,7 +373,7 @@ fun ReportsScreen(
                         val file = lastGeneratedFile!!
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = LightBlueContainer,
+                            color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -384,7 +391,7 @@ fun ReportsScreen(
                                     Text(
                                         text = file.name,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = PrimaryBlueDark
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -392,7 +399,7 @@ fun ReportsScreen(
                                         Icon(
                                             imageVector = Icons.Default.PictureAsPdf,
                                             contentDescription = "Open PDF",
-                                            tint = PrimaryBlue,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -400,7 +407,7 @@ fun ReportsScreen(
                                         Icon(
                                             imageVector = Icons.Default.Share,
                                             contentDescription = "Share PDF File",
-                                            tint = PrimaryBlue,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -457,14 +464,15 @@ fun ReportsScreen(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = null,
-                            tint = PrimaryBlue,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                         Column {
                             Text(
                                 text = strings.shareAccountsTitle,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = strings.shareAccountsDesc,
@@ -482,11 +490,14 @@ fun ReportsScreen(
                             onClick = { shareTextReport(null) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(strings.shareSummary)
+                            Text(strings.shareSummary, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = { shareTextReport(null) },
@@ -547,16 +558,17 @@ fun ReportsScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(LightBlueContainer),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Description, contentDescription = null, tint = PrimaryBlue)
+                            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "${record.reportType} REPORT",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = record.dateRangeLabel,
@@ -567,14 +579,14 @@ fun ReportsScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (savedFile != null && savedFile.exists()) {
                                 IconButton(onClick = { openPdfFile(savedFile) }) {
-                                    Icon(Icons.Default.PictureAsPdf, contentDescription = "Open PDF", tint = PrimaryBlue)
+                                    Icon(Icons.Default.PictureAsPdf, contentDescription = "Open PDF", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = { sharePdfFile(savedFile) }) {
-                                    Icon(Icons.Default.Share, contentDescription = "Share PDF", tint = PrimaryBlue)
+                                    Icon(Icons.Default.Share, contentDescription = "Share PDF", tint = MaterialTheme.colorScheme.primary)
                                 }
                             } else {
                                 IconButton(onClick = { shareTextReport(null) }) {
-                                    Icon(Icons.Default.Share, contentDescription = "Share Summary", tint = PrimaryBlue)
+                                    Icon(Icons.Default.Share, contentDescription = "Share Summary", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                             IconButton(

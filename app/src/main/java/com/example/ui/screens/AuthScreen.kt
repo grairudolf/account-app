@@ -143,7 +143,7 @@ fun AuthScreen(
                 shape = RoundedCornerShape(24.dp),
                 shadowElevation = 8.dp,
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(2.dp, PrimaryBlue.copy(alpha = 0.3f)),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
                 modifier = Modifier
                     .size(96.dp)
                     .testTag("app_login_logo")
@@ -168,7 +168,7 @@ fun AuthScreen(
             Text(
                 text = "CMFI ACCAP",
                 style = MaterialTheme.typography.headlineMedium,
-                color = PrimaryBlue,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center
             )
@@ -197,7 +197,7 @@ fun AuthScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (!isSignUpMode) PrimaryBlue else Color.Transparent,
+                        color = if (!isSignUpMode) MaterialTheme.colorScheme.primary else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -210,7 +210,7 @@ fun AuthScreen(
                             Text(
                                 text = strings.signIn,
                                 fontWeight = FontWeight.Bold,
-                                color = if (!isSignUpMode) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (!isSignUpMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -218,7 +218,7 @@ fun AuthScreen(
 
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isSignUpMode) PrimaryBlue else Color.Transparent,
+                        color = if (isSignUpMode) MaterialTheme.colorScheme.primary else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -231,7 +231,7 @@ fun AuthScreen(
                             Text(
                                 text = strings.signUp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSignUpMode) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isSignUpMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -247,7 +247,7 @@ fun AuthScreen(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                border = BorderStroke(1.dp, DividerColor)
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -262,7 +262,7 @@ fun AuthScreen(
                             },
                             label = { Text("Full Name *") },
                             placeholder = { Text("e.g., Brother John Doe") },
-                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue) },
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("auth_name_input"),
@@ -277,7 +277,7 @@ fun AuthScreen(
                             onValueChange = { assemblyInput = it },
                             label = { Text("Local Assembly / City (Optional)") },
                             placeholder = { Text("e.g., CMFI Yaoundé / London") },
-                            leadingIcon = { Icon(Icons.Default.LocationCity, contentDescription = null, tint = PrimaryBlue) },
+                            leadingIcon = { Icon(Icons.Default.LocationCity, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("auth_assembly_input"),
@@ -296,7 +296,7 @@ fun AuthScreen(
                         },
                         label = { Text("${strings.email} *") },
                         placeholder = { Text("disciple@example.com") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryBlue) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("auth_email_input"),
@@ -314,7 +314,7 @@ fun AuthScreen(
                         },
                         label = { Text("${strings.password} *") },
                         placeholder = { Text("Minimum 6 characters") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryBlue) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
@@ -351,7 +351,7 @@ fun AuthScreen(
                             },
                             label = { Text("Confirm Password *") },
                             placeholder = { Text("Repeat password") },
-                            leadingIcon = { Icon(Icons.Default.LockReset, contentDescription = null, tint = PrimaryBlue) },
+                            leadingIcon = { Icon(Icons.Default.LockReset, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             trailingIcon = {
                                 IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                     Icon(
@@ -386,7 +386,7 @@ fun AuthScreen(
                                 Text(
                                     text = "Forgot password?",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = PrimaryBlue
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -424,7 +424,10 @@ fun AuthScreen(
                             .height(50.dp)
                             .testTag("auth_submit_button"),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
                         Icon(
                             imageVector = if (isSignUpMode) Icons.Default.PersonAdd else Icons.Default.Login,
@@ -495,8 +498,8 @@ fun AuthScreen(
             // Guest Option Card
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = PrimaryBlue.copy(alpha = 0.06f),
-                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onContinueAsGuest() }
@@ -514,11 +517,11 @@ fun AuthScreen(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = PrimaryBlue.copy(alpha = 0.15f),
+                            color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.size(40.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.OfflinePin, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(22.dp))
+                                Icon(Icons.Default.OfflinePin, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                             }
                         }
                         Column {
@@ -526,7 +529,7 @@ fun AuthScreen(
                                 text = strings.continueAsGuest,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = "Track all disciplines offline on this device. You can link an account anytime in Settings.",
@@ -538,7 +541,7 @@ fun AuthScreen(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = PrimaryBlue
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

@@ -49,12 +49,24 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             )
 
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(com.example.R.drawable.ic_cmfi_app_logo)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
+
+            try {
+                val largeIcon = android.graphics.BitmapFactory.decodeResource(
+                    context.resources,
+                    com.example.R.mipmap.ic_launcher
+                )
+                if (largeIcon != null) {
+                    builder.setLargeIcon(largeIcon)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
         }
@@ -85,12 +97,24 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             )
 
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setSmallIcon(com.example.R.drawable.ic_cmfi_app_logo)
                 .setContentTitle("Live Session Active: $domainTitle")
                 .setContentText("Elapsed Time: $formattedTime • Session counting in background")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
                 .setContentIntent(pendingIntent)
+
+            try {
+                val largeIcon = android.graphics.BitmapFactory.decodeResource(
+                    context.resources,
+                    com.example.R.mipmap.ic_launcher
+                )
+                if (largeIcon != null) {
+                    builder.setLargeIcon(largeIcon)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             notificationManager.notify(TIMER_NOTIFICATION_ID, builder.build())
         }

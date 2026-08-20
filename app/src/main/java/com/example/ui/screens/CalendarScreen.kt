@@ -77,8 +77,8 @@ fun CalendarScreen(
         item {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = StreakGoldContainer,
-                border = BorderStroke(1.dp, StreakGold),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
                 modifier = Modifier.fillMaxWidth().testTag("calendar_streak_summary")
             ) {
                 Row(
@@ -90,13 +90,13 @@ fun CalendarScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape)
-                            .background(StreakGold),
+                            .background(MaterialTheme.colorScheme.tertiary),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onTertiary,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -105,12 +105,12 @@ fun CalendarScreen(
                             text = strings.accountabilityStreaks,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = StreakGoldDark
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                         Text(
                             text = String.format(strings.streakDaysWithAccountability, activeStreakDays),
                             style = MaterialTheme.typography.bodySmall,
-                            color = StreakGoldDark.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -122,7 +122,7 @@ fun CalendarScreen(
             Surface(
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -200,8 +200,8 @@ fun CalendarScreen(
                                                 .clip(CircleShape)
                                                 .background(
                                                     when {
-                                                        dayInfo.isSelected -> PrimaryBlue
-                                                        dayInfo.entriesCount > 0 -> StreakGoldContainer
+                                                        dayInfo.isSelected -> MaterialTheme.colorScheme.primary
+                                                        dayInfo.entriesCount > 0 -> MaterialTheme.colorScheme.tertiaryContainer
                                                         else -> Color.Transparent
                                                     }
                                                 )
@@ -215,8 +215,8 @@ fun CalendarScreen(
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = if (dayInfo.isToday || dayInfo.entriesCount > 0) FontWeight.Bold else FontWeight.Normal,
                                                     color = when {
-                                                        dayInfo.isSelected -> Color.White
-                                                        dayInfo.entriesCount > 0 -> StreakGoldDark
+                                                        dayInfo.isSelected -> MaterialTheme.colorScheme.onPrimary
+                                                        dayInfo.entriesCount > 0 -> MaterialTheme.colorScheme.onTertiaryContainer
                                                         else -> MaterialTheme.colorScheme.onSurface
                                                     }
                                                 )
@@ -224,7 +224,7 @@ fun CalendarScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.LocalFireDepartment,
                                                         contentDescription = null,
-                                                        tint = StreakGold,
+                                                        tint = MaterialTheme.colorScheme.tertiary,
                                                         modifier = Modifier.size(10.dp)
                                                     )
                                                 }
@@ -248,7 +248,7 @@ fun CalendarScreen(
                             modifier = Modifier
                                 .size(12.dp)
                                 .clip(CircleShape)
-                                .background(StreakGoldContainer)
+                                .background(MaterialTheme.colorScheme.tertiaryContainer)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -278,7 +278,7 @@ fun CalendarScreen(
                 Surface(
                     shape = RoundedCornerShape(28.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(

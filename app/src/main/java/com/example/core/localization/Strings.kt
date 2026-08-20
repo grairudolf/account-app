@@ -277,6 +277,7 @@ interface AppStrings {
     val notSet: String
     val noActiveReminders: String
     val addReminderTitle: String
+    val addReminderBtn: String
     val reminderTitleLabel: String
     val messageLabel: String
     val hourLabel: String
@@ -942,6 +943,7 @@ object EnglishStrings : AppStrings {
     override val notSet = "Not set"
     override val noActiveReminders = "No active reminders set. Add daily alerts for DDEWG or Prayer."
     override val addReminderTitle = "Add Spiritual Reminder"
+    override val addReminderBtn = "Add"
     override val reminderTitleLabel = "Reminder Title"
     override val messageLabel = "Message"
     override val hourLabel = "Hour (0-23)"
@@ -1423,6 +1425,7 @@ object FrenchStrings : AppStrings {
     override val notSet = "Non défini"
     override val noActiveReminders = "Aucun rappel actif. Ajoutez des alertes quotidiennes pour la RDQD ou la Prière."
     override val addReminderTitle = "Ajouter un Rappel Spirituel"
+    override val addReminderBtn = "Ajouter"
     override val reminderTitleLabel = "Titre du Rappel"
     override val messageLabel = "Message"
     override val hourLabel = "Heure (0-23)"

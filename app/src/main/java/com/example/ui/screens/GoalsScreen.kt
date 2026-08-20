@@ -72,9 +72,9 @@ fun GoalsScreen(
             ) {
                 listOf("ALL" to strings.allPeriod, "DAILY" to strings.daily, "WEEKLY" to strings.weekly, "MONTHLY" to strings.monthly).forEach { (freqKey, freqLabel) ->
                     val selected = selectedFrequency == freqKey
-                    val containerBg = if (selected) DarkPillBackground else MaterialTheme.colorScheme.surface
-                    val contentColor = if (selected) Color.White else TextSecondary
-                    val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, DividerColor)
+                    val containerBg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
                     Surface(
                         shape = RoundedCornerShape(20.dp),
@@ -177,7 +177,7 @@ fun GoalCard(
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, DividerColor),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -200,13 +200,13 @@ fun GoalCard(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(LightBlueContainer),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Flag,
                             contentDescription = null,
-                            tint = PrimaryBlue,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -246,13 +246,13 @@ fun GoalCard(
                     text = "${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = PrimaryBlueDark
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 val isAchieved = goalItem.currentProgress >= goalItem.goal.targetValue
                 val statusText = if (isAchieved) "Achieved" else if (goalItem.progressPercentage >= 50) "On Track" else "Needs Focus"
-                val statusBg = if (isAchieved) PastelMintContainer else if (goalItem.progressPercentage >= 50) PastelSkyContainer else PastelPeachContainer
-                val statusColor = if (isAchieved) PastelMintDark else if (goalItem.progressPercentage >= 50) PastelSkyDark else PastelPeachDark
+                val statusBg = if (isAchieved) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                val statusColor = if (isAchieved) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
@@ -274,8 +274,8 @@ fun GoalCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(CircleShape),
-                color = DarkPillBackground,
-                trackColor = SurfaceVariantLight
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 
             val diff = (goalItem.goal.targetValue - goalItem.currentProgress).toInt()

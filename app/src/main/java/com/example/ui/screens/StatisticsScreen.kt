@@ -92,7 +92,7 @@ fun StatisticsScreen(
 
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = if (overviewActive) DarkPillBackground else Color.Transparent,
+                        color = if (overviewActive) MaterialTheme.colorScheme.primary else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onTabSelected(0) }
@@ -105,7 +105,7 @@ fun StatisticsScreen(
                             Icon(
                                 Icons.Default.BarChart,
                                 contentDescription = null,
-                                tint = if (overviewActive) Color.White else TextSecondary,
+                                tint = if (overviewActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -113,14 +113,14 @@ fun StatisticsScreen(
                                 text = strings.analyticsOverview,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (overviewActive) Color.White else TextSecondary
+                                color = if (overviewActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = if (historyActive) DarkPillBackground else Color.Transparent,
+                        color = if (historyActive) MaterialTheme.colorScheme.primary else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onTabSelected(1) }
@@ -133,7 +133,7 @@ fun StatisticsScreen(
                             Icon(
                                 Icons.Default.CalendarMonth,
                                 contentDescription = null,
-                                tint = if (historyActive) Color.White else TextSecondary,
+                                tint = if (historyActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -141,7 +141,7 @@ fun StatisticsScreen(
                                 text = strings.historyAndCalendar,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (historyActive) Color.White else TextSecondary
+                                color = if (historyActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -174,7 +174,7 @@ fun StatisticsScreen(
                                 value = "${uiState.streakStats.currentStreakDays} ${strings.days}",
                                 subtitle = "${strings.longestStreak}: ${uiState.streakStats.longestStreakDays} ${strings.days}",
                                 icon = Icons.Default.LocalFireDepartment,
-                                iconBg = StreakGoldContainer,
+                                iconBg = MaterialTheme.colorScheme.tertiaryContainer,
                                 testTag = "stat_card_streak"
                             )
                             MetricCard(
@@ -183,7 +183,7 @@ fun StatisticsScreen(
                                 value = "${uiState.totalEntriesCount}",
                                 subtitle = strings.loggedDisciplineActivities,
                                 icon = Icons.Default.List,
-                                iconBg = LightBlueContainer,
+                                iconBg = MaterialTheme.colorScheme.primaryContainer,
                                 testTag = "stat_card_total"
                             )
                         }
@@ -242,7 +242,7 @@ fun StatisticsScreen(
                                                 text = "$value",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isToday) StreakGold else PrimaryBlue
+                                                color = if (isToday) StreakGold else MaterialTheme.colorScheme.primary
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Box(
@@ -250,7 +250,7 @@ fun StatisticsScreen(
                                                     .width(22.dp)
                                                     .fillMaxHeight(heightRatio.coerceAtLeast(0.08f))
                                                     .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                                    .background(if (isToday) StreakGold else PrimaryBlue)
+                                                    .background(if (isToday) StreakGold else MaterialTheme.colorScheme.primary)
                                             )
                                             Spacer(modifier = Modifier.height(6.dp))
                                             val dayDate = try { LocalDate.parse(dayActivity.dateIso) } catch (e: Exception) { null }
@@ -385,9 +385,9 @@ fun StatisticsScreen(
                                                             .clip(CircleShape)
                                                             .background(
                                                                 when {
-                                                                    isSelected -> PrimaryBlue
-                                                                    hasEntries -> LightBlueContainer
-                                                                    isToday -> StreakGoldContainer
+                                                                    isSelected -> MaterialTheme.colorScheme.primary
+                                                                    hasEntries -> MaterialTheme.colorScheme.primaryContainer
+                                                                    isToday -> MaterialTheme.colorScheme.secondaryContainer
                                                                     else -> Color.Transparent
                                                                 }
                                                             )
@@ -399,14 +399,14 @@ fun StatisticsScreen(
                                                                 text = "$dayNum",
                                                                 style = MaterialTheme.typography.labelMedium,
                                                                 fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
-                                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                                                             )
                                                             if (hasEntries) {
                                                                 Box(
                                                                     modifier = Modifier
                                                                         .size(4.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(if (isSelected) Color.White else PrimaryBlue)
+                                                                        .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
                                                                 )
                                                             }
                                                         }
@@ -555,7 +555,7 @@ fun EntryLogCard(
                             text = "${strings.timeSpanLabel}: $timeSpan",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
-                            color = PrimaryBlueDark
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
@@ -564,7 +564,7 @@ fun EntryLogCard(
                         text = "${strings.duration}: $displayDuration",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = AccentPurple
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
                 if (entry.prayerType.isNotBlank()) {
@@ -572,7 +572,7 @@ fun EntryLogCard(
                     Text(
                         text = "${strings.prayerFocus}: ${entry.prayerType}$topicsStr",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PrimaryBlueDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 if (entry.notes.isNotBlank()) {
@@ -684,7 +684,7 @@ fun MetricCard(
     Surface(
         shape = RoundedCornerShape(26.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, DividerColor),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = modifier.testTag(testTag)
     ) {
         Column(
@@ -698,11 +698,11 @@ fun MetricCard(
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = DarkPillBackground, modifier = Modifier.size(22.dp))
+                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(22.dp))
             }
-            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, fontWeight = FontWeight.Medium)
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = TextMuted)
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
         }
     }
 }

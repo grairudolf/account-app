@@ -151,7 +151,7 @@ fun DashboardScreen(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = strings.search,
-                        tint = PrimaryBlue
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 trailingIcon = {
@@ -172,7 +172,7 @@ fun DashboardScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = PrimaryBlue,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = DividerColor
                 ),
                 singleLine = true
@@ -225,8 +225,8 @@ fun DashboardScreen(
                         // Prominent Streak Badge in Calendar Header
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = if (uiState.streakStats.currentStreakDays > 0) BrandVibrantYellow.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                            border = BorderStroke(1.dp, if (uiState.streakStats.currentStreakDays > 0) BrandMutedGold else DividerColor)
+                            color = if (uiState.streakStats.currentStreakDays > 0) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            border = BorderStroke(1.dp, if (uiState.streakStats.currentStreakDays > 0) MaterialTheme.colorScheme.tertiary else DividerColor)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -241,7 +241,7 @@ fun DashboardScreen(
                                     text = "${uiState.streakStats.currentStreakDays} ${strings.days} ${strings.currentStreak}",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (uiState.streakStats.currentStreakDays > 0) BrandDarkNavy else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (uiState.streakStats.currentStreakDays > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -321,7 +321,7 @@ fun DashboardScreen(
                         text = strings.spiritualDisciplines,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -344,13 +344,13 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(LightBlueContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = null,
-                                    tint = PrimaryBlue,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -384,7 +384,7 @@ fun DashboardScreen(
                         text = strings.recentActivities,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -565,13 +565,15 @@ fun DashboardScreen(
             }
         }
 
-        // Daily Spiritual Encouragement Devotional Card (Image Background + Overlay + Share Action)
+        // Daily Spiritual Encouragement Devotional Card (Multiple Image Backgrounds + Interactive Refresh + Share Action)
         item {
             val quotes = remember(strings) { strings.dailyQuotes }
             val dayOfYear = remember { LocalDate.now().dayOfYear }
-            val currentQuote = remember(quotes, dayOfYear) {
-                val dayIndex = dayOfYear % quotes.size
-                quotes.getOrElse(dayIndex) { quotes.firstOrNull() ?: "" }
+            var manualQuoteOffset by remember { mutableIntStateOf(0) }
+            
+            val activeIndex = (dayOfYear + manualQuoteOffset) % if (quotes.isNotEmpty()) quotes.size else 1
+            val currentQuote = remember(quotes, activeIndex) {
+                quotes.getOrElse(activeIndex) { quotes.firstOrNull() ?: "" }
             }
             val devotionalBgList = remember {
                 listOf(
@@ -579,11 +581,13 @@ fun DashboardScreen(
                     com.example.R.drawable.quote_bg_waters_1787220685176,
                     com.example.R.drawable.quote_bg_path_1787220696837,
                     com.example.R.drawable.quote_bg_heavens_1787220708792,
-                    com.example.R.drawable.devotional_quote_bg_1787144263336
+                    com.example.R.drawable.devotional_quote_bg_1787144263336,
+                    com.example.R.drawable.quote_bg_mountains_1787235541853,
+                    com.example.R.drawable.quote_bg_cross_1787235555876
                 )
             }
-            val currentBgRes = remember(dayOfYear) {
-                devotionalBgList[dayOfYear % devotionalBgList.size]
+            val currentBgRes = remember(activeIndex) {
+                devotionalBgList[activeIndex % devotionalBgList.size]
             }
 
             Surface(
@@ -598,9 +602,9 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 165.dp)
+                        .heightIn(min = 175.dp)
                 ) {
-                    // Inspirational Devotional Background Image (rotates daily!)
+                    // Inspirational Devotional Background Image (rotates daily + manual interactive refresh!)
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = currentBgRes),
                         contentDescription = null,
@@ -608,15 +612,15 @@ fun DashboardScreen(
                         contentScale = ContentScale.Crop
                     )
 
-                    // Readability Cinematic Gradient Overlay (Preserves background scenery visibility)
+                    // Readability Cinematic Gradient Overlay
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        BrandDarkNavy.copy(alpha = 0.48f),
-                                        Color(0xFF0D1636).copy(alpha = 0.72f),
+                                        BrandDarkNavy.copy(alpha = 0.45f),
+                                        Color(0xFF0D1636).copy(alpha = 0.70f),
                                         Color(0xFF070B1E).copy(alpha = 0.88f)
                                     )
                                 )
@@ -663,32 +667,57 @@ fun DashboardScreen(
                                 )
                             }
 
-                            // Inline Share Action Button
-                            Surface(
-                                shape = CircleShape,
-                                color = BrandDarkNavy.copy(alpha = 0.8f),
-                                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
-                                modifier = Modifier.size(38.dp)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(
-                                    onClick = {
-                                        QuoteImageSharer.shareQuoteImage(
-                                            context = context,
-                                            quoteText = currentQuote,
-                                            title = strings.dailyWordTitle,
-                                            bgResId = currentBgRes
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .testTag("share_quote_button")
+                                // Interactive Quote & Image Refresh Button
+                                Surface(
+                                    shape = CircleShape,
+                                    color = BrandDarkNavy.copy(alpha = 0.8f),
+                                    border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
+                                    modifier = Modifier.size(38.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = "Share Quote",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    IconButton(
+                                        onClick = { manualQuoteOffset++ },
+                                        modifier = Modifier.fillMaxSize().testTag("refresh_quote_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Cycle Quote & Background",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                // Inline Share Action Button
+                                Surface(
+                                    shape = CircleShape,
+                                    color = BrandDarkNavy.copy(alpha = 0.8f),
+                                    border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            QuoteImageSharer.shareQuoteImage(
+                                                context = context,
+                                                quoteText = currentQuote,
+                                                title = strings.dailyWordTitle,
+                                                bgResId = currentBgRes
+                                            )
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .testTag("share_quote_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share Quote",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -696,7 +725,7 @@ fun DashboardScreen(
                         Text(
                             text = "“$currentQuote”",
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White,
                             lineHeight = 24.sp
                         )
@@ -921,14 +950,14 @@ fun DashboardScreen(
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = null,
-                                    tint = PrimaryBlue,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
                                     text = strings.getDomainTitle(domain.titleKey).uppercase(),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlue
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -1007,13 +1036,13 @@ fun RecentActivityCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(LightBlueContainer),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.MenuBook,
                     contentDescription = null,
-                    tint = PrimaryBlue,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
