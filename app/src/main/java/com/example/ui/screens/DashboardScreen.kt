@@ -211,7 +211,7 @@ fun DashboardScreen(
                             Icon(
                                 imageVector = Icons.Default.CalendarMonth,
                                 contentDescription = null,
-                                tint = BrandDarkNavy,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
@@ -249,7 +249,7 @@ fun DashboardScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         daysOfWeek.forEach { date ->
@@ -258,18 +258,18 @@ fun DashboardScreen(
                             val dayNumber = date.dayOfMonth.toString()
                             val hasEntryForDay = uiState.allEntries.any { it.dateIso == date.format(DateTimeFormatter.ISO_LOCAL_DATE) }
 
-                            val capsuleBg = if (isToday) BrandDarkNavy else if (hasEntryForDay) BrandSlateBlue.copy(alpha = 0.12f) else Color.Transparent
-                            val capsuleBorder = if (isToday) BorderStroke(0.dp, Color.Transparent) else if (hasEntryForDay) BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.4f)) else BorderStroke(1.dp, DividerColor)
-                            val textCol = if (isToday) BrandBrightYellow else if (hasEntryForDay) BrandDarkNavy else MaterialTheme.colorScheme.onSurfaceVariant
-                            val numCol = if (isToday) Color.White else if (hasEntryForDay) BrandDarkNavy else MaterialTheme.colorScheme.onSurface
-                            val dotCol = if (isToday) BrandBrightYellow else if (hasEntryForDay) BrandMutedGold else Color.Transparent
+                            val capsuleBg = if (isToday) MaterialTheme.colorScheme.primary else if (hasEntryForDay) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent
+                            val capsuleBorder = if (isToday) BorderStroke(0.dp, Color.Transparent) else if (hasEntryForDay) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else BorderStroke(1.dp, DividerColor)
+                            val textCol = if (isToday) MaterialTheme.colorScheme.tertiary else if (hasEntryForDay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            val numCol = if (isToday) MaterialTheme.colorScheme.onPrimary else if (hasEntryForDay) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface
+                            val dotCol = if (isToday) MaterialTheme.colorScheme.tertiary else if (hasEntryForDay) MaterialTheme.colorScheme.secondary else Color.Transparent
 
                             Surface(
-                                shape = RoundedCornerShape(20.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 color = capsuleBg,
                                 border = capsuleBorder,
                                 modifier = Modifier
-                                    .width(44.dp)
+                                    .weight(1f)
                                     .height(68.dp)
                             ) {
                                 Column(

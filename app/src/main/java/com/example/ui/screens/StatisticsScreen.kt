@@ -224,7 +224,7 @@ fun StatisticsScreen(
                                 val todayIso = LocalDate.now().toString()
 
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                                    modifier = Modifier.fillMaxWidth().height(130.dp),
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.Bottom
                                 ) {
@@ -236,19 +236,22 @@ fun StatisticsScreen(
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             verticalArrangement = Arrangement.Bottom,
-                                            modifier = Modifier.fillMaxHeight()
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxHeight()
                                         ) {
                                             Text(
                                                 text = "$value",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isToday) StreakGold else MaterialTheme.colorScheme.primary
+                                                color = if (isToday) StreakGold else MaterialTheme.colorScheme.primary,
+                                                textAlign = TextAlign.Center
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Box(
                                                 modifier = Modifier
                                                     .width(22.dp)
-                                                    .fillMaxHeight(heightRatio.coerceAtLeast(0.08f))
+                                                    .height((75.dp * heightRatio).coerceAtLeast(8.dp))
                                                     .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                                     .background(if (isToday) StreakGold else MaterialTheme.colorScheme.primary)
                                             )
@@ -263,7 +266,8 @@ fun StatisticsScreen(
                                                 text = dayText,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                textAlign = TextAlign.Center
                                             )
                                         }
                                     }
