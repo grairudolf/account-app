@@ -17,9 +17,10 @@ import com.example.data.local.entities.*
         ReminderEntity::class,
         ReportRecordEntity::class,
         NotificationEntity::class,
-        ProclamationTopicEntity::class
+        ProclamationTopicEntity::class,
+        DiscipleEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
     abstract fun notificationDao(): NotificationDao
     abstract fun proclamationTopicDao(): ProclamationTopicDao
+    abstract fun discipleDao(): DiscipleDao
 
     companion object {
         @Volatile

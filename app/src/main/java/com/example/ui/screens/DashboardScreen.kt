@@ -610,9 +610,22 @@ fun DashboardScreen(
         // Daily Spiritual Encouragement Devotional Card (Image Background + Overlay + Share Action)
         item {
             val quotes = remember(strings) { strings.dailyQuotes }
-            val currentQuote = remember(quotes) {
-                val dayIndex = (LocalDate.now().dayOfYear) % quotes.size
+            val dayOfYear = remember { LocalDate.now().dayOfYear }
+            val currentQuote = remember(quotes, dayOfYear) {
+                val dayIndex = dayOfYear % quotes.size
                 quotes.getOrElse(dayIndex) { quotes.firstOrNull() ?: "" }
+            }
+            val devotionalBgList = remember {
+                listOf(
+                    com.example.R.drawable.quote_bg_sunrise_1787220672419,
+                    com.example.R.drawable.quote_bg_waters_1787220685176,
+                    com.example.R.drawable.quote_bg_path_1787220696837,
+                    com.example.R.drawable.quote_bg_heavens_1787220708792,
+                    com.example.R.drawable.devotional_quote_bg_1787144263336
+                )
+            }
+            val currentBgRes = remember(dayOfYear) {
+                devotionalBgList[dayOfYear % devotionalBgList.size]
             }
 
             Surface(
@@ -627,25 +640,26 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 160.dp)
+                        .heightIn(min = 165.dp)
                 ) {
-                    // Inspirational Devotional Background Image
+                    // Inspirational Devotional Background Image (rotates daily!)
                     androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.devotional_quote_bg_1787144263336),
+                        painter = androidx.compose.ui.res.painterResource(id = currentBgRes),
                         contentDescription = null,
                         modifier = Modifier.matchParentSize(),
                         contentScale = ContentScale.Crop
                     )
 
-                    // Readability Dark Gradient Overlay
+                    // Readability Cinematic Gradient Overlay (Preserves background scenery visibility)
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        BrandDarkNavy.copy(alpha = 0.84f),
-                                        Color(0xFF0D1636).copy(alpha = 0.94f)
+                                        BrandDarkNavy.copy(alpha = 0.48f),
+                                        Color(0xFF0D1636).copy(alpha = 0.72f),
+                                        Color(0xFF070B1E).copy(alpha = 0.88f)
                                     )
                                 )
                             )
@@ -703,7 +717,8 @@ fun DashboardScreen(
                                         QuoteImageSharer.shareQuoteImage(
                                             context = context,
                                             quoteText = currentQuote,
-                                            title = strings.dailyWordTitle
+                                            title = strings.dailyWordTitle,
+                                            bgResId = currentBgRes
                                         )
                                     },
                                     modifier = Modifier
@@ -723,7 +738,7 @@ fun DashboardScreen(
                         Text(
                             text = "“$currentQuote”",
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             lineHeight = 24.sp
                         )

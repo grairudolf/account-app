@@ -10,8 +10,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -267,23 +269,22 @@ fun SettingsScreen(
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // Email Row
-                        if (!user?.email.isNullOrBlank()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(strings.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(
-                                    text = user!!.email,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                        // Full Name Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(strings.fullNameLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = user?.fullName?.ifBlank { strings.notSet } ?: strings.notSet,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
+
+                        HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
 
                         // Local Assembly Row
                         Row(
@@ -332,6 +333,24 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                        }
+
+                        // Spiritual Age / Time in Christ Row
+                        if (!user?.conversionDate.isNullOrBlank()) {
+                            HorizontalDivider(color = DividerColor.copy(alpha = 0.5f))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(strings.spiritualAgeLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = spiritualAgeText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimaryBlueDark
+                                )
+                            }
                         }
 
                         if (!user?.phoneNumber.isNullOrBlank()) {
@@ -823,24 +842,58 @@ fun EditProfileDialog(
         onDismissRequest = onDismiss,
         title = { Text(strings.editProfile, fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") })
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(strings.email) })
-                OutlinedTextField(value = assembly, onValueChange = { assembly = it }, label = { Text(strings.localAssembly) })
-                OutlinedTextField(value = maker, onValueChange = { maker = it }, label = { Text(strings.discipleMakerName) })
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(strings.phoneNumber) })
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(strings.fullNameLabel) },
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_name_input"),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = assembly,
+                    onValueChange = { assembly = it },
+                    label = { Text(strings.localAssembly) },
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_assembly_input"),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = maker,
+                    onValueChange = { maker = it },
+                    label = { Text(strings.discipleMakerName) },
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_maker_input"),
+                    singleLine = true
+                )
                 OutlinedTextField(
                     value = convDate,
                     onValueChange = { convDate = it },
                     label = { Text(strings.conversionDate) },
-                    placeholder = { Text("2021-04-15") },
-                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) }
+                    placeholder = { Text("YYYY-MM-DD (e.g. 2021-04-15)") },
+                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_conversion_date_input"),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(strings.phoneNumber) },
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_phone_input"),
+                    singleLine = true
                 )
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(name, email, assembly, maker, phone, convDate) }) {
-                Text(strings.save)
+            Button(
+                onClick = { onConfirm(name, email, assembly, maker, phone, convDate) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                modifier = Modifier.testTag("save_profile_button")
+            ) {
+                Text(strings.save, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

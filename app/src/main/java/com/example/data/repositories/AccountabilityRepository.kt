@@ -40,7 +40,8 @@ class AccountabilityRepository(
     private val reminderDao: ReminderDao,
     private val reportDao: ReportDao,
     private val notificationDao: NotificationDao,
-    private val proclamationTopicDao: ProclamationTopicDao
+    private val proclamationTopicDao: ProclamationTopicDao,
+    private val discipleDao: DiscipleDao? = null
 ) {
     val allEntriesFlow: Flow<List<AccountabilityEntryEntity>> = entryDao.getAllEntriesFlow()
     val allGoalsFlow: Flow<List<GoalEntity>> = goalDao.getAllGoalsFlow()
@@ -49,6 +50,26 @@ class AccountabilityRepository(
     val reportsFlow: Flow<List<ReportRecordEntity>> = reportDao.getAllReportsFlow()
     val notificationsFlow: Flow<List<NotificationEntity>> = notificationDao.getAllNotificationsFlow()
     val unreadNotificationCountFlow: Flow<Int> = notificationDao.getUnreadCountFlow()
+
+    fun getDisciplesFlow(userId: String = "default_user"): Flow<List<DiscipleEntity>> {
+        return discipleDao?.getAllDisciples(userId) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    suspend fun saveDisciple(disciple: DiscipleEntity) {
+        discipleDao?.insertDisciple(disciple)
+    }
+
+    suspend fun updateDisciple(disciple: DiscipleEntity) {
+        discipleDao?.updateDisciple(disciple)
+    }
+
+    suspend fun deleteDisciple(disciple: DiscipleEntity) {
+        discipleDao?.deleteDisciple(disciple)
+    }
+
+    suspend fun deleteDiscipleById(id: String) {
+        discipleDao?.deleteDiscipleById(id)
+    }
 
     fun getProclamationTopicsFlow(userId: String = "guest_user"): Flow<List<ProclamationTopicEntity>> {
         return proclamationTopicDao.getTopicsForUserFlow(userId)

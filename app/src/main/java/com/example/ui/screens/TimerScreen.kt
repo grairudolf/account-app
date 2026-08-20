@@ -483,9 +483,7 @@ fun SaveTimerDialog(
                                                 DropdownMenuItem(
                                                     text = { Text("${strings.getBibleBookName(b.name)} (${b.chapters} ch)") },
                                                     onClick = {
-                                                        segment.book = b.name
-                                                        segment.startChapter = 1
-                                                        segment.endChapter = 1
+                                                        bibleSegments[index] = segment.copy(book = b.name, startChapter = 1, endChapter = 1)
                                                         bookExp = false
                                                     }
                                                 )
@@ -512,8 +510,8 @@ fun SaveTimerDialog(
                                                     DropdownMenuItem(
                                                         text = { Text("Ch. $ch") },
                                                         onClick = {
-                                                            segment.startChapter = ch
-                                                            if (segment.endChapter < ch) segment.endChapter = ch
+                                                            val newEnd = if (segment.endChapter < ch) ch else segment.endChapter
+                                                            bibleSegments[index] = segment.copy(startChapter = ch, endChapter = newEnd)
                                                             sChExp = false
                                                         }
                                                     )
@@ -535,7 +533,7 @@ fun SaveTimerDialog(
                                                     DropdownMenuItem(
                                                         text = { Text("Ch. $ch") },
                                                         onClick = {
-                                                            segment.endChapter = ch
+                                                            bibleSegments[index] = segment.copy(endChapter = ch)
                                                             eChExp = false
                                                         }
                                                     )
@@ -573,6 +571,7 @@ fun SaveTimerDialog(
                         item {
                             Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             val aloneTypes = listOf(
+                                "Prayer Walk" to strings.prayerTypePrayerWalk,
                                 "Intercession" to strings.prayerTypeIntercession,
                                 "Personal Supplication" to strings.prayerTypePersonalSupplication,
                                 "Spiritual Warfare" to strings.prayerTypeSpiritualWarfare,
@@ -629,6 +628,7 @@ fun SaveTimerDialog(
                         item {
                             Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             val groupTypes = listOf(
+                                "Prayer Walk" to strings.prayerTypePrayerWalk,
                                 "Prayer Night" to strings.prayerTypePrayerNight,
                                 "Prayer Siege" to strings.prayerTypePrayerSiege,
                                 "Cell Group" to strings.prayerTypeCellGroup,

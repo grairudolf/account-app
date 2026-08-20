@@ -97,6 +97,8 @@ interface AppStrings {
     val proclamationDesc: String
     val retreatsTitle: String
     val retreatsDesc: String
+    val makingDisciplesTitle: String
+    val makingDisciplesDesc: String
     val customDomain: String
     val addCustomDomain: String
 
@@ -249,7 +251,9 @@ interface AppStrings {
     val supportFeedback: String
 
     // Profile & Settings Extra
+    val fullNameLabel: String
     val profileInformation: String
+    val spiritualAgeLabel: String
     val mySubmissions: String
     val myProgress: String
     val accountSettings: String
@@ -391,6 +395,7 @@ interface AppStrings {
     val prayerTypePersonalSupplication: String
     val prayerTypeSpiritualWarfare: String
     val prayerTypePraise: String
+    val prayerTypePrayerWalk: String
     val prayerTypePrayerNight: String
     val prayerTypePrayerSiege: String
     val prayerTypeCellGroup: String
@@ -470,6 +475,36 @@ interface AppStrings {
     val totalSoulWinningSummary: String
     val totalFastingSummary: String
     val consistencyStreakSummary: String
+
+    // Date Range & Discipleship Domain
+    val dateRangePeriod: String
+    val startDateLabel: String
+    val endDateLabel: String
+    val calculatedDaysLabel: String
+    val calculatedDaysFormat: String
+    val myDisciplesTitle: String
+    val addNewDisciple: String
+    val editDisciple: String
+    val deleteDisciple: String
+    val discipleNameLabel: String
+    val phoneOptionalLabel: String
+    val spiritualStageLabel: String
+    val prayerTopicsLabel: String
+    val spiritualJourneyNotesLabel: String
+    val topicsCoveredLabel: String
+    val noDisciplesYet: String
+    val noDisciplesDesc: String
+    val stageNewConvert: String
+    val stageGrowingDisciple: String
+    val stageDiscipleMaker: String
+    val stageLeaderInTraining: String
+    val discipleshipSession: String
+    val logDiscipleshipSession: String
+    val selectDisciple: String
+    val generalOrAllDisciples: String
+    val confirmDeleteDisciple: String
+    val confirmDeleteDisciplePrompt: String
+    val saveDiscipleButton: String
 
 
     fun getBibleBookName(englishName: String): String {
@@ -581,6 +616,7 @@ interface AppStrings {
             "bibleMemTitle" -> bibleMemTitle
             "soulWinningTitle" -> soulWinningTitle
             "retreatsTitle" -> retreatsTitle
+            "makingDisciplesTitle" -> makingDisciplesTitle
             else -> key
         }
     }
@@ -594,6 +630,7 @@ interface AppStrings {
             "fasting" -> fastingTitle
             "giving" -> givingTitle
             "accountability" -> accountabilityTitle
+            "making_disciples", "disciples" -> makingDisciplesTitle
             "christian_lit_reading", "christian_lit" -> christianLitTitle
             "christian_lit_memory", "christian_lit_mem" -> christianLitMemTitle
             "bible_memory", "bible_mem" -> bibleMemTitle
@@ -614,6 +651,7 @@ interface AppStrings {
             "fastingDesc" -> fastingDesc
             "givingDesc" -> givingDesc
             "accountabilityDesc" -> accountabilityDesc
+            "makingDisciplesDesc" -> makingDisciplesDesc
             "christianLitDesc" -> christianLitDesc
             "christianLitMemDesc" -> christianLitMemDesc
             "bibleMemDesc" -> bibleMemDesc
@@ -734,6 +772,8 @@ object EnglishStrings : AppStrings {
     override val proclamationDesc = "Persistent proclamation and repeated importunate prayer for specific spiritual topics."
     override val retreatsTitle = "Spiritual Retreats"
     override val retreatsDesc = "Solitude, extended prayer, fasting, and deep communion with God."
+    override val makingDisciplesTitle = "Making of Disciples"
+    override val makingDisciplesDesc = "Discipling, mentoring, spiritual fatherhood, tracking disciples, prayer topics, and discipleship notes."
     override val customDomain = "Custom Domain"
     override val addCustomDomain = "Add Custom Domain"
 
@@ -876,19 +916,21 @@ object EnglishStrings : AppStrings {
     override val termsConditions = "Terms & Conditions"
     override val supportFeedback = "Support & Feedback"
 
+    override val fullNameLabel = "Full Name"
     override val profileInformation = "Profile Information"
+    override val spiritualAgeLabel = "Spiritual Age (in Christ)"
     override val mySubmissions = "My Submissions"
     override val myProgress = "My Progress"
     override val accountSettings = "Account Settings"
     override val about = "About"
     override val needHelp = "Need Help?"
-    override val needHelpDesc = "Contact your house church leader or view documentation"
+    override val needHelpDesc = "Contact your disciple maker or church leader for assistance and spiritual guidance."
     override val getSupport = "Get Support"
     override val darkMode = "Dark Mode"
     override val completedLabel = "Completed"
     override val avgScoreLabel = "Avg Score"
     override val overallLabel = "Overall"
-    override val houseChurchMemberRole = "House Church Member"
+    override val houseChurchMemberRole = "Disciple"
     override val spiritualJourney = "Spiritual Journey"
     override val discipleProfile = "Disciple Profile"
     override val localAssembly = "Local Assembly"
@@ -1023,6 +1065,7 @@ object EnglishStrings : AppStrings {
     override val prayerTypePersonalSupplication = "Personal Supplication"
     override val prayerTypeSpiritualWarfare = "Spiritual Warfare"
     override val prayerTypePraise = "Praise & Adoration"
+    override val prayerTypePrayerWalk = "Prayer Walk"
     override val prayerTypePrayerNight = "Prayer Night"
     override val prayerTypePrayerSiege = "Prayer Siege"
     override val prayerTypeCellGroup = "Cell Group / House Fellowship"
@@ -1102,6 +1145,36 @@ object EnglishStrings : AppStrings {
     override val totalSoulWinningSummary = "Total People Preached / Won"
     override val totalFastingSummary = "Total Fasting Days"
     override val consistencyStreakSummary = "Consistency & Active Streak"
+
+    // Date Range & Discipleship Domain
+    override val dateRangePeriod = "Date Range Period"
+    override val startDateLabel = "Start Date"
+    override val endDateLabel = "End Date"
+    override val calculatedDaysLabel = "Calculated Duration: %d days"
+    override val calculatedDaysFormat = "Calculated Duration: %d days"
+    override val myDisciplesTitle = "My Disciples"
+    override val addNewDisciple = "Add Disciple"
+    override val editDisciple = "Edit Disciple"
+    override val deleteDisciple = "Delete"
+    override val discipleNameLabel = "Disciple Full Name"
+    override val phoneOptionalLabel = "Phone (Optional)"
+    override val spiritualStageLabel = "Spiritual Stage"
+    override val prayerTopicsLabel = "Specific Prayer Topics"
+    override val spiritualJourneyNotesLabel = "Spiritual Journey & Progress Notes"
+    override val topicsCoveredLabel = "Topics / Books Covered"
+    override val noDisciplesYet = "No disciples added yet"
+    override val noDisciplesDesc = "Add your disciples to track their spiritual progress, prayer topics, and discipleship lessons."
+    override val stageNewConvert = "New Convert"
+    override val stageGrowingDisciple = "Growing Disciple"
+    override val stageDiscipleMaker = "Disciple Maker"
+    override val stageLeaderInTraining = "Leader in Training"
+    override val discipleshipSession = "Discipleship Session"
+    override val logDiscipleshipSession = "Log Discipleship Session"
+    override val selectDisciple = "Select Disciple"
+    override val generalOrAllDisciples = "All Disciples / General Session"
+    override val confirmDeleteDisciple = "Delete Disciple"
+    override val confirmDeleteDisciplePrompt = "Are you sure you want to remove this disciple from your list?"
+    override val saveDiscipleButton = "Save Disciple"
 }
 
 object FrenchStrings : AppStrings {
@@ -1180,6 +1253,8 @@ object FrenchStrings : AppStrings {
     override val proclamationDesc = "Proclamation persistante et prière importune répétée pour des sujets de prière spécifiques."
     override val retreatsTitle = "Retraites Spirituelles"
     override val retreatsDesc = "Solitude, prière prolongée, jeûne et communion profonde avec Dieu."
+    override val makingDisciplesTitle = "Formation de Disciples"
+    override val makingDisciplesDesc = "Discipulat, mentorat, paternité spirituelle, suivi des disciples, sujets de prière et notes."
     override val customDomain = "Domaine Personnalisé"
     override val addCustomDomain = "Ajouter un Domaine Personnalisé"
 
@@ -1322,19 +1397,21 @@ object FrenchStrings : AppStrings {
     override val termsConditions = "Conditions Générales"
     override val supportFeedback = "Support & Commentaires"
 
+    override val fullNameLabel = "Nom Complet"
     override val profileInformation = "Informations du Profil"
+    override val spiritualAgeLabel = "Âge Spirituel (en Christ)"
     override val mySubmissions = "Mes Enregistrements"
     override val myProgress = "Mon Progrès"
     override val accountSettings = "Paramètres du Compte"
     override val about = "À Propos"
     override val needHelp = "Besoin d'Aide ?"
-    override val needHelpDesc = "Contactez votre responsable d'assemblée de maison ou consultez la documentation."
+    override val needHelpDesc = "Contactez votre faiseur de disciples ou responsable d'église pour assistance et accompagnement spirituel."
     override val getSupport = "Obtenir du Support"
     override val darkMode = "Mode Sombre"
     override val completedLabel = "Complétées"
     override val avgScoreLabel = "Score Moyen"
     override val overallLabel = "Global"
-    override val houseChurchMemberRole = "Membre d'Assemblée de Maison"
+    override val houseChurchMemberRole = "Disciple"
     override val spiritualJourney = "Parcours Spirituel"
     override val discipleProfile = "Profil du Disciple"
     override val localAssembly = "Assemblée Locale"
@@ -1469,6 +1546,7 @@ object FrenchStrings : AppStrings {
     override val prayerTypePersonalSupplication = "Supplication Personnelle"
     override val prayerTypeSpiritualWarfare = "Combat Spirituel"
     override val prayerTypePraise = "Louange & Adoration"
+    override val prayerTypePrayerWalk = "Marche de Prière"
     override val prayerTypePrayerNight = "Nuit de Prière"
     override val prayerTypePrayerSiege = "Siège de Prière"
     override val prayerTypeCellGroup = "Groupe de Maison / Cellule"
@@ -1548,4 +1626,34 @@ object FrenchStrings : AppStrings {
     override val totalSoulWinningSummary = "Total Évangélisés / Convertis"
     override val totalFastingSummary = "Total des Jours de Jeûne"
     override val consistencyStreakSummary = "Assiduité & Série Active"
+
+    // Date Range & Discipleship Domain
+    override val dateRangePeriod = "Période (Dates)"
+    override val startDateLabel = "Date de Début"
+    override val endDateLabel = "Date de Fin"
+    override val calculatedDaysLabel = "Durée Calculée: %d jours"
+    override val calculatedDaysFormat = "Durée Calculée: %d jours"
+    override val myDisciplesTitle = "Mes Disciples"
+    override val addNewDisciple = "Ajouter un Disciple"
+    override val editDisciple = "Modifier le Disciple"
+    override val deleteDisciple = "Supprimer"
+    override val discipleNameLabel = "Nom Complet du Disciple"
+    override val phoneOptionalLabel = "Téléphone (Optionnel)"
+    override val spiritualStageLabel = "Niveau Spirituel"
+    override val prayerTopicsLabel = "Sujets de Prière Spécifiques"
+    override val spiritualJourneyNotesLabel = "Cheminement Spirituel & Progrès"
+    override val topicsCoveredLabel = "Sujets / Livres Étudiés"
+    override val noDisciplesYet = "Aucun disciple enregistré"
+    override val noDisciplesDesc = "Ajoutez vos disciples pour suivre leur croissance spirituelle, leurs sujets de prière et leurs leçons de discipulat."
+    override val stageNewConvert = "Nouveau Converti"
+    override val stageGrowingDisciple = "Disciple en Croissance"
+    override val stageDiscipleMaker = "Faiseur de Disciples"
+    override val stageLeaderInTraining = "Responsable en Formation"
+    override val discipleshipSession = "Session de Discipulat"
+    override val logDiscipleshipSession = "Enregistrer la Session de Discipulat"
+    override val selectDisciple = "Sélectionner le Disciple"
+    override val generalOrAllDisciples = "Tous les disciples / Session générale"
+    override val confirmDeleteDisciple = "Supprimer le Disciple"
+    override val confirmDeleteDisciplePrompt = "Êtes-vous sûr de vouloir supprimer ce disciple de votre liste ?"
+    override val saveDiscipleButton = "Enregistrer le Disciple"
 }

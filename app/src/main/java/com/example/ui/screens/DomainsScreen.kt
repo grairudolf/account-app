@@ -135,17 +135,8 @@ fun DomainCard(
     strings: AppStrings,
     onClick: () -> Unit
 ) {
-    val (iconBg, iconTint) = when (domain.id) {
-        "ddewg" -> Pair(BrandDarkNavy, BrandBrightYellow)
-        "bible_reading" -> Pair(BrandSlateBlue, BrandBrightYellow)
-        "prayer_alone" -> Pair(BrandMutedGold, BrandBrightYellow)
-        "prayer_with_others" -> Pair(BrandDarkNavy, BrandVibrantYellow)
-        "proclamation_importunity" -> Pair(BrandSlateBlue, BrandBrightYellow)
-        "fasting" -> Pair(BrandDarkNavy, BrandBrightYellow)
-        "soul_winning" -> Pair(BrandMutedGold, BrandBrightYellow)
-        "giving" -> Pair(BrandDarkNavy, BrandBrightYellow)
-        else -> Pair(BrandSlateBlue, BrandBrightYellow)
-    }
+    val iconBg = BrandDarkNavy
+    val iconTint = BrandBrightYellow
 
     Surface(
         shape = RoundedCornerShape(24.dp),
@@ -170,14 +161,20 @@ fun DomainCard(
             ) {
                 Icon(
                     imageVector = when (domain.id) {
-                        "ddewg" -> Icons.Default.MenuBook
+                        "ddewg" -> Icons.Default.WbSunny
                         "bible_reading" -> Icons.Default.AutoStories
-                        "prayer_alone", "prayer_with_others" -> Icons.Default.SelfImprovement
+                        "prayer_alone" -> Icons.Default.SelfImprovement
+                        "prayer_with_others" -> Icons.Default.Groups
                         "proclamation_importunity" -> Icons.Default.Campaign
-                        "fasting" -> Icons.Default.Restaurant
-                        "soul_winning" -> Icons.Default.Groups
+                        "fasting" -> Icons.Default.NoFood
                         "giving" -> Icons.Default.VolunteerActivism
-                        else -> Icons.Default.Bookmark
+                        "making_disciples" -> Icons.Default.GroupAdd
+                        "soul_winning" -> Icons.Default.DirectionsWalk
+                        "christian_lit" -> Icons.Default.LibraryBooks
+                        "christian_lit_mem" -> Icons.Default.Psychology
+                        "bible_mem" -> Icons.Default.BookmarkAdded
+                        "retreats" -> Icons.Default.Landscape
+                        else -> Icons.Default.Star
                     },
                     contentDescription = null,
                     tint = iconTint,

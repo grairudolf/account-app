@@ -15,11 +15,24 @@ import java.io.FileOutputStream
 
 object QuoteImageSharer {
 
+    private val devotionalBgImages = listOf(
+        R.drawable.quote_bg_sunrise_1787220672419,
+        R.drawable.quote_bg_waters_1787220685176,
+        R.drawable.quote_bg_path_1787220696837,
+        R.drawable.quote_bg_heavens_1787220708792,
+        R.drawable.devotional_quote_bg_1787144263336
+    )
+
     /**
      * Programmatically renders the devotional quote onto an inspirational canvas graphic,
      * adds CMFI app branding at the bottom, and launches the native OS share sheet.
      */
-    fun shareQuoteImage(context: Context, quoteText: String, title: String = "DAILY WORD OF ENCOURAGEMENT") {
+    fun shareQuoteImage(
+        context: Context,
+        quoteText: String,
+        title: String = "DAILY WORD OF ENCOURAGEMENT",
+        bgResId: Int? = null
+    ) {
         var bitmap: Bitmap? = null
         var bgBitmap: Bitmap? = null
         try {
@@ -28,12 +41,17 @@ object QuoteImageSharer {
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
-            // 1. Draw Background Image
+            // 1. Draw Background Image (rotating daily or provided)
+            val selectedRes = bgResId ?: run {
+                val day = java.time.LocalDate.now().dayOfYear
+                devotionalBgImages[day % devotionalBgImages.size]
+            }
+
             val options = BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
                 inScaled = false
             }
-            bgBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.devotional_quote_bg_1787144263336, options)
+            bgBitmap = BitmapFactory.decodeResource(context.resources, selectedRes, options)
             if (bgBitmap != null) {
                 val srcRect = Rect(0, 0, bgBitmap.width, bgBitmap.height)
                 val dstRect = Rect(0, 0, width, height)
@@ -44,16 +62,16 @@ object QuoteImageSharer {
                 canvas.drawColor(android.graphics.Color.parseColor("#14214C"))
             }
 
-            // 2. Readability Dark Gradient Overlay
+            // 2. Readability Semi-transparent Gradient Overlay
             val gradientPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 shader = LinearGradient(
                     0f, 0f, 0f, height.toFloat(),
                     intArrayOf(
-                        android.graphics.Color.parseColor("#E614214C"), // 90% #14214C
-                        android.graphics.Color.parseColor("#F20D1636"), // 95% #0D1636
-                        android.graphics.Color.parseColor("#F80A1028")  // 97% deep navy
+                        android.graphics.Color.parseColor("#8014214C"), // ~50%
+                        android.graphics.Color.parseColor("#B30D1636"), // ~70%
+                        android.graphics.Color.parseColor("#E60A1028")  // ~90% bottom
                     ),
-                    floatArrayOf(0f, 0.5f, 1f),
+                    floatArrayOf(0f, 0.45f, 1f),
                     Shader.TileMode.CLAMP
                 )
             }

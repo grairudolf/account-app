@@ -8,8 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,10 +28,12 @@ import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
+import com.example.data.local.entities.DiscipleEntity
 import com.example.domain.models.BibleMetadata
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 data class BibleReadingSegment(
@@ -44,6 +48,10 @@ data class BibleReadingSegment(
 fun DomainDetailScreen(
     domainId: String,
     strings: AppStrings,
+    disciples: List<DiscipleEntity> = emptyList(),
+    onSaveDisciple: (DiscipleEntity) -> Unit = {},
+    onUpdateDisciple: (DiscipleEntity) -> Unit = {},
+    onDeleteDisciple: (DiscipleEntity) -> Unit = {},
     onNavigateToTimer: (String) -> Unit,
     onSaveEntry: (AccountabilityEntryEntity) -> Unit,
     onBack: () -> Unit
@@ -87,10 +95,40 @@ fun DomainDetailScreen(
     var timesReadText by remember { mutableStateOf("1") }
     var pagesMemorizedText by remember { mutableStateOf("5") }
 
-    // Fasting
-    var fastingDaysText by remember { mutableStateOf("1") }
+    // Fasting (Auto-calculated from Start Date & End Date)
+    var fastingStartDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var fastingEndDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    val calculatedFastingDays = remember(fastingStartDateIso, fastingEndDateIso) {
+        try {
+            val s = LocalDate.parse(fastingStartDateIso)
+            val e = LocalDate.parse(fastingEndDateIso)
+            val d = ChronoUnit.DAYS.between(s, e) + 1
+            if (d >= 1) d.toInt() else 1
+        } catch (ex: Exception) {
+            1
+        }
+    }
     var selectedFastingType by remember { mutableStateOf("Complete Fast") }
     var fastingPurpose by remember { mutableStateOf("") }
+
+    // Making of Disciples (Discipleship Management & Session Logging)
+    var discipleshipStartDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var discipleshipEndDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    val calculatedDiscipleshipDays = remember(discipleshipStartDateIso, discipleshipEndDateIso) {
+        try {
+            val s = LocalDate.parse(discipleshipStartDateIso)
+            val e = LocalDate.parse(discipleshipEndDateIso)
+            val d = ChronoUnit.DAYS.between(s, e) + 1
+            if (d >= 1) d.toInt() else 1
+        } catch (ex: Exception) {
+            1
+        }
+    }
+    var selectedDiscipleId by remember { mutableStateOf<String?>(null) }
+    var discipleshipTopicsCovered by remember { mutableStateOf("") }
+    var showAddEditDiscipleDialog by remember { mutableStateOf(false) }
+    var discipleToEdit by remember { mutableStateOf<DiscipleEntity?>(null) }
+    var discipleToDelete by remember { mutableStateOf<DiscipleEntity?>(null) }
 
     // Giving to God
     var givingIncomeText by remember { mutableStateOf("") }
@@ -248,7 +286,7 @@ fun DomainDetailScreen(
                                 }
                             }
 
-                            if (domainId != "giving") {
+                            if (domainId != "giving" && domainId != "fasting" && domainId != "making_disciples") {
                                 Button(
                                     onClick = { onNavigateToTimer(domainId) },
                                     modifier = Modifier
@@ -286,58 +324,60 @@ fun DomainDetailScreen(
                                 color = PrimaryBlueDark
                             )
 
-                            // Date Selector
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(strings.date, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    OutlinedIconButton(
-                                        onClick = {
-                                            val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
-                                            selectedDateIso = current.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                        },
-                                        modifier = Modifier.size(40.dp)
+                            // Date Selector (for standard daily domains)
+                            if (domainId != "fasting" && domainId != "making_disciples") {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(strings.date, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
-                                    }
-
-                                    Surface(
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = LightBlueContainer,
-                                        modifier = Modifier.testTag("entry_date_selector")
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        OutlinedIconButton(
+                                            onClick = {
+                                                val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
+                                                selectedDateIso = current.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                            },
+                                            modifier = Modifier.size(40.dp)
                                         ) {
-                                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                            Text(
-                                                text = selectedDateIso,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = PrimaryBlueDark
-                                            )
+                                            Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
                                         }
-                                    }
 
-                                    OutlinedIconButton(
-                                        onClick = {
-                                            val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
-                                            selectedDateIso = current.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                        },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = LightBlueContainer,
+                                            modifier = Modifier.testTag("entry_date_selector")
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                            ) {
+                                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                                Text(
+                                                    text = selectedDateIso,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryBlueDark
+                                                )
+                                            }
+                                        }
+
+                                        OutlinedIconButton(
+                                            onClick = {
+                                                val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
+                                                selectedDateIso = current.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                            },
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
+                                        }
                                     }
                                 }
                             }
 
                             // Time & Duration for duration-based domains
-                            if (domainId != "fasting" && domainId != "giving") {
+                            if (domainId != "fasting" && domainId != "giving" && domainId != "making_disciples") {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(strings.timeAndDuration, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -430,9 +470,11 @@ fun DomainDetailScreen(
                                                             DropdownMenuItem(
                                                                 text = { Text("${strings.getBibleBookName(b.name)} (${b.chapters} ch)") },
                                                                 onClick = {
-                                                                    segment.book = b.name
-                                                                    segment.startChapter = 1
-                                                                    segment.endChapter = 1
+                                                                    bibleSegments[index] = segment.copy(
+                                                                        book = b.name,
+                                                                        startChapter = 1,
+                                                                        endChapter = 1
+                                                                    )
                                                                     bookExpanded = false
                                                                 }
                                                             )
@@ -469,8 +511,11 @@ fun DomainDetailScreen(
                                                                 DropdownMenuItem(
                                                                     text = { Text("Ch. $ch") },
                                                                     onClick = {
-                                                                        segment.startChapter = ch
-                                                                        if (segment.endChapter < ch) segment.endChapter = ch
+                                                                        val newEnd = if (segment.endChapter < ch) ch else segment.endChapter
+                                                                        bibleSegments[index] = segment.copy(
+                                                                            startChapter = ch,
+                                                                            endChapter = newEnd
+                                                                        )
                                                                         startChExpanded = false
                                                                     }
                                                                 )
@@ -500,7 +545,9 @@ fun DomainDetailScreen(
                                                                 DropdownMenuItem(
                                                                     text = { Text("Ch. $ch") },
                                                                     onClick = {
-                                                                        segment.endChapter = ch
+                                                                        bibleSegments[index] = segment.copy(
+                                                                            endChapter = ch
+                                                                        )
                                                                         endChExpanded = false
                                                                     }
                                                                 )
@@ -546,6 +593,7 @@ fun DomainDetailScreen(
                                         "Personal Supplication" to strings.prayerTypePersonalSupplication,
                                         "Spiritual Warfare" to strings.prayerTypeSpiritualWarfare,
                                         "Praise & Adoration" to strings.prayerTypePraise,
+                                        "Prayer Walk" to strings.prayerTypePrayerWalk,
                                         "15-Minute Retreat" to strings.prayerType15MinRetreat,
                                         "Bertoua Message" to strings.prayerTypeBertouaMessage,
                                         "Thanksgiving" to strings.prayerTypeThanksgiving,
@@ -607,6 +655,7 @@ fun DomainDetailScreen(
                                         "Prayer Night" to strings.prayerTypePrayerNight,
                                         "Prayer Siege" to strings.prayerTypePrayerSiege,
                                         "Cell Group" to strings.prayerTypeCellGroup,
+                                        "Prayer Walk" to strings.prayerTypePrayerWalk,
                                         "Family Altar" to strings.prayerTypeFamilyAltar,
                                         "Corporate Assembly" to strings.prayerTypeCorporateAssembly,
                                         "Intercessory Chain" to strings.prayerTypeIntercessoryChain,
@@ -866,13 +915,129 @@ fun DomainDetailScreen(
                                             )
                                         }
                                     }
-                                    OutlinedTextField(
-                                        value = fastingDaysText,
-                                        onValueChange = { fastingDaysText = it },
-                                        label = { Text(strings.fastingDurationDays) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true
-                                    )
+
+                                    // Fasting Start Date & End Date (Auto-calculates number of days)
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(
+                                            text = strings.dateRangePeriod,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            // Start Date
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = LightBlueContainer,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Text(
+                                                        text = strings.startDateLabel,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = PrimaryBlueDark
+                                                    )
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(fastingStartDateIso)
+                                                                fastingStartDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                        Text(
+                                                            text = fastingStartDateIso,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(fastingStartDateIso)
+                                                                fastingStartDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // End Date
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = LightBlueContainer,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Text(
+                                                        text = strings.endDateLabel,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = PrimaryBlueDark
+                                                    )
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(fastingEndDateIso)
+                                                                fastingEndDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                        Text(
+                                                            text = fastingEndDateIso,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(fastingEndDateIso)
+                                                                fastingEndDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Auto-calculated days badge
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = PrimaryBlueDark.copy(alpha = 0.08f),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(Icons.Default.DateRange, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                                Text(
+                                                    text = String.format(strings.calculatedDaysFormat, calculatedFastingDays),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryBlueDark
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     OutlinedTextField(
                                         value = fastingPurpose,
                                         onValueChange = { fastingPurpose = it },
@@ -922,6 +1087,373 @@ fun DomainDetailScreen(
                                         value = ddewgInspirationText,
                                         onValueChange = { ddewgInspirationText = it },
                                         label = { Text(strings.inspirationForMeditation) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 2
+                                    )
+                                }
+
+                                "making_disciples" -> {
+                                    // 1. My Disciples Section
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = strings.myDisciplesTitle,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryBlueDark
+                                            )
+                                            Text(
+                                                text = "${disciples.size} ${if (disciples.size == 1) "disciple" else "disciples"}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Button(
+                                            onClick = {
+                                                discipleToEdit = null
+                                                showAddEditDiscipleDialog = true
+                                            },
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        ) {
+                                            Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(strings.addNewDisciple, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+
+                                    if (disciples.isEmpty()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = LightBlueContainer.copy(alpha = 0.5f),
+                                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.2f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(20.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Groups,
+                                                    contentDescription = null,
+                                                    tint = PrimaryBlue,
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                                Text(
+                                                    text = strings.noDisciplesYet,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = PrimaryBlueDark
+                                                )
+                                                Text(
+                                                    text = strings.noDisciplesDesc,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            disciples.forEach { disc ->
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = MaterialTheme.colorScheme.surface,
+                                                    border = BorderStroke(1.dp, DividerColor),
+                                                    shadowElevation = 1.dp,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(14.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                            ) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(36.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(LightBlueContainer),
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Person,
+                                                                        contentDescription = null,
+                                                                        tint = PrimaryBlue,
+                                                                        modifier = Modifier.size(20.dp)
+                                                                    )
+                                                                }
+                                                                Column {
+                                                                    Text(
+                                                                        text = disc.name,
+                                                                        style = MaterialTheme.typography.titleSmall,
+                                                                        fontWeight = FontWeight.Bold
+                                                                    )
+                                                                    if (disc.phone.isNotBlank()) {
+                                                                        Text(
+                                                                            text = disc.phone,
+                                                                            style = MaterialTheme.typography.bodySmall,
+                                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Surface(
+                                                                    shape = RoundedCornerShape(8.dp),
+                                                                    color = PrimaryBlueDark.copy(alpha = 0.1f)
+                                                                ) {
+                                                                    Text(
+                                                                        text = disc.status,
+                                                                        style = MaterialTheme.typography.labelSmall,
+                                                                        color = PrimaryBlueDark,
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                                    )
+                                                                }
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        discipleToEdit = disc
+                                                                        showAddEditDiscipleDialog = true
+                                                                    },
+                                                                    modifier = Modifier.size(32.dp)
+                                                                ) {
+                                                                    Icon(Icons.Default.Edit, contentDescription = "Edit Disciple", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                                                }
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        discipleToDelete = disc
+                                                                    },
+                                                                    modifier = Modifier.size(32.dp)
+                                                                ) {
+                                                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Disciple", tint = StatusError, modifier = Modifier.size(18.dp))
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if (disc.prayerTopics.isNotBlank()) {
+                                                            Surface(
+                                                                shape = RoundedCornerShape(8.dp),
+                                                                color = LightBlueContainer.copy(alpha = 0.5f),
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            ) {
+                                                                Column(modifier = Modifier.padding(8.dp)) {
+                                                                    Text(
+                                                                        text = "🙏 ${strings.prayerTopicsLabel}:",
+                                                                        style = MaterialTheme.typography.labelSmall,
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        color = PrimaryBlueDark
+                                                                    )
+                                                                    Text(
+                                                                        text = disc.prayerTopics,
+                                                                        style = MaterialTheme.typography.bodySmall,
+                                                                        color = MaterialTheme.colorScheme.onSurface
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if (disc.notes.isNotBlank()) {
+                                                            Text(
+                                                                text = "📝 ${disc.notes}",
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    HorizontalDivider(color = DividerColor)
+
+                                    // 2. Discipleship Session Log
+                                    Text(
+                                        text = strings.logDiscipleshipSession,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryBlueDark
+                                    )
+
+                                    // Disciple Selector
+                                    var discipleMenuExpanded by remember { mutableStateOf(false) }
+                                    val currentSelectedDisciple = disciples.find { it.id == selectedDiscipleId }
+                                    ExposedDropdownMenuBox(
+                                        expanded = discipleMenuExpanded,
+                                        onExpandedChange = { discipleMenuExpanded = !discipleMenuExpanded }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = currentSelectedDisciple?.name ?: strings.generalOrAllDisciples,
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(strings.selectDisciple) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = discipleMenuExpanded) },
+                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = discipleMenuExpanded,
+                                            onDismissRequest = { discipleMenuExpanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(strings.generalOrAllDisciples, fontWeight = FontWeight.Bold) },
+                                                onClick = {
+                                                    selectedDiscipleId = null
+                                                    discipleMenuExpanded = false
+                                                }
+                                            )
+                                            disciples.forEach { d ->
+                                                DropdownMenuItem(
+                                                    text = { Text("${d.name} (${d.status})") },
+                                                    onClick = {
+                                                        selectedDiscipleId = d.id
+                                                        discipleMenuExpanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Start Date and End Date Selector (Auto-calculates number of days)
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(
+                                            text = strings.dateRangePeriod,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            // Start Date
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = LightBlueContainer,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Text(
+                                                        text = strings.startDateLabel,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = PrimaryBlueDark
+                                                    )
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(discipleshipStartDateIso)
+                                                                discipleshipStartDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                        Text(
+                                                            text = discipleshipStartDateIso,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(discipleshipStartDateIso)
+                                                                discipleshipStartDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // End Date
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = LightBlueContainer,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Text(
+                                                        text = strings.endDateLabel,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = PrimaryBlueDark
+                                                    )
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(discipleshipEndDateIso)
+                                                                discipleshipEndDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                        Text(
+                                                            text = discipleshipEndDateIso,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        IconButton(
+                                                            onClick = {
+                                                                val cur = LocalDate.parse(discipleshipEndDateIso)
+                                                                discipleshipEndDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Auto-calculated days badge
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = PrimaryBlueDark.copy(alpha = 0.08f),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(Icons.Default.DateRange, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                                Text(
+                                                    text = String.format(strings.calculatedDaysFormat, calculatedDiscipleshipDays),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryBlueDark
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    OutlinedTextField(
+                                        value = discipleshipTopicsCovered,
+                                        onValueChange = { discipleshipTopicsCovered = it },
+                                        label = { Text(strings.topicsCoveredLabel) },
                                         modifier = Modifier.fillMaxWidth(),
                                         minLines = 2
                                     )
@@ -1089,9 +1621,32 @@ fun DomainDetailScreen(
                                                 timestampMs = System.currentTimeMillis(),
                                                 timezoneId = java.time.ZoneId.systemDefault().id,
                                                 durationSeconds = 0L,
-                                                fastingDaysCount = fastingDaysText.toIntOrNull() ?: 1,
+                                                fastingDaysCount = calculatedFastingDays,
                                                 fastingType = selectedFastingType,
                                                 notes = if (fastingPurpose.isNotBlank()) "$fastingPurpose\n$notes" else notes
+                                            )
+                                        }
+                                        "making_disciples" -> {
+                                            val discName = disciples.find { it.id == selectedDiscipleId }?.name ?: "General"
+                                            val combinedNotes = buildString {
+                                                append("Disciple: $discName")
+                                                if (discipleshipTopicsCovered.isNotBlank()) {
+                                                    append("\nTopics: $discipleshipTopicsCovered")
+                                                }
+                                                if (notes.isNotBlank()) {
+                                                    append("\n$notes")
+                                                }
+                                            }
+                                            AccountabilityEntryEntity(
+                                                id = UUID.randomUUID().toString(),
+                                                userId = "guest_user",
+                                                domainId = domainId,
+                                                dateIso = selectedDateIso,
+                                                timestampMs = System.currentTimeMillis(),
+                                                timezoneId = java.time.ZoneId.systemDefault().id,
+                                                durationSeconds = 0L,
+                                                fastingDaysCount = calculatedDiscipleshipDays,
+                                                notes = combinedNotes
                                             )
                                         }
                                         "soul_winning" -> {
@@ -1204,5 +1759,158 @@ fun DomainDetailScreen(
                 }
             }
         }
+    }
+
+    // Add / Edit Disciple Dialog
+    if (showAddEditDiscipleDialog) {
+        var discName by remember { mutableStateOf(discipleToEdit?.name ?: "") }
+        var discPhone by remember { mutableStateOf(discipleToEdit?.phone ?: "") }
+        var discNotes by remember { mutableStateOf(discipleToEdit?.notes ?: "") }
+        var discPrayerTopics by remember { mutableStateOf(discipleToEdit?.prayerTopics ?: "") }
+        var discStatus by remember { mutableStateOf(discipleToEdit?.status ?: "Active") }
+        var statusDropdownExpanded by remember { mutableStateOf(false) }
+
+        val statuses = listOf("Active", "New Convert", "Growing", "Leader in Training")
+
+        AlertDialog(
+            onDismissRequest = { showAddEditDiscipleDialog = false },
+            title = {
+                Text(
+                    text = if (discipleToEdit == null) strings.addNewDisciple else strings.editDisciple,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = discName,
+                        onValueChange = { discName = it },
+                        label = { Text(strings.discipleNameLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = discPhone,
+                        onValueChange = { discPhone = it },
+                        label = { Text(strings.phoneOptionalLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = statusDropdownExpanded,
+                        onExpandedChange = { statusDropdownExpanded = !statusDropdownExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = discStatus,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(strings.spiritualStageLabel) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusDropdownExpanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(
+                            expanded = statusDropdownExpanded,
+                            onDismissRequest = { statusDropdownExpanded = false }
+                        ) {
+                            statuses.forEach { st ->
+                                DropdownMenuItem(
+                                    text = { Text(st) },
+                                    onClick = {
+                                        discStatus = st
+                                        statusDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = discPrayerTopics,
+                        onValueChange = { discPrayerTopics = it },
+                        label = { Text(strings.prayerTopicsLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+
+                    OutlinedTextField(
+                        value = discNotes,
+                        onValueChange = { discNotes = it },
+                        label = { Text(strings.spiritualJourneyNotesLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (discName.isNotBlank()) {
+                            val entity = DiscipleEntity(
+                                id = discipleToEdit?.id ?: UUID.randomUUID().toString(),
+                                name = discName.trim(),
+                                phone = discPhone.trim(),
+                                notes = discNotes.trim(),
+                                prayerTopics = discPrayerTopics.trim(),
+                                status = discStatus,
+                                createdAtMs = discipleToEdit?.createdAtMs ?: System.currentTimeMillis(),
+                                updatedAtMs = System.currentTimeMillis()
+                            )
+                            if (discipleToEdit == null) {
+                                onSaveDisciple(entity)
+                            } else {
+                                onUpdateDisciple(entity)
+                            }
+                            showAddEditDiscipleDialog = false
+                            HapticHelper.vibrateSuccess(context)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(strings.saveDiscipleButton, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddEditDiscipleDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    // Delete Confirmation Dialog
+    discipleToDelete?.let { disc ->
+        AlertDialog(
+            onDismissRequest = { discipleToDelete = null },
+            title = { Text(strings.confirmDeleteDisciple, fontWeight = FontWeight.Bold) },
+            text = { Text(String.format(strings.confirmDeleteDisciplePrompt, disc.name)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteDisciple(disc)
+                        discipleToDelete = null
+                        HapticHelper.vibrateClick(context)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusError),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(strings.delete, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { discipleToDelete = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
     }
 }

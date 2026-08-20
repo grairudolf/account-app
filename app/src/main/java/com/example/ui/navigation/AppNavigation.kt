@@ -434,9 +434,14 @@ fun MainApp() {
                         )
                     } else {
                         val entryViewModel: EntryViewModel = viewModel(factory = factory)
+                        val disciplesList by entryViewModel.disciples.collectAsStateWithLifecycle()
                         DomainDetailScreen(
                             domainId = domainId,
                             strings = strings,
+                            disciples = disciplesList,
+                            onSaveDisciple = { entryViewModel.saveDisciple(it) },
+                            onUpdateDisciple = { entryViewModel.updateDisciple(it) },
+                            onDeleteDisciple = { entryViewModel.deleteDisciple(it) },
                             onNavigateToTimer = { id ->
                                 navController.navigate(NavRoutes.timer(id))
                             },

@@ -95,13 +95,13 @@ object HapticHelper {
             if (!vibrator.hasVibrator()) return
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Strong double-thump waveform pattern at max amplitude (255) for heavy tactile feedback
-                val timings = longArrayOf(0, 50, 20, 40)
-                val amplitudes = intArrayOf(0, 255, 0, 230)
+                // Strong deep double-pulse at max amplitude (255) for heavier tactile feedback
+                val timings = longArrayOf(0, 75, 30, 65)
+                val amplitudes = intArrayOf(0, 255, 0, 255)
                 vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(80)
+                vibrator.vibrate(120)
             }
         } catch (_: Exception) {
             // Ignore

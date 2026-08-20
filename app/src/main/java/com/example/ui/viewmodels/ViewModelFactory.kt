@@ -73,7 +73,8 @@ class ViewModelFactory private constructor(
                     db.reminderDao(),
                     db.reportDao(),
                     db.notificationDao(),
-                    db.proclamationTopicDao()
+                    db.proclamationTopicDao(),
+                    db.discipleDao()
                 )
                 val timerMgr = TimerServiceManager(db.timerSessionDao())
                 val instance = ViewModelFactory(context.applicationContext, userRepo, accRepo, timerMgr)
