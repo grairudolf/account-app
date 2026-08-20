@@ -528,7 +528,7 @@ fun ProclamationScreen(
                                 if (nextCount == targetCount || (nextCount > 0 && nextCount % 50 == 0)) {
                                     HapticHelper.vibrateMilestone(context)
                                 } else {
-                                    HapticHelper.vibrateClick(context)
+                                    HapticHelper.vibrateProclamationTap(context)
                                 }
                                 viewModel.incrementCounter(1)
                             },

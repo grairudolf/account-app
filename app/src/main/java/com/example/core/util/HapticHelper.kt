@@ -75,13 +75,33 @@ object HapticHelper {
             val vibrator = getVibrator(context) ?: return
             if (!vibrator.hasVibrator()) return
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(35, 200))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(50, 255))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(35)
+                vibrator.vibrate(50)
+            }
+        } catch (_: Exception) {
+            // Ignore
+        }
+    }
+
+    /**
+     * Heavy, powerful tactile impact specifically designed for proclamation taps.
+     */
+    fun vibrateProclamationTap(context: Context) {
+        try {
+            val vibrator = getVibrator(context) ?: return
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Strong double-thump waveform pattern at max amplitude (255) for heavy tactile feedback
+                val timings = longArrayOf(0, 50, 20, 40)
+                val amplitudes = intArrayOf(0, 255, 0, 230)
+                vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(80)
             }
         } catch (_: Exception) {
             // Ignore
