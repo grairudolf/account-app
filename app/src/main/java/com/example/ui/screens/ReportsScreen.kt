@@ -56,6 +56,8 @@ fun ReportsScreen(
     onDeleteReport: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val isFrench = strings is com.example.core.localization.FrenchStrings
+    val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
     var lastGeneratedFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
     var showCalendarDatePicker by remember { mutableStateOf(false) }
@@ -237,11 +239,13 @@ fun ReportsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val monthNameRaw = targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMMM", locale))
+                                val monthName = monthNameRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                                 val dateText = when (selectedReportType) {
-                                    "DAILY" -> "${strings.targetDayLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
-                                    "WEEKLY" -> "${strings.weekEndingLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
-                                    "MONTHLY" -> "${strings.monthLabel}: ${targetDate.month.name} ${targetDate.year}"
-                                    else -> "${strings.dateRangeLabel}: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                                    "DAILY" -> "${strings.targetDayLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
+                                    "WEEKLY" -> "${strings.weekEndingLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
+                                    "MONTHLY" -> "${strings.monthLabel}: $monthName ${targetDate.year}"
+                                    else -> "${strings.dateRangeLabel}: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", locale))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
                                 }
                                 Text(
                                     text = dateText,
@@ -458,12 +462,12 @@ fun ReportsScreen(
                         )
                         Column {
                             Text(
-                                text = "Share Accounts to Social Media & Messaging",
+                                text = strings.shareAccountsTitle,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Send summary links or reports directly to your Disciple Maker, WhatsApp, or Social Platforms:",
+                                text = strings.shareAccountsDesc,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -482,7 +486,7 @@ fun ReportsScreen(
                         ) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share Summary")
+                            Text(strings.shareSummary)
                         }
                         OutlinedButton(
                             onClick = { shareTextReport(null) },
@@ -491,7 +495,7 @@ fun ReportsScreen(
                         ) {
                             Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy Link")
+                            Text(strings.copyLink)
                         }
                     }
                 }
@@ -588,6 +592,7 @@ fun ReportsScreen(
 
     if (showCalendarDatePicker) {
         ReportDatePickerDialog(
+            strings = strings,
             currentReportType = selectedReportType,
             currentTargetDate = targetDate,
             currentStartDate = startDate,
@@ -608,24 +613,24 @@ fun ReportsScreen(
         val target = reportToDelete!!
         AlertDialog(
             onDismissRequest = { reportToDelete = null },
-            title = { Text("Delete Report", fontWeight = FontWeight.Bold) },
-            text = { Text("Are you sure you want to delete this ${target.reportType} report record (${target.dateRangeLabel})? This action cannot be undone.") },
+            title = { Text(if (isFrench) "Supprimer le rapport" else "Delete Report", fontWeight = FontWeight.Bold) },
+            text = { Text(if (isFrench) "Êtes-vous sûr de vouloir supprimer ce rapport ${target.reportType} (${target.dateRangeLabel}) ? Cette action est irréversible." else "Are you sure you want to delete this ${target.reportType} report record (${target.dateRangeLabel})? This action cannot be undone.") },
             confirmButton = {
                 Button(
                     onClick = {
                         onDeleteReport(target.id)
                         reportToDelete = null
-                        Toast.makeText(context, "Report deleted", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (isFrench) "Rapport supprimé" else "Report deleted", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusError),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Delete")
+                    Text(if (isFrench) "Supprimer" else "Delete")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { reportToDelete = null }) {
-                    Text("Cancel")
+                    Text(strings.cancel)
                 }
             },
             shape = RoundedCornerShape(28.dp)
@@ -636,6 +641,7 @@ fun ReportsScreen(
 
 @Composable
 fun ReportDatePickerDialog(
+    strings: AppStrings,
     currentReportType: String,
     currentTargetDate: java.time.LocalDate,
     currentStartDate: java.time.LocalDate,
@@ -644,6 +650,7 @@ fun ReportDatePickerDialog(
     onConfirmDate: (java.time.LocalDate) -> Unit,
     onConfirmRange: (java.time.LocalDate, java.time.LocalDate) -> Unit
 ) {
+    val isFrench = strings is com.example.core.localization.FrenchStrings
     var targetDateText by remember { mutableStateOf(currentTargetDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
     var startDateText by remember { mutableStateOf(currentStartDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
     var endDateText by remember { mutableStateOf(currentEndDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
@@ -654,14 +661,14 @@ fun ReportDatePickerDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (currentReportType == "CUSTOM") "Select Custom Date Range" else "Select Report Date",
+                text = if (currentReportType == "CUSTOM") (if (isFrench) "Sélectionner la plage de dates" else "Select Custom Date Range") else (if (isFrench) "Sélectionner la date du rapport" else "Select Report Date"),
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Quick Presets
-                Text("Quick Preset Selection:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Text(if (isFrench) "Sélection rapide :" else "Quick Preset Selection:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = false,
@@ -670,7 +677,7 @@ fun ReportDatePickerDialog(
                             startDateText = today.minusDays(7).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                             endDateText = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                         },
-                        label = { Text("Today") },
+                        label = { Text(strings.today) },
                         shape = CircleShape
                     )
                     FilterChip(
@@ -681,7 +688,7 @@ fun ReportDatePickerDialog(
                             startDateText = today.minusDays(14).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                             endDateText = yest.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                         },
-                        label = { Text("Yesterday") },
+                        label = { Text(if (isFrench) "Hier" else "Yesterday") },
                         shape = CircleShape
                     )
                 }
@@ -692,7 +699,7 @@ fun ReportDatePickerDialog(
                     OutlinedTextField(
                         value = startDateText,
                         onValueChange = { startDateText = it },
-                        label = { Text("Start Date (YYYY-MM-DD)") },
+                        label = { Text(if (isFrench) "Date de début (AAAA-MM-JJ)" else "Start Date (YYYY-MM-DD)") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
@@ -700,7 +707,7 @@ fun ReportDatePickerDialog(
                     OutlinedTextField(
                         value = endDateText,
                         onValueChange = { endDateText = it },
-                        label = { Text("End Date (YYYY-MM-DD)") },
+                        label = { Text(if (isFrench) "Date de fin (AAAA-MM-JJ)" else "End Date (YYYY-MM-DD)") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
@@ -709,7 +716,7 @@ fun ReportDatePickerDialog(
                     OutlinedTextField(
                         value = targetDateText,
                         onValueChange = { targetDateText = it },
-                        label = { Text("Target Date (YYYY-MM-DD)") },
+                        label = { Text(if (isFrench) "Date cible (AAAA-MM-JJ)" else "Target Date (YYYY-MM-DD)") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
@@ -735,12 +742,12 @@ fun ReportDatePickerDialog(
                 },
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Apply Date")
+                Text(if (isFrench) "Appliquer" else "Apply Date")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         },
         shape = RoundedCornerShape(28.dp)

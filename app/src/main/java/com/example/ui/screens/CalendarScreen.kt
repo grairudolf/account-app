@@ -44,7 +44,10 @@ fun CalendarScreen(
     onPreviousMonth: () -> Unit,
     onGoToToday: () -> Unit
 ) {
-    val monthTitle = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+    val isFrench = strings is com.example.core.localization.FrenchStrings
+    val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
+    val monthTitleRaw = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+    val monthTitle = monthTitleRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
     val activeStreakDays = monthDaysCompletion.count { it.entriesCount > 0 }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -160,8 +163,9 @@ fun CalendarScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Calendar Grid Header (Mon, Tue, Wed...)
+                    val dayHeaders = if (isFrench) listOf("L", "M", "M", "J", "V", "S", "D") else listOf("M", "T", "W", "T", "F", "S", "S")
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
+                        dayHeaders.forEach { day ->
                             Text(
                                 text = day,
                                 modifier = Modifier.weight(1f),
@@ -259,8 +263,10 @@ fun CalendarScreen(
 
         // Selected Date Summary Header
         item {
+            val formattedDateRaw = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMM yyyy", locale))
+            val formattedDate = formattedDateRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
             Text(
-                text = String.format(strings.activitiesForDate, selectedDate.format(DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"))),
+                text = String.format(strings.activitiesForDate, formattedDate),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface

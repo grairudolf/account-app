@@ -48,6 +48,8 @@ fun StatisticsScreen(
     onDeleteEntry: (String) -> Unit = {}
 ) {
     var editingEntry by remember { mutableStateOf<AccountabilityEntryEntity?>(null) }
+    val isFrench = strings is com.example.core.localization.FrenchStrings
+    val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
@@ -251,8 +253,14 @@ fun StatisticsScreen(
                                                     .background(if (isToday) StreakGold else PrimaryBlue)
                                             )
                                             Spacer(modifier = Modifier.height(6.dp))
+                                            val dayDate = try { LocalDate.parse(dayActivity.dateIso) } catch (e: Exception) { null }
+                                            val dayText = if (dayDate != null) {
+                                                dayDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).take(3).replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+                                            } else {
+                                                dayActivity.dayLabel.take(3)
+                                            }
                                             Text(
-                                                text = dayActivity.dayLabel.take(3),
+                                                text = dayText,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -314,8 +322,10 @@ fun StatisticsScreen(
                                     IconButton(onClick = onPreviousMonth) {
                                         Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
                                     }
+                                    val statMonthTitleRaw = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+                                    val statMonthTitle = statMonthTitleRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                                     Text(
-                                        text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                                        text = statMonthTitle,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -330,8 +340,9 @@ fun StatisticsScreen(
                                 }
 
                                 // Day headers
+                                val statDayHeaders = if (isFrench) listOf("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim") else listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                                    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { day ->
+                                    statDayHeaders.forEach { day ->
                                         Text(
                                             text = day,
                                             style = MaterialTheme.typography.labelSmall,
@@ -412,8 +423,10 @@ fun StatisticsScreen(
                     }
 
                     item {
+                        val selDateFormattedRaw = selectedDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy", locale))
+                        val selDateFormatted = selDateFormattedRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                         Text(
-                            text = String.format(strings.selectedDateLabel, selectedDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy"))),
+                            text = String.format(strings.selectedDateLabel, selDateFormatted),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
