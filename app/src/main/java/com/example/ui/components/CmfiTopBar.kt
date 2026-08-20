@@ -107,7 +107,7 @@ fun CmfiTopBar(
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, DividerColor),
                         modifier = Modifier
-                            .padding(end = 6.dp)
+                            .padding(end = 8.dp)
                             .testTag("top_bar_language_selector")
                     ) {
                         Row(
@@ -167,30 +167,7 @@ fun CmfiTopBar(
                     }
                 }
 
-                // Rounded Icon Action Buttons
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    IconButton(
-                        onClick = onSearchClick,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .testTag("top_bar_search_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(6.dp))
-
+                // Notification Icon Action Button
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface,

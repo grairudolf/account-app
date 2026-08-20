@@ -111,75 +111,33 @@ fun DashboardScreen(
         contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Date & Welcome Header
+        // 2. User Greeting Section
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Column {
-                    Text(
-                        text = today.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 1.sp
-                    )
-                    val currentHour = LocalTime.now().hour
-                    val timeGreeting = when {
-                        currentHour in 5..11 -> strings.greetingMorning
-                        currentHour in 12..17 -> strings.greetingAfternoon
-                        else -> strings.greetingEvening
-                    }
-                    Text(
-                        text = "$timeGreeting, $discipleName",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                Text(
+                    text = today.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.2.sp
+                )
+                val currentHour = LocalTime.now().hour
+                val timeGreeting = when {
+                    currentHour in 5..11 -> strings.greetingMorning
+                    currentHour in 12..17 -> strings.greetingAfternoon
+                    else -> strings.greetingEvening
                 }
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(PrimaryBlue, AccentPurple)
-                            )
-                        )
-                        .padding(2.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(LightBlueContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val profilePic = uiState.user?.profileImageUri
-                        if (!profilePic.isNullOrBlank()) {
-                            AsyncImage(
-                                model = profilePic,
-                                contentDescription = "Profile Photo",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = discipleName.take(1).uppercase(),
-                                color = PrimaryBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = "$timeGreeting, $discipleName",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
 
