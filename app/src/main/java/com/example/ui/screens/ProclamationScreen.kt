@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
 import com.example.core.localization.EnglishStrings
+import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.ProclamationTopicEntity
 import com.example.ui.theme.*
@@ -83,7 +84,7 @@ fun ProclamationScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Importunate Prayer & Faith Proclamation",
+                            text = strings.importunatePrayerSubtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -204,16 +205,27 @@ fun ProclamationScreen(
 
                         // Suggestions Row
                         Text(
-                            text = "Quick Scriptural Proclamations:",
+                            text = strings.quickScripturalProclamations,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        val suggestionsList = if (strings is FrenchStrings) listOf(
+                            "Jésus-Christ est Seigneur sur toutes les nations",
+                            "Tout pouvoir m'a été donné dans le ciel et sur la terre",
+                            "Mon Dieu pourvoira à tous mes besoins selon sa richesse",
+                            "L'Éternel est ma lumière et mon salut, de qui aurais-je crainte?",
+                            "Toute arme forgée contre moi sera sans effet",
+                            "Par ses meurtrissures nous sommes guéris",
+                            "L'Éternel combattra pour vous, et vous garderez le silence",
+                            "La moisson est grande, envoie des ouvriers dans ta moisson"
+                        ) else viewModel.sampleSuggestions
 
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(vertical = 4.dp)
                         ) {
-                            items(viewModel.sampleSuggestions) { suggestion ->
+                            items(suggestionsList) { suggestion ->
                                 SuggestionChip(
                                     onClick = {
                                         viewModel.setTopicText(suggestion)
@@ -238,7 +250,7 @@ fun ProclamationScreen(
                         if (topics.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             Text(
-                                text = "Your Saved Prayer Topics:",
+                                text = strings.yourSavedPrayerTopics,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -317,13 +329,13 @@ fun ProclamationScreen(
                                         val addedInSession = (counter - startingCount).coerceAtLeast(0)
                                         Column {
                                             Text(
-                                                text = "Continuing session from $startingCount",
+                                                text = String.format(strings.continuingSessionFrom, startingCount),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
-                                                text = "+$addedInSession added in today's session",
+                                                text = String.format(strings.addedInTodaySession, addedInSession),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -333,7 +345,7 @@ fun ProclamationScreen(
                                         onClick = { viewModel.clearResumedSession() },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                                     ) {
-                                        Text("Start at 0", style = MaterialTheme.typography.labelSmall)
+                                        Text(strings.startAtZero, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
                             }
@@ -630,7 +642,7 @@ fun ProclamationScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "Spiritual Notes & Impressions",
+                            text = strings.spiritualNotesAndImpressions,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -639,7 +651,7 @@ fun ProclamationScreen(
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { viewModel.setNotes(it) },
-                            label = { Text("Session Notes (e.g. Specific breakthrough, scriptures)") },
+                            label = { Text(strings.sessionNotesPlaceholder) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("proclamation_notes_input"),
@@ -651,7 +663,7 @@ fun ProclamationScreen(
                         OutlinedTextField(
                             value = reflection,
                             onValueChange = { viewModel.setReflection(it) },
-                            label = { Text("Prophetic Burdens / Divine Impressions") },
+                            label = { Text(strings.propheticBurdensPlaceholder) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("proclamation_reflection_input"),
@@ -688,7 +700,7 @@ fun ProclamationScreen(
                     Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Save Proclamation Session",
+                        text = strings.saveProclamationSession,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -699,7 +711,7 @@ fun ProclamationScreen(
             if (topics.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Saved Prayer Topics & Progress",
+                        text = strings.savedPrayerTopicsAndProgress,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp)
@@ -709,6 +721,7 @@ fun ProclamationScreen(
                 items(topics) { topicItem ->
                     TopicHistoryCard(
                         topic = topicItem,
+                        strings = strings,
                         onResume = { viewModel.resumeTopicSession(topicItem) },
                         onStartFresh = { viewModel.startNewSessionForTopic(topicItem) },
                         onDelete = { viewModel.deleteTopic(topicItem) }
@@ -735,7 +748,10 @@ fun ProclamationScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "If you have already proclaimed or prayed before logging, you can set your counter to any number (e.g., 100) and choose whether to continue from this number as your session starting base.",
+                        text = if (strings is FrenchStrings)
+                            "Si vous avez déjà proclamé ou prié avant d'enregistrer, vous pouvez régler votre compteur sur n'importe quel nombre (ex. 100) et choisir de continuer à partir de ce nombre comme base de départ."
+                        else
+                            "If you have already proclaimed or prayed before logging, you can set your counter to any number (e.g., 100) and choose whether to continue from this number as your session starting base.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -774,7 +790,10 @@ fun ProclamationScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Set as session starting baseline (only count additional repetitions toward today's log)",
+                            text = if (strings is FrenchStrings)
+                                "Définir comme point de départ de la session (ne compter que les répétitions supplémentaires pour aujourd'hui)"
+                            else
+                                "Set as session starting baseline (only count additional repetitions toward today's log)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -811,7 +830,10 @@ fun ProclamationScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Proclamation & Importunity", fontWeight = FontWeight.Bold)
+                    Text(
+                        if (strings is FrenchStrings) "Proclamation & Importunité" else "Proclamation & Importunity",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             text = {
@@ -820,39 +842,48 @@ fun ProclamationScreen(
                     modifier = Modifier.padding(vertical = 4.dp)
                 ) {
                     Text(
-                        text = "1. Proclamation of Faith",
+                        text = if (strings is FrenchStrings) "1. Proclamation de la Foi" else "1. Proclamation of Faith",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Speaking God's word aloud repeatedly until faith fills the spirit and spiritual opposition is broken (Hebrews 4:14, Revelation 12:11).",
+                        text = if (strings is FrenchStrings)
+                            "Proclamer la parole de Dieu à voix haute et de manière répétée jusqu'à ce que la foi remplisse l'esprit et que l'opposition spirituelle soit brisée (Hébreux 4:14, Apocalypse 12:11)."
+                        else
+                            "Speaking God's word aloud repeatedly until faith fills the spirit and spiritual opposition is broken (Hebrews 4:14, Revelation 12:11).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "2. Importunity in Prayer",
+                        text = if (strings is FrenchStrings) "2. L'Importunité dans la Prière" else "2. Importunity in Prayer",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Persistent, shameless, and untiring prayer for a specific topic until the answer comes (Luke 11:8, Luke 18:1-8).",
+                        text = if (strings is FrenchStrings)
+                            "Prière persistante, fervente et infatigable pour un sujet précis jusqu'à ce que l'exaucement se manifeste (Luc 11:8, Luc 18:1-8)."
+                        else
+                            "Persistent, shameless, and untiring prayer for a specific topic until the answer comes (Luke 11:8, Luke 18:1-8).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "3. Practical Tips",
+                        text = if (strings is FrenchStrings) "3. Conseils Pratiques" else "3. Practical Tips",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "• Set clear biblical topics.\n• Use the counter to maintain focused repetition.\n• Let your prayers be audible, firm, and filled with the Holy Spirit.",
+                        text = if (strings is FrenchStrings)
+                            "• Choisissez des sujets bibliques clairs.\n• Utilisez le compteur pour maintenir une répétition focalisée.\n• Que vos prières soient audibles, fermes et remplies du Saint-Esprit."
+                        else
+                            "• Set clear biblical topics.\n• Use the counter to maintain focused repetition.\n• Let your prayers be audible, firm, and filled with the Holy Spirit.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -860,7 +891,7 @@ fun ProclamationScreen(
             },
             confirmButton = {
                 Button(onClick = { showInfoDialog = false }) {
-                    Text("Understood")
+                    Text(if (strings is FrenchStrings) "Compris" else "Understood")
                 }
             }
         )
@@ -870,19 +901,19 @@ fun ProclamationScreen(
     if (showSaveConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showSaveConfirmDialog = false },
-            title = { Text("Log Empty Session?") },
-            text = { Text("You currently have 0 repetitions and 0 minutes recorded. Would you still like to log this session?") },
+            title = { Text(if (strings is FrenchStrings) "Enregistrer une session vide ?" else "Log Empty Session?") },
+            text = { Text(if (strings is FrenchStrings) "Vous avez actuellement 0 répétition et 0 minute enregistrée. Souhaitez-vous tout de même enregistrer ?" else "You currently have 0 repetitions and 0 minutes recorded. Would you still like to log this session?") },
             confirmButton = {
                 Button(onClick = {
                     showSaveConfirmDialog = false
                     viewModel.saveSession(onSuccess = { onNavigateBack() })
                 }) {
-                    Text("Save Anyway")
+                    Text(if (strings is FrenchStrings) "Enregistrer quand même" else "Save Anyway")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSaveConfirmDialog = false }) {
-                    Text("Cancel")
+                    Text(strings.cancelTimer)
                 }
             }
         )
@@ -892,6 +923,7 @@ fun ProclamationScreen(
 @Composable
 private fun TopicHistoryCard(
     topic: ProclamationTopicEntity,
+    strings: AppStrings,
     onResume: () -> Unit,
     onStartFresh: () -> Unit,
     onDelete: () -> Unit
@@ -932,7 +964,7 @@ private fun TopicHistoryCard(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = "${topic.cumulativeCount} Proclamations",
+                                text = "${topic.cumulativeCount} ${strings.proclamationTitle}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold,
@@ -940,13 +972,13 @@ private fun TopicHistoryCard(
                             )
                         }
                         Text(
-                            text = "${topic.totalDurationSeconds / 60}m logged",
+                            text = "${topic.totalDurationSeconds / 60}m",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (topic.lastPracticedIso.isNotBlank()) {
                             Text(
-                                text = "Last: ${topic.lastPracticedIso}",
+                                text = "${if (strings is FrenchStrings) "Dernier: " else "Last: "}${topic.lastPracticedIso}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -960,7 +992,7 @@ private fun TopicHistoryCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Delete topic",
+                        contentDescription = strings.delete,
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
@@ -990,7 +1022,7 @@ private fun TopicHistoryCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Continue from ${topic.cumulativeCount}",
+                        text = if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue from ${topic.cumulativeCount}",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1009,7 +1041,7 @@ private fun TopicHistoryCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "New (+0)",
+                        text = if (strings is FrenchStrings) "Nouveau (+0)" else "New (+0)",
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

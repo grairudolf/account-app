@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.core.localization.AppStrings
+import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
 import com.example.core.util.QuoteImageSharer
 import com.example.data.local.entities.AccountabilityEntryEntity
@@ -252,17 +253,18 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val locale = if (strings is FrenchStrings) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
                         daysOfWeek.forEach { date ->
                             val isToday = date.dayOfMonth == currentDayOfMonth
-                            val dayName = date.format(DateTimeFormatter.ofPattern("EEE"))
+                            val dayName = date.format(DateTimeFormatter.ofPattern("EEE", locale))
                             val dayNumber = date.dayOfMonth.toString()
                             val hasEntryForDay = uiState.allEntries.any { it.dateIso == date.format(DateTimeFormatter.ISO_LOCAL_DATE) }
 
                             val capsuleBg = if (isToday) MaterialTheme.colorScheme.primary else if (hasEntryForDay) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent
                             val capsuleBorder = if (isToday) BorderStroke(0.dp, Color.Transparent) else if (hasEntryForDay) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else BorderStroke(1.dp, DividerColor)
-                            val textCol = if (isToday) MaterialTheme.colorScheme.tertiary else if (hasEntryForDay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            val textCol = if (isToday) MaterialTheme.colorScheme.onPrimary else if (hasEntryForDay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             val numCol = if (isToday) MaterialTheme.colorScheme.onPrimary else if (hasEntryForDay) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface
-                            val dotCol = if (isToday) MaterialTheme.colorScheme.tertiary else if (hasEntryForDay) MaterialTheme.colorScheme.secondary else Color.Transparent
+                            val dotCol = if (isToday) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f) else if (hasEntryForDay) MaterialTheme.colorScheme.secondary else Color.Transparent
 
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
@@ -501,16 +503,16 @@ fun DashboardScreen(
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "${uiState.dailyProgress.completedDomainsCount} of ${uiState.dailyProgress.totalActiveDomainsCount} Completed",
+                                    text = String.format(strings.completedDomainsCountFormat, uiState.dailyProgress.completedDomainsCount, uiState.dailyProgress.totalActiveDomainsCount),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = if (uiState.dailyProgress.progressPercentage >= 100)
-                                        "All spiritual disciplines fulfilled today!"
+                                        strings.allDisciplinesFulfilledToday
                                     else
-                                        "Pressing toward the mark of high calling",
+                                        strings.pressingTowardMark,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = BrandLightText
                                 )

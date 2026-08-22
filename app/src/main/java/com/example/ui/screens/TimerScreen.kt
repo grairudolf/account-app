@@ -589,14 +589,15 @@ fun SaveTimerDialog(
                         item {
                             Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             val aloneTypes = listOf(
-                                "Prayer Walk" to strings.prayerTypePrayerWalk,
                                 "Intercession" to strings.prayerTypeIntercession,
+                                "Request" to strings.prayerTypeRequest,
                                 "Personal Supplication" to strings.prayerTypePersonalSupplication,
+                                "Thanksgiving" to strings.prayerTypeThanksgiving,
+                                "Bertoua Message" to strings.prayerTypeBertouaMessage,
+                                "Prayer Walk" to strings.prayerTypePrayerWalk,
                                 "Spiritual Warfare" to strings.prayerTypeSpiritualWarfare,
                                 "Praise & Adoration" to strings.prayerTypePraise,
                                 "15-Minute Retreat" to strings.prayerType15MinRetreat,
-                                "Bertoua Message" to strings.prayerTypeBertouaMessage,
-                                "Thanksgiving" to strings.prayerTypeThanksgiving,
                                 "Custom" to strings.prayerTypeCustom
                             )
 

@@ -41,6 +41,23 @@ object PdfReportGenerator {
         paint.color = Color.parseColor("#1565C0")
         canvas.drawRect(0f, 0f, 595f, 100f, paint)
 
+        // Draw App Logo in Header
+        try {
+            val logoBmp = android.graphics.BitmapFactory.decodeResource(context.resources, com.example.R.drawable.app_logo)
+            if (logoBmp != null) {
+                val logoRect = android.graphics.RectF(515f, 18f, 575f, 78f)
+                // Draw rounded background behind logo for clean contrast
+                val bgPaint = Paint().apply {
+                    isAntiAlias = true
+                    color = Color.WHITE
+                }
+                canvas.drawRoundRect(logoRect, 12f, 12f, bgPaint)
+                canvas.drawBitmap(logoBmp, null, logoRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // Header Title
         paint.color = Color.WHITE
         paint.textSize = 20f
@@ -56,10 +73,11 @@ object PdfReportGenerator {
         y = 125f
 
         // Disciple Profile Info
-        paint.color = Color.BLACK
-        paint.textSize = 13f
+        paint.color = Color.parseColor("#1565C0")
+        paint.textSize = 14f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        val discipleName = user?.fullName?.ifBlank { if (isFrench) "Disciple" else "Disciple" } ?: "Disciple"
+        val rawName = user?.fullName?.trim()
+        val discipleName = if (!rawName.isNullOrEmpty()) rawName else if (isFrench) "Disciple du Seigneur" else "Disciple of the Lord"
         val discipleLabel = if (isFrench) "Disciple : $discipleName" else "Disciple: $discipleName"
         canvas.drawText(discipleLabel, 30f, y, paint)
 

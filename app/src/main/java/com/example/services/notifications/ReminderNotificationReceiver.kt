@@ -49,7 +49,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             )
 
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(com.example.R.drawable.ic_cmfi_app_logo)
+                .setSmallIcon(com.example.R.drawable.ic_app_logo)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -59,7 +59,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             try {
                 val largeIcon = android.graphics.BitmapFactory.decodeResource(
                     context.resources,
-                    com.example.R.mipmap.ic_launcher
+                    com.example.R.drawable.app_logo
                 )
                 if (largeIcon != null) {
                     builder.setLargeIcon(largeIcon)
@@ -97,7 +97,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             )
 
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(com.example.R.drawable.ic_cmfi_app_logo)
+                .setSmallIcon(com.example.R.drawable.ic_app_logo)
                 .setContentTitle("Live Session Active: $domainTitle")
                 .setContentText("Elapsed Time: $formattedTime • Session counting in background")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -107,7 +107,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             try {
                 val largeIcon = android.graphics.BitmapFactory.decodeResource(
                     context.resources,
-                    com.example.R.mipmap.ic_launcher
+                    com.example.R.drawable.app_logo
                 )
                 if (largeIcon != null) {
                     builder.setLargeIcon(largeIcon)

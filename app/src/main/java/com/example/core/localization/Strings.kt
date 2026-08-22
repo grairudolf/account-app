@@ -507,6 +507,25 @@ interface AppStrings {
     val confirmDeleteDisciplePrompt: String
     val saveDiscipleButton: String
 
+    // Proclamation & Dashboard localization keys
+    val completedDomainsCountFormat: String
+    val pressingTowardMark: String
+    val allDisciplinesFulfilledToday: String
+    val goalsCompletedCountFormat: String
+    val importunatePrayerSubtitle: String
+    val proclamationMottoVerse: String
+    val proclamationMottoRef: String
+    val quickScripturalProclamations: String
+    val yourSavedPrayerTopics: String
+    val continuingSessionFrom: String
+    val addedInTodaySession: String
+    val targetLabel: String
+    val spiritualNotesAndImpressions: String
+    val sessionNotesPlaceholder: String
+    val propheticBurdensPlaceholder: String
+    val saveProclamationSession: String
+    val savedPrayerTopicsAndProgress: String
+
 
     fun getBibleBookName(englishName: String): String {
         if (this is FrenchStrings) {
@@ -1159,6 +1178,25 @@ object EnglishStrings : AppStrings {
     override val confirmDeleteDisciple = "Delete Disciple"
     override val confirmDeleteDisciplePrompt = "Are you sure you want to remove this disciple from your list?"
     override val saveDiscipleButton = "Save Disciple"
+
+    // Proclamation & Dashboard localization keys
+    override val completedDomainsCountFormat = "%d of %d Completed"
+    override val pressingTowardMark = "Pressing toward the mark of high calling"
+    override val allDisciplinesFulfilledToday = "All spiritual disciplines fulfilled today!"
+    override val goalsCompletedCountFormat = "%d/%d goals completed"
+    override val importunatePrayerSubtitle = "Importunate Prayer & Faith Proclamation"
+    override val proclamationMottoVerse = "\"Men ought always to pray, and not to faint.\""
+    override val proclamationMottoRef = "Luke 18:1 • Proclaim until total victory is obtained"
+    override val quickScripturalProclamations = "Quick Scriptural Proclamations:"
+    override val yourSavedPrayerTopics = "Your Saved Prayer Topics:"
+    override val continuingSessionFrom = "Continuing session from %d"
+    override val addedInTodaySession = "+%d added in today's session"
+    override val targetLabel = "Target: %d"
+    override val spiritualNotesAndImpressions = "Spiritual Notes & Impressions"
+    override val sessionNotesPlaceholder = "Session Notes (e.g. Specific breakthrough, scriptures)"
+    override val propheticBurdensPlaceholder = "Prophetic Burdens / Divine Impressions"
+    override val saveProclamationSession = "Save Proclamation Session"
+    override val savedPrayerTopicsAndProgress = "Saved Prayer Topics & Progress"
 }
 
 object FrenchStrings : AppStrings {
@@ -1641,4 +1679,23 @@ object FrenchStrings : AppStrings {
     override val confirmDeleteDisciple = "Supprimer le Disciple"
     override val confirmDeleteDisciplePrompt = "Êtes-vous sûr de vouloir supprimer ce disciple de votre liste ?"
     override val saveDiscipleButton = "Enregistrer le Disciple"
+
+    // Proclamation & Dashboard localization keys
+    override val completedDomainsCountFormat = "%d sur %d Terminés"
+    override val pressingTowardMark = "Courir vers le but de la vocation céleste"
+    override val allDisciplinesFulfilledToday = "Toutes les disciplines spirituelles accomplies aujourd'hui !"
+    override val goalsCompletedCountFormat = "%d/%d objectifs complétés"
+    override val importunatePrayerSubtitle = "Prière Importune & Proclamation de la Foi"
+    override val proclamationMottoVerse = "« Il faut toujours prier, et ne point se relâcher. »"
+    override val proclamationMottoRef = "Luc 18:1 • Proclamez jusqu'à la victoire totale"
+    override val quickScripturalProclamations = "Proclamations scripturaires rapides :"
+    override val yourSavedPrayerTopics = "Vos Sujets de Prière Enregistrés :"
+    override val continuingSessionFrom = "Poursuite de la session à partir de %d"
+    override val addedInTodaySession = "+%d ajoutés dans la session d'aujourd'hui"
+    override val targetLabel = "Cible : %d"
+    override val spiritualNotesAndImpressions = "Notes & Impressions Spirituelles"
+    override val sessionNotesPlaceholder = "Notes de session (ex. Percée spécifique, écritures)"
+    override val propheticBurdensPlaceholder = "Fardeaux prophétiques / Impressions divines"
+    override val saveProclamationSession = "Enregistrer la Session de Proclamation"
+    override val savedPrayerTopicsAndProgress = "Sujets de Prière Enregistrés & Progrès"
 }

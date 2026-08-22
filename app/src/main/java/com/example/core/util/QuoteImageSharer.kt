@@ -147,16 +147,29 @@ object QuoteImageSharer {
             }
             canvas.drawLine(100f, height - 160f, width - 100f, height - 160f, dividerPaint)
 
-            // 8. Official App Branding (Bottom Bar)
-            // Gold Cross / Accent Icon
-            val brandAccentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.parseColor("#FDBC0A")
+            // 8. Official App Branding (Bottom Bar) with App Logo
+            var drawnLogo = false
+            try {
+                val logoBmp = BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
+                if (logoBmp != null) {
+                    val logoRect = RectF(100f, height - 145f, 164f, height - 81f)
+                    canvas.drawBitmap(logoBmp, null, logoRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+                    drawnLogo = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            // Draw sleek Christian Cross
-            val crossCenterX = 125f
-            val crossCenterY = height - 105f
-            canvas.drawRoundRect(RectF(crossCenterX - 4f, crossCenterY - 24f, crossCenterX + 4f, crossCenterY + 24f), 4f, 4f, brandAccentPaint)
-            canvas.drawRoundRect(RectF(crossCenterX - 18f, crossCenterY - 12f, crossCenterX + 18f, crossCenterY - 4f), 4f, 4f, brandAccentPaint)
+
+            if (!drawnLogo) {
+                // Fallback Gold Accent
+                val brandAccentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = android.graphics.Color.parseColor("#FDBC0A")
+                }
+                val crossCenterX = 125f
+                val crossCenterY = height - 105f
+                canvas.drawRoundRect(RectF(crossCenterX - 4f, crossCenterY - 24f, crossCenterX + 4f, crossCenterY + 24f), 4f, 4f, brandAccentPaint)
+                canvas.drawRoundRect(RectF(crossCenterX - 18f, crossCenterY - 12f, crossCenterX + 18f, crossCenterY - 4f), 4f, 4f, brandAccentPaint)
+            }
 
             // App Name & Tagline Text
             val brandTitlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -165,13 +178,14 @@ object QuoteImageSharer {
                 isFakeBoldText = true
                 letterSpacing = 0.04f
             }
-            canvas.drawText("CMFI Spiritual Accountability", 160f, height - 110f, brandTitlePaint)
+            val textLeft = if (drawnLogo) 180f else 160f
+            canvas.drawText("CMFI Spiritual Accountability", textLeft, height - 115f, brandTitlePaint)
 
             val brandSubPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.parseColor("#CACED7")
                 textSize = 22f
             }
-            canvas.drawText("Daily Discipleship & Personal Holiness", 160f, height - 80f, brandSubPaint)
+            canvas.drawText("Daily Discipleship & Personal Holiness", textLeft, height - 85f, brandSubPaint)
 
             // 9. Save Bitmap to File and Share
             val shareDir = File(context.cacheDir, "shared_quotes").apply { mkdirs() }

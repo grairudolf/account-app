@@ -109,7 +109,7 @@ fun GoalsScreen(
                 )
                 FloatingActionButton(
                     onClick = { showAddGoalDialog = true },
-                    containerColor = PrimaryBlue,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
