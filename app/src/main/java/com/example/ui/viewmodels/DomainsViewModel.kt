@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class DomainsViewModel(
-    private val accountabilityRepository: AccountabilityRepository
+    private val accountabilityRepository: AccountabilityRepository,
+    private val userRepository: com.example.data.repositories.UserRepository? = null
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -54,9 +55,11 @@ class DomainsViewModel(
 
     fun addCustomDomain(name: String, description: String, iconName: String, measurementType: String) {
         viewModelScope.launch {
+            val user = userRepository?.getOrCreateGuestUser()
+            val userId = user?.id ?: "guest_user"
             val domain = CustomDomainEntity(
                 id = "custom_${UUID.randomUUID()}",
-                userId = "guest_user",
+                userId = userId,
                 name = name,
                 description = description,
                 iconName = iconName,

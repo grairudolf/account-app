@@ -10,6 +10,9 @@ interface DiscipleDao {
     @Query("SELECT * FROM disciples WHERE userId = :userId ORDER BY name ASC")
     fun getAllDisciples(userId: String): Flow<List<DiscipleEntity>>
 
+    @Query("SELECT * FROM disciples ORDER BY name ASC")
+    fun getAllDisciplesListFlow(): Flow<List<DiscipleEntity>>
+
     @Query("SELECT * FROM disciples WHERE id = :id LIMIT 1")
     suspend fun getDiscipleById(id: String): DiscipleEntity?
 

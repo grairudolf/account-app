@@ -25,6 +25,9 @@ interface EntryDao {
     @Query("SELECT * FROM accountability_entries WHERE id = :id")
     suspend fun getEntryById(id: String): AccountabilityEntryEntity?
 
+    @Query("SELECT * FROM accountability_entries")
+    suspend fun getAllEntriesList(): List<AccountabilityEntryEntity>
+
     @Query("SELECT * FROM accountability_entries WHERE timestampMs >= :startMs AND timestampMs <= :endMs ORDER BY timestampMs DESC")
     suspend fun getEntriesInRange(startMs: Long, endMs: Long): List<AccountabilityEntryEntity>
 

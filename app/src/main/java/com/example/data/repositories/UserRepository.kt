@@ -9,6 +9,7 @@ import com.example.services.sync.FirestoreSyncManager
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class UserRepository(
     private val userDao: UserDao,
@@ -55,6 +56,17 @@ class UserRepository(
             val fbPhoto = fbUser.photoUrl?.toString()
 
             if (existing != null && !existing.isGuest && existing.id == fbUid) {
+                // Background sync to pull any updates from other devices
+                if (context != null) {
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        try {
+                            val db = AppDatabase.getInstance(context)
+                            FirestoreSyncManager.performFullSync(context, db, fbUid)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
                 return existing
             }
 
@@ -238,12 +250,9 @@ class UserRepository(
                 db.discipleDao().migrateUserDisciples(id)
                 db.customDomainDao().migrateUserCustomDomains(id)
                 db.proclamationTopicDao().migrateUserTopics(id)
+                db.reportDao().migrateUserReports(id)
 
-                FirestoreSyncManager.restoreUserDataFromCloud(context, db, id)
-                
-                val freshUser = userDao.getCurrentUser() ?: updated
-                FirestoreSyncManager.syncUserProfile(context, freshUser)
-                FirestoreSyncManager.syncAllLocalDataToCloud(context, db, id)
+                FirestoreSyncManager.performFullSync(context, db, id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

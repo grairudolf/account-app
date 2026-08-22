@@ -55,8 +55,12 @@ class AccountabilityRepository(
     val notificationsFlow: Flow<List<NotificationEntity>> = notificationDao.getAllNotificationsFlow()
     val unreadNotificationCountFlow: Flow<Int> = notificationDao.getUnreadCountFlow()
 
-    fun getDisciplesFlow(userId: String = "default_user"): Flow<List<DiscipleEntity>> {
-        return discipleDao?.getAllDisciples(userId) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    fun getDisciplesFlow(userId: String? = null): Flow<List<DiscipleEntity>> {
+        return if (!userId.isNullOrBlank()) {
+            discipleDao?.getAllDisciples(userId) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            discipleDao?.getAllDisciplesListFlow() ?: kotlinx.coroutines.flow.flowOf(emptyList())
+        }
     }
 
     suspend fun saveDisciple(disciple: DiscipleEntity) {
@@ -87,8 +91,12 @@ class AccountabilityRepository(
         }
     }
 
-    fun getProclamationTopicsFlow(userId: String = "guest_user"): Flow<List<ProclamationTopicEntity>> {
-        return proclamationTopicDao.getTopicsForUserFlow(userId)
+    fun getProclamationTopicsFlow(userId: String? = null): Flow<List<ProclamationTopicEntity>> {
+        return if (!userId.isNullOrBlank()) {
+            proclamationTopicDao.getTopicsForUserFlow(userId)
+        } else {
+            proclamationTopicDao.getAllTopicsFlow()
+        }
     }
 
     suspend fun getProclamationTopics(userId: String = "guest_user"): List<ProclamationTopicEntity> {

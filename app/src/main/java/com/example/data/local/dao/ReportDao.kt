@@ -12,9 +12,18 @@ interface ReportDao {
     @Query("SELECT * FROM reports ORDER BY generatedAtMs DESC")
     fun getAllReportsFlow(): Flow<List<ReportRecordEntity>>
 
+    @Query("SELECT * FROM reports")
+    suspend fun getAllReportsList(): List<ReportRecordEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReport(report: ReportRecordEntity)
 
+    @Query("UPDATE reports SET userId = :newUserId")
+    suspend fun migrateUserReports(newUserId: String)
+
     @Query("DELETE FROM reports WHERE id = :id")
     suspend fun deleteReportById(id: String)
+
+    @Query("DELETE FROM reports")
+    suspend fun clearAllReports()
 }

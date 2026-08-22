@@ -10,6 +10,9 @@ interface ProclamationTopicDao {
     @Query("SELECT * FROM proclamation_topics WHERE userId = :userId ORDER BY updatedAtMs DESC")
     fun getTopicsForUserFlow(userId: String): Flow<List<ProclamationTopicEntity>>
 
+    @Query("SELECT * FROM proclamation_topics ORDER BY updatedAtMs DESC")
+    fun getAllTopicsFlow(): Flow<List<ProclamationTopicEntity>>
+
     @Query("SELECT * FROM proclamation_topics WHERE userId = :userId ORDER BY updatedAtMs DESC")
     suspend fun getTopicsForUser(userId: String): List<ProclamationTopicEntity>
 

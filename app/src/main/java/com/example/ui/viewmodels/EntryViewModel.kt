@@ -6,17 +6,21 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.DiscipleEntity
 import com.example.data.repositories.AccountabilityRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import com.example.data.repositories.UserRepository
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class EntryViewModel(
-    private val accountabilityRepository: AccountabilityRepository
+    private val accountabilityRepository: AccountabilityRepository,
+    private val userRepository: UserRepository? = null
 ) : ViewModel() {
 
-    val disciples: StateFlow<List<DiscipleEntity>> = accountabilityRepository.getDisciplesFlow()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val disciples: StateFlow<List<DiscipleEntity>> = (
+        userRepository?.currentUserFlow?.flatMapLatest { user ->
+            accountabilityRepository.getDisciplesFlow(user?.id)
+        } ?: accountabilityRepository.getDisciplesFlow()
+    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun saveEntry(context: Context, entry: AccountabilityEntryEntity) {
         viewModelScope.launch {

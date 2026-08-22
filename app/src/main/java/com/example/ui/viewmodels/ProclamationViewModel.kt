@@ -23,8 +23,10 @@ class ProclamationViewModel(
     private val accountabilityRepository: AccountabilityRepository
 ) : ViewModel() {
 
-    val topicsFlow: StateFlow<List<ProclamationTopicEntity>> = accountabilityRepository.getProclamationTopicsFlow()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val topicsFlow: StateFlow<List<ProclamationTopicEntity>> = userRepository.currentUserFlow.flatMapLatest { user ->
+        accountabilityRepository.getProclamationTopicsFlow(user?.id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _selectedTopic = MutableStateFlow<ProclamationTopicEntity?>(null)
     val selectedTopic: StateFlow<ProclamationTopicEntity?> = _selectedTopic.asStateFlow()
