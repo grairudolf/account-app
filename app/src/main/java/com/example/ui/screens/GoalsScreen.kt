@@ -313,7 +313,7 @@ fun AddGoalDialog(
     val domainAspects = remember(selectedDomain) {
         when (selectedDomain) {
             "bible_reading" -> listOf("Chapters Read", "Complete Whole Bible", "Gospel Study", "Epistles Study", "Custom")
-            "ddewg" -> listOf("Daily Encounter (Min)", "Consistent Morning Watch", "Custom")
+            "ddewg" -> listOf("Daily Dynamic Encounters (DDEWG)", "Morning Watch Encounters", "Consistent Daily Encounters", "Custom")
             "prayer_alone" -> listOf("Secret Place Devotion", "Intercession Hours", "Prayer Night Vigils", "15-Min Retreats", "Custom")
             "prayer_with_others" -> listOf("Corporate Prayer Sessions", "Prayer Siege Hours", "Family Altar Sessions", "Custom")
             "proclamation_importunity" -> listOf("Proclamation Repetitions", "Topic Breakthrough Target", "Custom")
@@ -335,7 +335,12 @@ fun AddGoalDialog(
                 selectedUnit = strings.unitChapters
                 target = "10"
             }
-            "ddewg", "prayer_alone", "prayer_with_others" -> {
+            "ddewg" -> {
+                selectedUnit = strings.unitDdewg
+                target = "7"
+                frequency = "WEEKLY"
+            }
+            "prayer_alone", "prayer_with_others" -> {
                 selectedUnit = strings.unitMinutes
                 target = "60"
             }
@@ -374,6 +379,7 @@ fun AddGoalDialog(
     }
 
     val availableUnits = listOf(
+        strings.unitDdewg,
         strings.unitChapters,
         strings.unitPages,
         strings.unitHours,

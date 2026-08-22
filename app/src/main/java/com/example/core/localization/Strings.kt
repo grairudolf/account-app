@@ -526,6 +526,23 @@ interface AppStrings {
     val saveProclamationSession: String
     val savedPrayerTopicsAndProgress: String
 
+    // DDEWG, Prayer & Report Metrics
+    val unitDdewg: String
+    val totalTimeWithGod: String
+    val totalTimeWithGodToday: String
+    val totalTimeWithGodDate: String
+    val ddewgSessionsCount: String
+    val thanksgivingTopicsCount: String
+    val requestTopicsCount: String
+    val retreats15MinCount: String
+    val bertouaMessagesPrayed: String
+    val booksReadSummary: String
+    val totalTimeInPrayer: String
+    val totalTimeInDdewg: String
+    val totalTimeBibleReading: String
+    val totalTimeChristianLit: String
+    val discipleMakerSignaturePrompt: String
+
 
     fun getBibleBookName(englishName: String): String {
         if (this is FrenchStrings) {
@@ -1197,6 +1214,23 @@ object EnglishStrings : AppStrings {
     override val propheticBurdensPlaceholder = "Prophetic Burdens / Divine Impressions"
     override val saveProclamationSession = "Save Proclamation Session"
     override val savedPrayerTopicsAndProgress = "Saved Prayer Topics & Progress"
+
+    // DDEWG, Prayer & Report Metrics
+    override val unitDdewg = "DDEWG"
+    override val totalTimeWithGod = "Total Time Spent with God"
+    override val totalTimeWithGodToday = "Time Spent with God Today"
+    override val totalTimeWithGodDate = "Time Spent with God on this Day"
+    override val ddewgSessionsCount = "DDEWG Encounters"
+    override val thanksgivingTopicsCount = "Thanksgiving Topics"
+    override val requestTopicsCount = "Request Topics"
+    override val retreats15MinCount = "15-Minute Retreats"
+    override val bertouaMessagesPrayed = "Bertoua Messages Prayed"
+    override val booksReadSummary = "Books Read"
+    override val totalTimeInPrayer = "Total Prayer Time"
+    override val totalTimeInDdewg = "Total DDEWG Time"
+    override val totalTimeBibleReading = "Total Bible Reading Time"
+    override val totalTimeChristianLit = "Total Christian Literature Time"
+    override val discipleMakerSignaturePrompt = "Disciple Maker Signature: ___________________"
 }
 
 object FrenchStrings : AppStrings {
@@ -1698,4 +1732,21 @@ object FrenchStrings : AppStrings {
     override val propheticBurdensPlaceholder = "Fardeaux prophétiques / Impressions divines"
     override val saveProclamationSession = "Enregistrer la Session de Proclamation"
     override val savedPrayerTopicsAndProgress = "Sujets de Prière Enregistrés & Progrès"
+
+    // DDEWG, Prayer & Report Metrics
+    override val unitDdewg = "DREQD"
+    override val totalTimeWithGod = "Temps Total Passé avec Dieu"
+    override val totalTimeWithGodToday = "Temps Passé avec Dieu Aujourd'hui"
+    override val totalTimeWithGodDate = "Temps Passé avec Dieu ce Jour"
+    override val ddewgSessionsCount = "Rencontres DREQD"
+    override val thanksgivingTopicsCount = "Sujets d'Actions de Grâce"
+    override val requestTopicsCount = "Sujets de Requêtes"
+    override val retreats15MinCount = "Retraites de 15 Min"
+    override val bertouaMessagesPrayed = "Messages de Bertoua Priés"
+    override val booksReadSummary = "Livres Lus"
+    override val totalTimeInPrayer = "Temps Total de Prière"
+    override val totalTimeInDdewg = "Temps Total DREQD"
+    override val totalTimeBibleReading = "Temps Total Lecture Biblique"
+    override val totalTimeChristianLit = "Temps Total Littérature Chrétienne"
+    override val discipleMakerSignaturePrompt = "Signature du Faiseur de disciples : ___________________"
 }

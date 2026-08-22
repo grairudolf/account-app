@@ -203,7 +203,7 @@ fun AuthScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_app_logo),
+                        painter = painterResource(id = R.drawable.app_logo),
                         contentDescription = "CMFI App Logo",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize()

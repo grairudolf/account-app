@@ -172,7 +172,7 @@ class TimerNotificationReceiver : BroadcastReceiver() {
             val formattedTime = if (hours > 0) String.format("%02d:%02d:%02d", hours, mins, secs) else String.format("%02d:%02d", mins, secs)
 
             val builder = NotificationCompat.Builder(context, TIMER_CHANNEL_ID)
-                .setSmallIcon(com.example.R.drawable.ic_app_logo)
+                .setSmallIcon(com.example.R.drawable.app_logo)
                 .setContentTitle("Live Session Active: $domainTitle")
                 .setContentIntent(contentPendingIntent)
                 .setOngoing(true)

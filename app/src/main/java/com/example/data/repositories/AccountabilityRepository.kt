@@ -412,10 +412,20 @@ class AccountabilityRepository(
                     relevantEntries.size.toDouble()
                 }
             }
-            "ddewg", "prayer_alone", "prayer_with_others" -> {
+            "ddewg" -> {
                 if (u.contains("hour") || u.contains("heure")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
-                } else if (u.contains("session") || u.contains("time") || u.contains("fois")) {
+                } else if (u.contains("min")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else {
+                    // Count number of DDEWG occurrences (e.g., 7 DDEWG per week)
+                    relevantEntries.size.toDouble()
+                }
+            }
+            "prayer_alone", "prayer_with_others" -> {
+                if (u.contains("hour") || u.contains("heure")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                } else if (u.contains("session") || u.contains("time") || u.contains("fois") || u.contains("topic") || u.contains("sujet")) {
                     relevantEntries.size.toDouble()
                 } else {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes

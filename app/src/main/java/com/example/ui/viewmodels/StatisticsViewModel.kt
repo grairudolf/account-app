@@ -27,7 +27,14 @@ data class OverallStatisticsUiState(
     val totalPrayerMinutes: Long = 0L,
     val totalFastingDays: Int = 0,
     val totalEntriesCount: Int = 0,
-    val weeklyActivity: List<DayActivity> = emptyList()
+    val weeklyActivity: List<DayActivity> = emptyList(),
+    val todayTimeWithGodSeconds: Long = 0L,
+    val totalTimeWithGodSeconds: Long = 0L,
+    val totalDdewgCount: Int = 0,
+    val totalThanksgivingTopics: Int = 0,
+    val totalRequestTopics: Int = 0,
+    val total15MinRetreats: Int = 0,
+    val totalBertouaPrayers: Int = 0
 )
 
 class StatisticsViewModel(
@@ -88,6 +95,28 @@ class StatisticsViewModel(
         val totalFasting = entries.filter { it.domainId == "fasting" }.sumOf { it.fastingDaysCount }
 
         val today = LocalDate.now()
+        val todayIso = today.toString()
+        val todayEntries = entries.filter { it.dateIso == todayIso }
+
+        val communionDomains = listOf("ddewg", "prayer_alone", "prayer_with_others", "bible_reading", "christian_lit", "christian_lit_mem", "bible_mem", "proclamation_importunity", "retreats")
+        val todayTimeWithGod = todayEntries.filter { it.domainId in communionDomains }.sumOf { it.durationSeconds }
+        val totalTimeWithGod = entries.filter { it.domainId in communionDomains }.sumOf { it.durationSeconds }
+
+        val totalDdewg = entries.count { it.domainId == "ddewg" }
+        val prayerAloneEntries = entries.filter { it.domainId == "prayer_alone" }
+        val totalThanksgiving = prayerAloneEntries.filter {
+            it.prayerType.contains("Thanksgiving", true) || it.notes.contains("Thanksgiving", true) || it.notes.contains("Grâce", true)
+        }.sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }
+        val totalRequests = prayerAloneEntries.filter {
+            it.prayerType.contains("Request", true) || it.notes.contains("Request", true) || it.notes.contains("Requête", true)
+        }.sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }
+        val total15Min = prayerAloneEntries.count {
+            it.prayerType.contains("15", true) || it.notes.contains("15", true)
+        }
+        val totalBertoua = prayerAloneEntries.count {
+            it.prayerType.contains("Bertoua", true) || it.notes.contains("Bertoua", true)
+        }
+
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val weekDays = (0..6).map { monday.plusDays(it.toLong()) }
         val entriesByDate = entries.groupBy { it.dateIso }
@@ -110,7 +139,14 @@ class StatisticsViewModel(
             totalPrayerMinutes = totalPrayerSecs / 60,
             totalFastingDays = totalFasting,
             totalEntriesCount = entries.size,
-            weeklyActivity = weekly
+            weeklyActivity = weekly,
+            todayTimeWithGodSeconds = todayTimeWithGod,
+            totalTimeWithGodSeconds = totalTimeWithGod,
+            totalDdewgCount = totalDdewg,
+            totalThanksgivingTopics = totalThanksgiving,
+            totalRequestTopics = totalRequests,
+            total15MinRetreats = total15Min,
+            totalBertouaPrayers = totalBertoua
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OverallStatisticsUiState())
 
