@@ -65,7 +65,7 @@ class ViewModelFactory private constructor(
         fun getInstance(context: Context): ViewModelFactory {
             return INSTANCE ?: synchronized(this) {
                 val db = AppDatabase.getInstance(context.applicationContext)
-                val userRepo = UserRepository(db.userDao())
+                val userRepo = UserRepository(db.userDao(), context.applicationContext)
                 val accRepo = AccountabilityRepository(
                     db.entryDao(),
                     db.goalDao(),
@@ -74,7 +74,8 @@ class ViewModelFactory private constructor(
                     db.reportDao(),
                     db.notificationDao(),
                     db.proclamationTopicDao(),
-                    db.discipleDao()
+                    db.discipleDao(),
+                    context.applicationContext
                 )
                 val timerMgr = TimerServiceManager(db.timerSessionDao())
                 val instance = ViewModelFactory(context.applicationContext, userRepo, accRepo, timerMgr)

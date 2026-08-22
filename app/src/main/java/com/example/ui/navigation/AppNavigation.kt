@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,21 +86,43 @@ fun MainApp() {
     val strings = LocalizationManager.getStrings(currentLanguage)
 
     CmfiTheme(themeMode = currentTheme) {
-        val navController = rememberNavController()
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentNavRoute = navBackStackEntry?.destination?.route ?: NavRoutes.MAIN_PAGER
+        val currentUserState = currentUser
+        if (currentUserState == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        } else {
+            val navController = rememberNavController()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            
+            val initialStartDestination = remember {
+                if (authViewModel.hasCompletedAuthPrompt() || !currentUserState.isGuest) {
+                    NavRoutes.MAIN_PAGER
+                } else {
+                    NavRoutes.AUTH
+                }
+            }
 
-        val pagerState = rememberPagerState(
-            initialPage = 0,
-            pageCount = { BottomTab.entries.size }
-        )
+            val currentNavRoute = navBackStackEntry?.destination?.route ?: initialStartDestination
 
-        val isMainPagerActive = currentNavRoute == NavRoutes.MAIN_PAGER
-        val currentTab = BottomTab.entries.getOrElse(pagerState.currentPage) { BottomTab.DASHBOARD }
-        val activeRouteName = if (isMainPagerActive) currentTab.route else currentNavRoute
+            val pagerState = rememberPagerState(
+                initialPage = 0,
+                pageCount = { BottomTab.entries.size }
+            )
 
-        val isMainBottomBarVisible = isMainPagerActive
-        val isTopBarVisible = currentNavRoute != NavRoutes.AUTH
+            val isMainPagerActive = currentNavRoute == NavRoutes.MAIN_PAGER
+            val currentTab = BottomTab.entries.getOrElse(pagerState.currentPage) { BottomTab.DASHBOARD }
+            val activeRouteName = if (isMainPagerActive) currentTab.route else currentNavRoute
+
+            val isMainBottomBarVisible = isMainPagerActive
+            val isTopBarVisible = currentNavRoute != NavRoutes.AUTH
 
         val topBarTitle = if (isMainPagerActive) {
             when (pagerState.currentPage) {
@@ -125,8 +148,8 @@ fun MainApp() {
                 if (isTopBarVisible) {
                     CmfiTopBar(
                         title = topBarTitle,
-                        userName = currentUser?.fullName?.ifBlank { "Disciple" } ?: "Disciple",
-                        profileImageUri = currentUser?.profileImageUri,
+                        userName = currentUserState.fullName.ifBlank { "Disciple" },
+                        profileImageUri = currentUserState.profileImageUri,
                         currentLanguage = currentLanguage,
                         unreadCount = unreadNotificationsCount,
                         onLanguageSelected = { newLang ->
@@ -242,7 +265,7 @@ fun MainApp() {
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = NavRoutes.MAIN_PAGER,
+                startDestination = initialStartDestination,
                 modifier = Modifier.padding(innerPadding),
                 enterTransition = {
                     fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
@@ -282,8 +305,8 @@ fun MainApp() {
                                 popUpTo(NavRoutes.AUTH) { inclusive = true }
                             }
                         },
-                        onSignInWithAccount = { id, name, email ->
-                            authViewModel.signInWithAccount(id, name, email, migrateLocalData = true)
+                        onSignInWithAccount = { id, name, email, photoUrl, assembly ->
+                            authViewModel.signInWithAccount(id, name, email, photoUrl, assembly, migrateLocalData = true)
                             navController.navigate(NavRoutes.MAIN_PAGER) {
                                 popUpTo(NavRoutes.AUTH) { inclusive = true }
                             }
@@ -401,7 +424,7 @@ fun MainApp() {
                                 val reportHistory by reportsViewModel.reportHistory.collectAsStateWithLifecycle()
                                 ReportsScreen(
                                     strings = strings,
-                                    user = currentUser,
+                                    user = currentUserState,
                                     selectedReportType = selectedReportType,
                                     selectedDomains = selectedDomains,
                                     targetDate = targetDate,
@@ -503,7 +526,7 @@ fun MainApp() {
                     val settingsReminders by settingsViewModel.reminders.collectAsStateWithLifecycle()
                     SettingsScreen(
                         strings = strings,
-                        user = currentUser,
+                        user = currentUserState,
                         currentLanguage = currentLanguage,
                         currentTheme = currentTheme,
                         reminders = settingsReminders,
@@ -524,9 +547,19 @@ fun MainApp() {
                         },
                         onDeleteReminder = { ctx, id -> settingsViewModel.deleteReminder(ctx, id) },
                         onSignOut = {
-                            authViewModel.signOut()
-                            navController.navigate(NavRoutes.AUTH) {
-                                popUpTo(0) { inclusive = true }
+                            val isGuest = currentUserState.isGuest
+                            if (isGuest) {
+                                // If guest, safely navigate to the login/auth screen by removing the Settings screen from backstack
+                                // This preserves their local data and allows them to sign in/up and migrate data
+                                navController.navigate(NavRoutes.AUTH) {
+                                    popUpTo(NavRoutes.MAIN_PAGER) { inclusive = false }
+                                }
+                            } else {
+                                // If authenticated user, perform a full sign out and clear backstack up to MAIN_PAGER
+                                authViewModel.signOut()
+                                navController.navigate(NavRoutes.AUTH) {
+                                    popUpTo(NavRoutes.MAIN_PAGER) { inclusive = false }
+                                }
                             }
                         }
                     )
@@ -559,7 +592,7 @@ fun MainApp() {
                         activeSession = activeTimerSession,
                         elapsedSeconds = timerElapsedSeconds,
                         onStartTimer = { dId ->
-                            timerViewModel.startTimer(currentUser?.id ?: "guest_user", dId)
+                            timerViewModel.startTimer(currentUserState.id, dId)
                         },
                         onPauseTimer = { timerViewModel.pauseTimer() },
                         onResumeTimer = { timerViewModel.resumeTimer() },
@@ -574,4 +607,5 @@ fun MainApp() {
             }
         }
     }
+}
 }

@@ -1,20 +1,44 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+.build-outputs/
+
+# Gradle files
+.gradle/
+build/
+app/build/
 /build
-/captures
-.externalNativeBuild
-.cxx
+*/build
+
+# Local configuration and credentials (CRITICAL: Do not commit secrets/credentials)
+google-services.json
+app/google-services.json
+*/google-services.json
 local.properties
 .env
-debug.keystore
-*.keystore
-!/debug.keystore
+.env.local
+.env.*.local
+
+# Android Studio / IntelliJ IDEA files
+.idea/
+*.iml
+.kotlin/
+.externalNativeBuild/
+.cxx/
+captures/
+/captures
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+

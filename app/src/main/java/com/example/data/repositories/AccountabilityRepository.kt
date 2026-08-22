@@ -1,8 +1,11 @@
 package com.example.data.repositories
 
+import android.content.Context
+import com.example.data.local.AppDatabase
 import com.example.data.local.BibleMetadata
 import com.example.data.local.dao.*
 import com.example.data.local.entities.*
+import com.example.services.sync.FirestoreSyncManager
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -41,7 +44,8 @@ class AccountabilityRepository(
     private val reportDao: ReportDao,
     private val notificationDao: NotificationDao,
     private val proclamationTopicDao: ProclamationTopicDao,
-    private val discipleDao: DiscipleDao? = null
+    private val discipleDao: DiscipleDao? = null,
+    private val context: Context? = null
 ) {
     val allEntriesFlow: Flow<List<AccountabilityEntryEntity>> = entryDao.getAllEntriesFlow()
     val allGoalsFlow: Flow<List<GoalEntity>> = goalDao.getAllGoalsFlow()
@@ -57,18 +61,30 @@ class AccountabilityRepository(
 
     suspend fun saveDisciple(disciple: DiscipleEntity) {
         discipleDao?.insertDisciple(disciple)
+        if (context != null && disciple.userId.isNotBlank() && disciple.userId != "guest_user") {
+            FirestoreSyncManager.syncDisciple(context, disciple)
+        }
     }
 
     suspend fun updateDisciple(disciple: DiscipleEntity) {
         discipleDao?.updateDisciple(disciple)
+        if (context != null && disciple.userId.isNotBlank() && disciple.userId != "guest_user") {
+            FirestoreSyncManager.syncDisciple(context, disciple)
+        }
     }
 
     suspend fun deleteDisciple(disciple: DiscipleEntity) {
         discipleDao?.deleteDisciple(disciple)
+        if (context != null && disciple.userId.isNotBlank() && disciple.userId != "guest_user") {
+            FirestoreSyncManager.deleteDisciple(context, disciple.userId, disciple.id)
+        }
     }
 
-    suspend fun deleteDiscipleById(id: String) {
+    suspend fun deleteDiscipleById(id: String, userId: String = "") {
         discipleDao?.deleteDiscipleById(id)
+        if (context != null && userId.isNotBlank() && userId != "guest_user") {
+            FirestoreSyncManager.deleteDisciple(context, userId, id)
+        }
     }
 
     fun getProclamationTopicsFlow(userId: String = "guest_user"): Flow<List<ProclamationTopicEntity>> {
@@ -81,6 +97,9 @@ class AccountabilityRepository(
 
     suspend fun saveProclamationTopic(topic: ProclamationTopicEntity) {
         proclamationTopicDao.insertOrUpdateTopic(topic)
+        if (context != null && topic.userId.isNotBlank() && topic.userId != "guest_user") {
+            FirestoreSyncManager.syncProclamationTopic(context, topic)
+        }
     }
 
     suspend fun deleteProclamationTopic(topic: ProclamationTopicEntity) {
@@ -89,20 +108,22 @@ class AccountabilityRepository(
 
     suspend fun recordProclamationSession(entry: AccountabilityEntryEntity) {
         entryDao.insertOrUpdateEntry(entry)
+        if (context != null && entry.userId.isNotBlank() && entry.userId != "guest_user") {
+            FirestoreSyncManager.syncEntry(context, entry)
+        }
         // Also update topic cumulative stats
         if (entry.proclamationTopic.isNotBlank()) {
             val existing = proclamationTopicDao.findTopicByName(entry.userId, entry.proclamationTopic)
-            if (existing != null) {
-                val updated = existing.copy(
+            val updatedTopic = if (existing != null) {
+                existing.copy(
                     cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
                     targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else existing.targetCount,
                     totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
                     lastPracticedIso = entry.dateIso,
                     updatedAtMs = System.currentTimeMillis()
                 )
-                proclamationTopicDao.insertOrUpdateTopic(updated)
             } else {
-                val newTopic = ProclamationTopicEntity(
+                ProclamationTopicEntity(
                     id = UUID.randomUUID().toString(),
                     userId = entry.userId,
                     topic = entry.proclamationTopic,
@@ -112,7 +133,10 @@ class AccountabilityRepository(
                     lastPracticedIso = entry.dateIso,
                     updatedAtMs = System.currentTimeMillis()
                 )
-                proclamationTopicDao.insertOrUpdateTopic(newTopic)
+            }
+            proclamationTopicDao.insertOrUpdateTopic(updatedTopic)
+            if (context != null && updatedTopic.userId.isNotBlank() && updatedTopic.userId != "guest_user") {
+                FirestoreSyncManager.syncProclamationTopic(context, updatedTopic)
             }
         }
     }
@@ -163,22 +187,37 @@ class AccountabilityRepository(
 
     suspend fun saveEntry(entry: AccountabilityEntryEntity) {
         entryDao.insertOrUpdateEntry(entry)
+        if (context != null && entry.userId.isNotBlank() && entry.userId != "guest_user") {
+            FirestoreSyncManager.syncEntry(context, entry)
+        }
     }
 
-    suspend fun deleteEntry(id: String) {
+    suspend fun deleteEntry(id: String, userId: String = "") {
         entryDao.deleteEntryById(id)
+        if (context != null && userId.isNotBlank() && userId != "guest_user") {
+            FirestoreSyncManager.deleteEntry(context, userId, id)
+        }
     }
 
     suspend fun saveGoal(goal: GoalEntity) {
         goalDao.insertOrUpdateGoal(goal)
+        if (context != null && goal.userId.isNotBlank() && goal.userId != "guest_user") {
+            FirestoreSyncManager.syncGoal(context, goal)
+        }
     }
 
-    suspend fun deleteGoal(id: String) {
+    suspend fun deleteGoal(id: String, userId: String = "") {
         goalDao.deleteGoalById(id)
+        if (context != null && userId.isNotBlank() && userId != "guest_user") {
+            FirestoreSyncManager.deleteGoal(context, userId, id)
+        }
     }
 
     suspend fun saveCustomDomain(domain: CustomDomainEntity) {
         customDomainDao.insertCustomDomain(domain)
+        if (context != null && domain.userId.isNotBlank() && domain.userId != "guest_user") {
+            FirestoreSyncManager.syncCustomDomain(context, domain)
+        }
     }
 
     suspend fun deleteCustomDomain(id: String) {
@@ -195,6 +234,9 @@ class AccountabilityRepository(
 
     suspend fun saveReportRecord(report: ReportRecordEntity) {
         reportDao.insertReport(report)
+        if (context != null && report.userId.isNotBlank() && report.userId != "guest_user") {
+            FirestoreSyncManager.syncReport(context, report)
+        }
     }
 
     suspend fun clearAllData() {
@@ -205,6 +247,13 @@ class AccountabilityRepository(
     suspend fun migrateGuestDataToAccount(newUserId: String) {
         entryDao.migrateUserEntries(newUserId)
         goalDao.migrateUserGoals(newUserId)
+        if (context != null && newUserId.isNotBlank() && newUserId != "guest_user") {
+            try {
+                FirestoreSyncManager.syncAllLocalDataToCloud(context, AppDatabase.getInstance(context), newUserId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     // Calculators using real database entries

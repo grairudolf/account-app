@@ -35,12 +35,15 @@ class DomainsViewModel(
             )
         }
         val combined = predefined + mappedCustom
-        if (query.isBlank()) {
+        val q = query.trim()
+        if (q.isBlank()) {
             combined
         } else {
-            combined.filter {
-                it.titleKey.contains(query, ignoreCase = true) ||
-                it.descKey.contains(query, ignoreCase = true)
+            combined.filter { domain ->
+                domain.id.contains(q, ignoreCase = true) ||
+                domain.titleKey.contains(q, ignoreCase = true) ||
+                domain.descKey.contains(q, ignoreCase = true) ||
+                domain.measurementUnit.contains(q, ignoreCase = true)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PredefinedDomains.ALL)

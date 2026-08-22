@@ -1,13 +1,26 @@
 package com.example.data.repositories
 
+import android.content.Context
 import com.example.core.localization.AppLanguage
+import com.example.data.local.AppDatabase
 import com.example.data.local.dao.UserDao
 import com.example.data.local.entities.UserEntity
+import com.example.services.sync.FirestoreSyncManager
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class UserRepository(private val userDao: UserDao) {
+class UserRepository(
+    private val userDao: UserDao,
+    private val context: Context? = null
+) {
+    private val prefs = context?.getSharedPreferences("cmfi_user_prefs", Context.MODE_PRIVATE)
+
+    var hasCompletedAuthPrompt: Boolean
+        get() = prefs?.getBoolean("has_completed_auth_prompt", false) ?: false
+        set(value) {
+            prefs?.edit()?.putBoolean("has_completed_auth_prompt", value)?.apply()
+        }
 
     val currentUserFlow: Flow<UserEntity?> = userDao.getCurrentUserFlow()
 
@@ -73,6 +86,9 @@ class UserRepository(private val userDao: UserDao) {
             updatedAtMs = System.currentTimeMillis()
         )
         userDao.insertOrUpdateUser(updated)
+        if (context != null && !updated.isGuest) {
+            FirestoreSyncManager.syncUserProfile(context, updated)
+        }
     }
 
     suspend fun updateProfileImage(uri: String) {
@@ -82,6 +98,9 @@ class UserRepository(private val userDao: UserDao) {
             updatedAtMs = System.currentTimeMillis()
         )
         userDao.insertOrUpdateUser(updated)
+        if (context != null && !updated.isGuest) {
+            FirestoreSyncManager.syncUserProfile(context, updated)
+        }
     }
 
     suspend fun updateLanguage(language: AppLanguage) {
@@ -91,6 +110,9 @@ class UserRepository(private val userDao: UserDao) {
             updatedAtMs = System.currentTimeMillis()
         )
         userDao.insertOrUpdateUser(updated)
+        if (context != null && !updated.isGuest) {
+            FirestoreSyncManager.syncUserProfile(context, updated)
+        }
     }
 
     suspend fun updateThemeMode(themeMode: ThemeMode) {
@@ -100,25 +122,72 @@ class UserRepository(private val userDao: UserDao) {
             updatedAtMs = System.currentTimeMillis()
         )
         userDao.insertOrUpdateUser(updated)
+        if (context != null && !updated.isGuest) {
+            FirestoreSyncManager.syncUserProfile(context, updated)
+        }
     }
 
     suspend fun signInAsGuest() {
+        hasCompletedAuthPrompt = true
         getOrCreateGuestUser()
     }
 
-    suspend fun signInWithAccount(id: String, fullName: String, email: String) {
+    suspend fun signInWithAccount(
+        id: String,
+        fullName: String,
+        email: String,
+        profileImageUri: String? = null,
+        localAssembly: String = ""
+    ) {
+        hasCompletedAuthPrompt = true
         val current = getOrCreateGuestUser()
+        val finalName = if (fullName.isNotBlank() && fullName != "Disciple") {
+            fullName
+        } else if (current.fullName.isNotBlank() && current.fullName != "Disciple") {
+            current.fullName
+        } else {
+            email.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() }
+        }
+
+        val finalImageUri = if (!profileImageUri.isNullOrBlank()) {
+            profileImageUri
+        } else {
+            current.profileImageUri
+        }
+
+        val finalAssembly = if (localAssembly.isNotBlank()) {
+            localAssembly
+        } else {
+            current.localAssembly
+        }
+
         val updated = current.copy(
             id = id,
-            fullName = if (fullName.isNotBlank()) fullName else current.fullName,
+            fullName = finalName,
             email = email,
+            profileImageUri = finalImageUri,
+            localAssembly = finalAssembly,
             isGuest = false,
             updatedAtMs = System.currentTimeMillis()
         )
+        userDao.clearUserTable()
         userDao.insertOrUpdateUser(updated)
+
+        // Attempt cloud restore so user's existing goals, progress, streaks, reports, and disciples on that account are loaded!
+        if (context != null) {
+            try {
+                FirestoreSyncManager.restoreUserDataFromCloud(context, AppDatabase.getInstance(context), id)
+                // Backup current user profile if freshly updated
+                val freshUser = userDao.getCurrentUser() ?: updated
+                FirestoreSyncManager.syncUserProfile(context, freshUser)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     suspend fun signOut() {
+        hasCompletedAuthPrompt = false
         userDao.clearUserTable()
         getOrCreateGuestUser() // reset to guest
     }

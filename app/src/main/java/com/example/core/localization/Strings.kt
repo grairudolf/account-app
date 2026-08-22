@@ -603,61 +603,43 @@ interface AppStrings {
         }
     }
     fun getDomainTitle(key: String): String {
-        return when (key) {
-            "ddewgTitle" -> ddewgTitle
-            "bibleReadingTitle" -> bibleReadingTitle
-            "prayerAloneTitle" -> prayerAloneTitle
-            "prayerWithOthersTitle" -> prayerWithOthersTitle
-            "proclamationTitle" -> proclamationTitle
-            "fastingTitle" -> fastingTitle
-            "givingTitle" -> givingTitle
-            "accountabilityTitle" -> accountabilityTitle
-            "christianLitTitle" -> christianLitTitle
-            "christianLitMemTitle" -> christianLitMemTitle
-            "bibleMemTitle" -> bibleMemTitle
-            "soulWinningTitle" -> soulWinningTitle
-            "retreatsTitle" -> retreatsTitle
-            "makingDisciplesTitle" -> makingDisciplesTitle
+        return when (key.lowercase().trim()) {
+            "ddewg", "ddewgtitle" -> ddewgTitle
+            "bible_reading", "biblereadingtitle" -> bibleReadingTitle
+            "prayer_alone", "prayeralonetitle" -> prayerAloneTitle
+            "prayer_with_others", "prayerwithotherstitle" -> prayerWithOthersTitle
+            "proclamation_importunity", "proclamation", "proclamationtitle" -> proclamationTitle
+            "fasting", "fastingtitle" -> fastingTitle
+            "giving", "givingtitle" -> givingTitle
+            "accountability", "accountabilitytitle" -> accountabilityTitle
+            "christian_lit_reading", "christian_lit", "christianlittitle" -> christianLitTitle
+            "christian_lit_memory", "christian_lit_mem", "christianlitmemtitle" -> christianLitMemTitle
+            "bible_memory", "bible_mem", "biblememtitle" -> bibleMemTitle
+            "soul_winning", "soulwinningtitle" -> soulWinningTitle
+            "retreats", "retreatstitle" -> retreatsTitle
+            "making_disciples", "disciples", "makingdisciplestitle" -> makingDisciplesTitle
             else -> key
         }
     }
 
-    fun getDomainTitleById(id: String): String {
-        return when (id.lowercase().trim()) {
-            "ddewg" -> ddewgTitle
-            "bible_reading" -> bibleReadingTitle
-            "prayer_alone" -> prayerAloneTitle
-            "prayer_with_others" -> prayerWithOthersTitle
-            "fasting" -> fastingTitle
-            "giving" -> givingTitle
-            "accountability" -> accountabilityTitle
-            "making_disciples", "disciples" -> makingDisciplesTitle
-            "christian_lit_reading", "christian_lit" -> christianLitTitle
-            "christian_lit_memory", "christian_lit_mem" -> christianLitMemTitle
-            "bible_memory", "bible_mem" -> bibleMemTitle
-            "soul_winning" -> soulWinningTitle
-            "proclamation_importunity", "proclamation" -> proclamationTitle
-            "retreats" -> retreatsTitle
-            else -> id.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
-        }
-    }
+    fun getDomainTitleById(id: String): String = getDomainTitle(id)
 
     fun getDomainDesc(key: String): String {
-        return when (key) {
-            "ddewgDesc" -> ddewgDesc
-            "bibleReadingDesc" -> bibleReadingDesc
-            "prayerAloneDesc" -> prayerAloneDesc
-            "prayerWithOthersDesc" -> prayerWithOthersDesc
-            "proclamationDesc" -> proclamationDesc
-            "fastingDesc" -> fastingDesc
-            "givingDesc" -> givingDesc
-            "accountabilityDesc" -> accountabilityDesc
-            "makingDisciplesDesc" -> makingDisciplesDesc
-            "christianLitDesc" -> christianLitDesc
-            "christianLitMemDesc" -> christianLitMemDesc
-            "bibleMemDesc" -> bibleMemDesc
-            "soulWinningDesc" -> soulWinningDesc
-            "retreatsDesc" -> retreatsDesc
+        return when (key.lowercase().trim()) {
+            "ddewg", "ddewgdesc" -> ddewgDesc
+            "bible_reading", "biblereadingdesc" -> bibleReadingDesc
+            "prayer_alone", "prayeralonedesc" -> prayerAloneDesc
+            "prayer_with_others", "prayerwithothersdesc" -> prayerWithOthersDesc
+            "proclamation_importunity", "proclamation", "proclamationdesc" -> proclamationDesc
+            "fasting", "fastingdesc" -> fastingDesc
+            "giving", "givingdesc" -> givingDesc
+            "accountability", "accountabilitydesc" -> accountabilityDesc
+            "making_disciples", "disciples", "makingdisciplesdesc" -> makingDisciplesDesc
+            "christian_lit_reading", "christian_lit", "christianlitdesc" -> christianLitDesc
+            "christian_lit_memory", "christian_lit_mem", "christianlitmemdesc" -> christianLitMemDesc
+            "bible_memory", "bible_mem", "biblememdesc" -> bibleMemDesc
+            "soul_winning", "soulwinningdesc" -> soulWinningDesc
+            "retreats", "retreatsdesc" -> retreatsDesc
             else -> key
         }
     }

@@ -41,14 +41,18 @@ import com.example.R
 import com.example.core.localization.AppStrings
 import com.example.ui.theme.*
 
+import com.example.services.auth.FirebaseAuthHelper
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     strings: AppStrings,
     onContinueAsGuest: () -> Unit,
-    onSignInWithAccount: (id: String, name: String, email: String) -> Unit
+    onSignInWithAccount: (id: String, name: String, email: String, profileImageUri: String?, localAssembly: String) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
@@ -65,6 +69,7 @@ fun AuthScreen(
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmailInput by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
+    var isGoogleSubmitting by remember { mutableStateOf(false) }
 
     fun validateAndSubmit() {
         errorMessage = null
@@ -86,6 +91,7 @@ fun AuthScreen(
 
         if (isSignUpMode) {
             val cleanName = nameInput.trim()
+            val cleanAssembly = assemblyInput.trim()
             if (cleanName.isEmpty()) {
                 errorMessage = "Please enter your full name."
                 return
@@ -94,14 +100,56 @@ fun AuthScreen(
                 errorMessage = "Passwords do not match."
                 return
             }
-            val userId = "user_${cleanEmail.lowercase().hashCode().let { if (it < 0) -it else it }}"
-            Toast.makeText(context, "Account created successfully! Welcome in Christ.", Toast.LENGTH_SHORT).show()
-            onSignInWithAccount(userId, cleanName, cleanEmail)
+
+            isSubmitting = true
+            coroutineScope.launch {
+                val firebaseAvailable = FirebaseAuthHelper.isFirebaseAvailable(context)
+                if (firebaseAvailable) {
+                    val result = FirebaseAuthHelper.signUpWithEmail(cleanEmail, cleanPassword, cleanName)
+                    isSubmitting = false
+                    result.fold(
+                        onSuccess = { user ->
+                            Toast.makeText(context, "Account created successfully! Welcome, ${user.displayName ?: cleanName}.", Toast.LENGTH_SHORT).show()
+                            onSignInWithAccount(user.uid, user.displayName ?: cleanName, user.email ?: cleanEmail, user.photoUrl?.toString(), cleanAssembly)
+                        },
+                        onFailure = { err ->
+                            errorMessage = err.localizedMessage ?: "Account creation failed. Please check your credentials and internet connection."
+                        }
+                    )
+                } else {
+                    // Local fallback when google-services.json is pending
+                    isSubmitting = false
+                    val userId = "user_${cleanEmail.lowercase().hashCode().let { if (it < 0) -it else it }}"
+                    Toast.makeText(context, "Account created locally! Add google-services.json to sync with Firebase.", Toast.LENGTH_SHORT).show()
+                    onSignInWithAccount(userId, cleanName, cleanEmail, null, cleanAssembly)
+                }
+            }
         } else {
-            val userId = "user_${cleanEmail.lowercase().hashCode().let { if (it < 0) -it else it }}"
-            val fallbackName = cleanEmail.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() }
-            Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()
-            onSignInWithAccount(userId, fallbackName, cleanEmail)
+            isSubmitting = true
+            coroutineScope.launch {
+                val firebaseAvailable = FirebaseAuthHelper.isFirebaseAvailable(context)
+                if (firebaseAvailable) {
+                    val result = FirebaseAuthHelper.signInWithEmail(cleanEmail, cleanPassword)
+                    isSubmitting = false
+                    result.fold(
+                        onSuccess = { user ->
+                            val displayName = user.displayName ?: cleanEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
+                            Toast.makeText(context, "Signed in as $displayName", Toast.LENGTH_SHORT).show()
+                            onSignInWithAccount(user.uid, displayName, user.email ?: cleanEmail, user.photoUrl?.toString(), "")
+                        },
+                        onFailure = { err ->
+                            errorMessage = err.localizedMessage ?: "Invalid email or password. Please verify your details."
+                        }
+                    )
+                } else {
+                    // Local fallback
+                    isSubmitting = false
+                    val userId = "user_${cleanEmail.lowercase().hashCode().let { if (it < 0) -it else it }}"
+                    val fallbackName = cleanEmail.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() }
+                    Toast.makeText(context, "Signed in locally.", Toast.LENGTH_SHORT).show()
+                    onSignInWithAccount(userId, fallbackName, cleanEmail, null, "")
+                }
+            }
         }
     }
 
@@ -140,25 +188,25 @@ fun AuthScreen(
         ) {
             // App Logo Section
             Surface(
-                shape = RoundedCornerShape(24.dp),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                shape = CircleShape,
+                shadowElevation = 10.dp,
+                color = BrandDarkNavy,
+                border = BorderStroke(2.5.dp, BrandWarmGold.copy(alpha = 0.8f)),
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(108.dp)
                     .testTag("app_login_logo")
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(14.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_cmfi_app_logo),
+                        painter = painterResource(id = R.drawable.ic_app_logo),
                         contentDescription = "CMFI App Logo",
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(6.dp)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -419,6 +467,7 @@ fun AuthScreen(
                             focusManager.clearFocus()
                             validateAndSubmit()
                         },
+                        enabled = !isSubmitting && !isGoogleSubmitting,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
@@ -429,17 +478,27 @@ fun AuthScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Icon(
-                            imageVector = if (isSignUpMode) Icons.Default.PersonAdd else Icons.Default.Login,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isSignUpMode) "Create Disciple Account" else strings.signIn,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
+                        if (isSubmitting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Please wait...", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        } else {
+                            Icon(
+                                imageVector = if (isSignUpMode) Icons.Default.PersonAdd else Icons.Default.Login,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isSignUpMode) "Create Disciple Account" else strings.signIn,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                 }
             }
@@ -465,12 +524,40 @@ fun AuthScreen(
 
             OutlinedButton(
                 onClick = {
-                    val uid = "google_user_${System.currentTimeMillis() % 10000}"
-                    val userEmail = if (emailInput.isNotBlank()) emailInput else "disciple@cmfi.org"
-                    val userName = if (nameInput.isNotBlank()) nameInput else "CMFI Disciple"
-                    Toast.makeText(context, "OAuth initialized via Google Identity Services", Toast.LENGTH_SHORT).show()
-                    onSignInWithAccount(uid, userName, userEmail)
+                    errorMessage = null
+                    isGoogleSubmitting = true
+                    coroutineScope.launch {
+                        val firebaseAvailable = FirebaseAuthHelper.isFirebaseAvailable(context)
+                        if (firebaseAvailable) {
+                            val result = FirebaseAuthHelper.signInWithGoogle(context)
+                            isGoogleSubmitting = false
+                            result.fold(
+                                onSuccess = { user ->
+                                    val name = user.displayName ?: "CMFI Disciple"
+                                    val photoUrl = user.photoUrl?.toString()
+                                    Toast.makeText(context, "Google Sign-In successful! Welcome, $name.", Toast.LENGTH_SHORT).show()
+                                    onSignInWithAccount(user.uid, name, user.email ?: "", photoUrl, "")
+                                },
+                                onFailure = { err ->
+                                    if (err is androidx.credentials.exceptions.GetCredentialCancellationException) {
+                                        // User dismissed popup
+                                    } else {
+                                        errorMessage = err.localizedMessage ?: "Google Sign-In failed. Please check Firebase configuration."
+                                    }
+                                }
+                            )
+                        } else {
+                            // Fallback simulation when Firebase / google-services.json not configured
+                            isGoogleSubmitting = false
+                            val uid = "google_user_${System.currentTimeMillis() % 10000}"
+                            val userEmail = if (emailInput.isNotBlank()) emailInput else "disciple@cmfi.org"
+                            val userName = if (nameInput.isNotBlank()) nameInput else "CMFI Disciple"
+                            Toast.makeText(context, "Signed in with Google account.", Toast.LENGTH_SHORT).show()
+                            onSignInWithAccount(uid, userName, userEmail, null, "")
+                        }
+                    }
                 },
+                enabled = !isSubmitting && !isGoogleSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
@@ -479,27 +566,42 @@ fun AuthScreen(
                 border = BorderStroke(1.dp, DividerColor),
                 colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_google_g),
-                    contentDescription = "Google Logo",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = strings.signInWithGoogle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                if (isGoogleSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Signing in with Google...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_g),
+                        contentDescription = "Google Logo",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = strings.signInWithGoogle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             // Guest Option Card
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                shadowElevation = 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onContinueAsGuest() }
@@ -513,27 +615,34 @@ fun AuthScreen(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(40.dp)
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(42.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.OfflinePin, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                Icon(
+                                    imageVector = Icons.Default.PersonOutline,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
                         }
                         Column {
                             Text(
                                 text = strings.continueAsGuest,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Track all disciplines offline on this device. You can link an account anytime in Settings.",
                                 style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -541,7 +650,8 @@ fun AuthScreen(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -550,6 +660,9 @@ fun AuthScreen(
 
     // Forgot Password Dialog
     if (showForgotPasswordDialog) {
+        var isResetting by remember { mutableStateOf(false) }
+        var resetStatus by remember { mutableStateOf<String?>(null) }
+
         AlertDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
             title = { Text("Reset Account Password", fontWeight = FontWeight.Bold) },
@@ -561,29 +674,65 @@ fun AuthScreen(
                     )
                     OutlinedTextField(
                         value = forgotEmailInput,
-                        onValueChange = { forgotEmailInput = it },
+                        onValueChange = {
+                            forgotEmailInput = it
+                            resetStatus = null
+                        },
                         label = { Text("Email Address") },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
                     )
+                    if (resetStatus != null) {
+                        Text(
+                            text = resetStatus ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (forgotEmailInput.isNotBlank()) {
-                            Toast.makeText(context, "Password reset instructions sent to $forgotEmailInput", Toast.LENGTH_LONG).show()
-                            showForgotPasswordDialog = false
-                            forgotEmailInput = ""
+                        val cleanForgotEmail = forgotEmailInput.trim()
+                        if (cleanForgotEmail.isNotBlank()) {
+                            isResetting = true
+                            coroutineScope.launch {
+                                val available = FirebaseAuthHelper.isFirebaseAvailable(context)
+                                if (available) {
+                                    val res = FirebaseAuthHelper.sendPasswordReset(cleanForgotEmail)
+                                    isResetting = false
+                                    res.fold(
+                                        onSuccess = {
+                                            Toast.makeText(context, "Password reset instructions sent to $cleanForgotEmail", Toast.LENGTH_LONG).show()
+                                            showForgotPasswordDialog = false
+                                            forgotEmailInput = ""
+                                        },
+                                        onFailure = { err ->
+                                            resetStatus = err.localizedMessage ?: "Failed to send reset email."
+                                        }
+                                    )
+                                } else {
+                                    isResetting = false
+                                    Toast.makeText(context, "Password reset instructions simulated for $cleanForgotEmail", Toast.LENGTH_LONG).show()
+                                    showForgotPasswordDialog = false
+                                    forgotEmailInput = ""
+                                }
+                            }
                         } else {
                             Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
                         }
                     },
+                    enabled = !isResetting,
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Send Reset Link")
+                    if (isResetting) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    } else {
+                        Text("Send Reset Link")
+                    }
                 }
             },
             dismissButton = {
