@@ -525,6 +525,7 @@ fun MainApp() {
                 composable(NavRoutes.SETTINGS) {
                     val settingsReminders by settingsViewModel.reminders.collectAsStateWithLifecycle()
                     val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
+                    val syncProgress by settingsViewModel.syncProgress.collectAsStateWithLifecycle()
                     SettingsScreen(
                         strings = strings,
                         user = currentUserState,
@@ -532,6 +533,7 @@ fun MainApp() {
                         currentTheme = currentTheme,
                         reminders = settingsReminders,
                         isSyncing = isSyncing,
+                        syncProgress = syncProgress,
                         onSyncCloudData = { settingsViewModel.syncCloudData() },
                         onUpdateLanguage = { settingsViewModel.updateLanguage(it) },
                         onUpdateTheme = { settingsViewModel.updateThemeMode(it) },

@@ -250,17 +250,16 @@ class UserRepository(
         }
     }
 
+    val syncProgress: kotlinx.coroutines.flow.StateFlow<com.example.services.sync.SyncProgress> =
+        com.example.services.sync.FirestoreSyncManager.syncProgressFlow
+
     suspend fun syncAllCloudData(): Boolean {
         if (context == null) return false
         val user = userDao.getCurrentUser() ?: return false
         if (user.isGuest || user.id.isBlank() || user.id == "guest_user") return false
         return try {
             val db = AppDatabase.getInstance(context)
-            FirestoreSyncManager.restoreUserDataFromCloud(context, db, user.id)
-            val freshUser = userDao.getCurrentUser() ?: user
-            FirestoreSyncManager.syncUserProfile(context, freshUser)
-            FirestoreSyncManager.syncAllLocalDataToCloud(context, db, user.id)
-            true
+            FirestoreSyncManager.performFullSync(context, db, user.id)
         } catch (e: Exception) {
             e.printStackTrace()
             false

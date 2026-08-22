@@ -8,11 +8,56 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+enum class SyncStage {
+    IDLE,
+    PREPARING,
+    DOWNLOADING,
+    UPLOADING,
+    COMPLETED,
+    ERROR
+}
+
+data class SyncProgress(
+    val isSyncing: Boolean = false,
+    val progress: Float = 0f,
+    val stage: SyncStage = SyncStage.IDLE,
+    val stageTitle: String = "",
+    val details: String = "",
+    val lastSyncTimeMs: Long? = null,
+    val error: String? = null
+)
+
 object FirestoreSyncManager {
     private const val TAG = "FirestoreSyncManager"
+
+    private val _syncProgressFlow = MutableStateFlow(SyncProgress())
+    val syncProgressFlow: StateFlow<SyncProgress> = _syncProgressFlow.asStateFlow()
+
+    private fun updateProgress(
+        isSyncing: Boolean,
+        progress: Float,
+        stage: SyncStage,
+        stageTitle: String,
+        details: String,
+        lastSyncTimeMs: Long? = _syncProgressFlow.value.lastSyncTimeMs,
+        error: String? = null
+    ) {
+        _syncProgressFlow.value = SyncProgress(
+            isSyncing = isSyncing,
+            progress = progress.coerceIn(0f, 1f),
+            stage = stage,
+            stageTitle = stageTitle,
+            details = details,
+            lastSyncTimeMs = lastSyncTimeMs,
+            error = error
+        )
+    }
 
     fun isFirestoreAvailable(context: Context): Boolean {
         return try {
@@ -49,6 +94,13 @@ object FirestoreSyncManager {
             if (userId.isBlank() || userId == "guest_user") return@withContext Result.success(false)
 
             Log.i(TAG, "Starting cloud restore for user: $userId")
+            updateProgress(
+                isSyncing = true,
+                progress = 0.10f,
+                stage = SyncStage.DOWNLOADING,
+                stageTitle = "Connecting to Cloud Database",
+                details = "Fetching your user profile..."
+            )
 
             // 1. Fetch User Profile Document
             val userDoc = firestore.collection("users").document(userId).get().await()
@@ -79,9 +131,18 @@ object FirestoreSyncManager {
                 }
             }
 
+            updateProgress(
+                isSyncing = true,
+                progress = 0.25f,
+                stage = SyncStage.DOWNLOADING,
+                stageTitle = "Downloading Spiritual Entries",
+                details = "Fetching prayer, scripture and fasting logs..."
+            )
+
             // 2. Restore Entries
             val entriesSnapshot = firestore.collection("users").document(userId).collection("entries").get().await()
-            for (doc in entriesSnapshot.documents) {
+            val totalEntries = entriesSnapshot.documents.size
+            for ((index, doc) in entriesSnapshot.documents.withIndex()) {
                 val d = doc.data ?: continue
                 val entry = AccountabilityEntryEntity(
                     id = doc.id,
@@ -145,8 +206,26 @@ object FirestoreSyncManager {
                     syncStatus = "SYNCED"
                 )
                 database.entryDao().insertOrUpdateEntry(entry)
+                if (index % 5 == 0 || index == totalEntries - 1) {
+                    val p = 0.25f + 0.25f * ((index + 1).toFloat() / totalEntries.coerceAtLeast(1))
+                    updateProgress(
+                        isSyncing = true,
+                        progress = p,
+                        stage = SyncStage.DOWNLOADING,
+                        stageTitle = "Downloading Entries",
+                        details = "Restored ${index + 1} of $totalEntries spiritual entries"
+                    )
+                }
             }
             Log.i(TAG, "Restored ${entriesSnapshot.size()} entries from cloud")
+
+            updateProgress(
+                isSyncing = true,
+                progress = 0.55f,
+                stage = SyncStage.DOWNLOADING,
+                stageTitle = "Downloading Goals",
+                details = "Fetching spiritual targets and metrics..."
+            )
 
             // 3. Restore Goals
             val goalsSnapshot = firestore.collection("users").document(userId).collection("goals").get().await()
@@ -170,6 +249,14 @@ object FirestoreSyncManager {
             }
             Log.i(TAG, "Restored ${goalsSnapshot.size()} goals from cloud")
 
+            updateProgress(
+                isSyncing = true,
+                progress = 0.70f,
+                stage = SyncStage.DOWNLOADING,
+                stageTitle = "Downloading Disciples",
+                details = "Restoring discipleship names and prayer topics..."
+            )
+
             // 4. Restore Disciples
             val disciplesSnapshot = firestore.collection("users").document(userId).collection("disciples").get().await()
             for (doc in disciplesSnapshot.documents) {
@@ -189,6 +276,14 @@ object FirestoreSyncManager {
                 )
                 database.discipleDao().insertDisciple(disciple)
             }
+
+            updateProgress(
+                isSyncing = true,
+                progress = 0.85f,
+                stage = SyncStage.DOWNLOADING,
+                stageTitle = "Downloading Custom Domains & Topics",
+                details = "Restoring domains and proclamation records..."
+            )
 
             // 5. Restore Custom Domains
             val domainsSnapshot = firestore.collection("users").document(userId).collection("custom_domains").get().await()
@@ -243,12 +338,36 @@ object FirestoreSyncManager {
             }
 
             Log.i(TAG, "Cloud restore finished successfully for user: $userId")
+            updateProgress(
+                isSyncing = false,
+                progress = 1.0f,
+                stage = SyncStage.COMPLETED,
+                stageTitle = "Restore Completed",
+                details = "All records downloaded and restored from cloud",
+                lastSyncTimeMs = System.currentTimeMillis()
+            )
             Result.success(true)
         } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
             Log.i(TAG, "Firestore offline or unreachable during restore (${e.message}). Proceeding with local offline data.")
+            updateProgress(
+                isSyncing = false,
+                progress = 1.0f,
+                stage = SyncStage.COMPLETED,
+                stageTitle = "Offline Mode",
+                details = "Running with local database (cloud currently unreachable)",
+                lastSyncTimeMs = _syncProgressFlow.value.lastSyncTimeMs
+            )
             Result.success(false)
         } catch (e: Exception) {
             Log.w(TAG, "Notice during cloud restore: ${e.message}")
+            updateProgress(
+                isSyncing = false,
+                progress = 0f,
+                stage = SyncStage.ERROR,
+                stageTitle = "Sync Warning",
+                details = e.message ?: "Could not complete cloud restore",
+                error = e.message
+            )
             Result.success(false)
         }
     }
@@ -519,14 +638,31 @@ object FirestoreSyncManager {
     ) = withContext(Dispatchers.IO) {
         if (userId.isBlank() || userId == "guest_user") return@withContext
         try {
+            updateProgress(
+                isSyncing = true,
+                progress = 0.10f,
+                stage = SyncStage.UPLOADING,
+                stageTitle = "Preparing Cloud Backup",
+                details = "Gathering local spiritual records..."
+            )
+
             // 1. Sync User Profile
             val user = database.userDao().getCurrentUser()
             if (user != null && !user.isGuest) {
+                updateProgress(
+                    isSyncing = true,
+                    progress = 0.20f,
+                    stage = SyncStage.UPLOADING,
+                    stageTitle = "Backing Up Profile",
+                    details = "Saving account settings and profile..."
+                )
                 syncUserProfile(context, user)
             }
+
             // 2. Sync all Entries
             val entries = database.entryDao().getEntriesInRange(0L, System.currentTimeMillis() + 86400000000L)
-            for (entry in entries) {
+            val totalEntries = entries.size
+            for ((index, entry) in entries.withIndex()) {
                 if (entry.userId == userId || entry.userId == "guest_user") {
                     val entryToSync = if (entry.userId != userId) entry.copy(userId = userId) else entry
                     if (entry.userId != userId) {
@@ -534,10 +670,22 @@ object FirestoreSyncManager {
                     }
                     syncEntry(context, entryToSync)
                 }
+                if (index % 5 == 0 || index == totalEntries - 1) {
+                    val p = 0.25f + 0.35f * ((index + 1).toFloat() / totalEntries.coerceAtLeast(1))
+                    updateProgress(
+                        isSyncing = true,
+                        progress = p,
+                        stage = SyncStage.UPLOADING,
+                        stageTitle = "Uploading Spiritual Entries",
+                        details = "Backed up ${index + 1} of $totalEntries prayer & scripture records"
+                    )
+                }
             }
+
             // 3. Sync all Goals
             val goals = database.goalDao().getAllGoalsList()
-            for (goal in goals) {
+            val totalGoals = goals.size
+            for ((index, goal) in goals.withIndex()) {
                 if (goal.userId == userId || goal.userId == "guest_user") {
                     val goalToSync = if (goal.userId != userId) goal.copy(userId = userId) else goal
                     if (goal.userId != userId) {
@@ -545,12 +693,35 @@ object FirestoreSyncManager {
                     }
                     syncGoal(context, goalToSync)
                 }
+                if (index % 2 == 0 || index == totalGoals - 1) {
+                    val p = 0.60f + 0.15f * ((index + 1).toFloat() / totalGoals.coerceAtLeast(1))
+                    updateProgress(
+                        isSyncing = true,
+                        progress = p,
+                        stage = SyncStage.UPLOADING,
+                        stageTitle = "Uploading Spiritual Goals",
+                        details = "Backed up ${index + 1} of $totalGoals active goals"
+                    )
+                }
             }
+
             // 4. Sync Disciples
             val disciples = database.discipleDao().getDisciplesList(userId)
-            for (disciple in disciples) {
+            val totalDisciples = disciples.size
+            for ((index, disciple) in disciples.withIndex()) {
                 syncDisciple(context, disciple)
+                if (index % 2 == 0 || index == totalDisciples - 1) {
+                    val p = 0.75f + 0.10f * ((index + 1).toFloat() / totalDisciples.coerceAtLeast(1))
+                    updateProgress(
+                        isSyncing = true,
+                        progress = p,
+                        stage = SyncStage.UPLOADING,
+                        stageTitle = "Uploading Disciples",
+                        details = "Backed up ${index + 1} of $totalDisciples disciples"
+                    )
+                }
             }
+
             // 5. Sync Custom Domains
             val customDomains = database.customDomainDao().getAllDomainsList()
             for (cd in customDomains) {
@@ -562,14 +733,68 @@ object FirestoreSyncManager {
                     syncCustomDomain(context, cdToSync)
                 }
             }
+
             // 6. Sync Proclamation Topics
             val procTopics = database.proclamationTopicDao().getTopicsForUser(userId)
             for (topic in procTopics) {
                 syncProclamationTopic(context, topic)
             }
+
             Log.i(TAG, "Full local sync to cloud finished for user: $userId")
+            updateProgress(
+                isSyncing = false,
+                progress = 1.0f,
+                stage = SyncStage.COMPLETED,
+                stageTitle = "Cloud Sync & Backup Complete",
+                details = "All entries, goals, disciples and settings are safely stored in Firebase",
+                lastSyncTimeMs = System.currentTimeMillis()
+            )
         } catch (e: Exception) {
             Log.w(TAG, "Error in full local sync: ${e.message}")
+            updateProgress(
+                isSyncing = false,
+                progress = 0f,
+                stage = SyncStage.ERROR,
+                stageTitle = "Backup Error",
+                details = e.message ?: "Failed to complete cloud backup",
+                error = e.message
+            )
+        }
+    }
+
+    /**
+     * Unified 2-way sync: Restores any remote records and uploads all local records with live progress
+     */
+    suspend fun performFullSync(
+        context: Context,
+        database: AppDatabase,
+        userId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        if (userId.isBlank() || userId == "guest_user") return@withContext false
+        try {
+            updateProgress(
+                isSyncing = true,
+                progress = 0.05f,
+                stage = SyncStage.PREPARING,
+                stageTitle = "Initiating Cloud Sync",
+                details = "Connecting to Firebase..."
+            )
+            // 1. Restore remote data first
+            restoreUserDataFromCloud(context, database, userId)
+            // 2. Upload any local updates/new entries
+            syncAllLocalDataToCloud(context, database, userId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Error during full sync: ${e.message}")
+            updateProgress(
+                isSyncing = false,
+                progress = 0f,
+                stage = SyncStage.ERROR,
+                stageTitle = "Sync Error",
+                details = e.message ?: "Could not complete synchronization",
+                error = e.message
+            )
+            false
         }
     }
 }

@@ -37,6 +37,11 @@ import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import com.example.services.sync.SyncProgress
+import com.example.services.sync.SyncStage
+
 @Composable
 fun SettingsScreen(
     strings: AppStrings,
@@ -45,6 +50,7 @@ fun SettingsScreen(
     currentTheme: ThemeMode,
     reminders: List<ReminderEntity>,
     isSyncing: Boolean = false,
+    syncProgress: SyncProgress = SyncProgress(),
     onSyncCloudData: () -> Unit = {},
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateTheme: (ThemeMode) -> Unit,
@@ -938,74 +944,209 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Cloud Sync Status Card
+                        val activelySyncing = isSyncing || syncProgress.isSyncing
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = if (activelySyncing) syncProgress.progress.coerceIn(0.05f, 1f) else 1f,
+                            animationSpec = tween(350),
+                            label = "sync_progress"
+                        )
+
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                            border = BorderStroke(
+                                1.dp,
+                                if (activelySyncing) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    val iconColor = when {
+                                        syncProgress.stage == SyncStage.ERROR -> StatusError
+                                        activelySyncing -> MaterialTheme.colorScheme.primary
+                                        else -> StatusSuccess
+                                    }
+                                    val icon = when {
+                                        syncProgress.stage == SyncStage.DOWNLOADING -> Icons.Default.CloudDownload
+                                        syncProgress.stage == SyncStage.UPLOADING -> Icons.Default.CloudUpload
+                                        syncProgress.stage == SyncStage.ERROR -> Icons.Default.SyncProblem
+                                        else -> Icons.Default.CloudDone
+                                    }
+
                                     Surface(
                                         shape = CircleShape,
-                                        color = StatusSuccess.copy(alpha = 0.15f),
-                                        modifier = Modifier.size(36.dp)
+                                        color = iconColor.copy(alpha = 0.15f),
+                                        modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
-                                                Icons.Default.CloudDone,
+                                                icon,
                                                 contentDescription = null,
-                                                tint = StatusSuccess,
-                                                modifier = Modifier.size(20.dp)
+                                                tint = iconColor,
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            "Cloud Backup & Sync Active",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                if (activelySyncing) {
+                                                    if (syncProgress.stage == SyncStage.DOWNLOADING) "Downloading from Cloud"
+                                                    else if (syncProgress.stage == SyncStage.UPLOADING) "Uploading to Cloud"
+                                                    else "Synchronizing..."
+                                                } else "Cloud Backup & Sync Active",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                         Text(
                                             if (!user?.email.isNullOrBlank()) "Linked to: ${user!!.email}" else "Connected to Firebase Cloud Database",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
+
+                                    if (activelySyncing) {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        ) {
+                                            Text(
+                                                "${(animatedProgress * 100).toInt()}%",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                    }
                                 }
 
-                                Text(
-                                    "All your prayer sessions, scripture readings, fasts, disciples, goals, and reports are automatically backed up. If you switch phones, simply sign in with this account to restore all your data.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (activelySyncing) {
+                                    // Active Progress Section
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (syncProgress.stageTitle.isNotBlank()) syncProgress.stageTitle else "Syncing records...",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(12.dp),
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    strokeWidth = 2.dp
+                                                )
+                                                Text(
+                                                    "Active",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
 
-                                Button(
-                                    onClick = onSyncCloudData,
-                                    enabled = !isSyncing,
-                                    modifier = Modifier.fillMaxWidth().height(42.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                ) {
-                                    if (isSyncing) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(18.dp),
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                            strokeWidth = 2.dp
+                                        LinearProgressIndicator(
+                                            progress = { animatedProgress },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(8.dp)
+                                                .clip(RoundedCornerShape(4.dp)),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Syncing with Cloud...", fontWeight = FontWeight.Bold)
-                                    } else {
+
+                                        if (syncProgress.details.isNotBlank()) {
+                                            Text(
+                                                text = syncProgress.details,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        Text(
+                                            text = "Background sync active — you can continue using the app while data transfers.",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                } else {
+                                    // Idle / Finished State
+                                    Text(
+                                        "All your prayer sessions, scripture readings, fasts, disciples, goals, and reports are backed up in real-time. If you switch phones, simply sign in with this account to restore all your data.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    if (syncProgress.lastSyncTimeMs != null && syncProgress.lastSyncTimeMs > 0) {
+                                        val timeStr = remember(syncProgress.lastSyncTimeMs) {
+                                            val diffMin = (System.currentTimeMillis() - syncProgress.lastSyncTimeMs) / 60000
+                                            when {
+                                                diffMin < 1 -> "Just now"
+                                                diffMin < 60 -> "$diffMin min ago"
+                                                else -> {
+                                                    val dt = java.time.Instant.ofEpochMilli(syncProgress.lastSyncTimeMs)
+                                                        .atZone(java.time.ZoneId.systemDefault())
+                                                        .toLocalDateTime()
+                                                    "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
+                                                }
+                                            }
+                                        }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = StatusSuccess,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Text(
+                                                "Last synced: $timeStr",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = onSyncCloudData,
+                                        enabled = !activelySyncing,
+                                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    ) {
                                         Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Sync & Backup Now", fontWeight = FontWeight.Bold)

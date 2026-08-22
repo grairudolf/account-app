@@ -31,6 +31,9 @@ class SettingsViewModel(
     val reminders: StateFlow<List<ReminderEntity>> = accountabilityRepository.remindersFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val syncProgress: StateFlow<com.example.services.sync.SyncProgress> = userRepository.syncProgress
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.services.sync.SyncProgress())
+
     fun updateLanguage(language: AppLanguage) {
         viewModelScope.launch {
             userRepository.updateLanguage(language)
