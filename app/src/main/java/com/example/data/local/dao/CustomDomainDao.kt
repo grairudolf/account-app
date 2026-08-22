@@ -12,8 +12,14 @@ interface CustomDomainDao {
     @Query("SELECT * FROM custom_domains ORDER BY createdAtMs ASC")
     fun getAllCustomDomainsFlow(): Flow<List<CustomDomainEntity>>
 
+    @Query("SELECT * FROM custom_domains")
+    suspend fun getAllDomainsList(): List<CustomDomainEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomDomain(domain: CustomDomainEntity)
+
+    @Query("UPDATE custom_domains SET userId = :newUserId")
+    suspend fun migrateUserCustomDomains(newUserId: String)
 
     @Query("DELETE FROM custom_domains WHERE id = :id")
     suspend fun deleteCustomDomainById(id: String)

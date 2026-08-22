@@ -27,4 +27,7 @@ interface ProclamationTopicDao {
 
     @Query("DELETE FROM proclamation_topics WHERE userId = :userId")
     suspend fun deleteAllForUser(userId: String)
+
+    @Query("UPDATE proclamation_topics SET userId = :newUserId")
+    suspend fun migrateUserTopics(newUserId: String)
 }

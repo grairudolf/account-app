@@ -519,16 +519,50 @@ object FirestoreSyncManager {
     ) = withContext(Dispatchers.IO) {
         if (userId.isBlank() || userId == "guest_user") return@withContext
         try {
+            // 1. Sync User Profile
             val user = database.userDao().getCurrentUser()
             if (user != null && !user.isGuest) {
                 syncUserProfile(context, user)
             }
-            val entries = database.entryDao().getEntriesInRange(0L, System.currentTimeMillis() + 86400000L)
+            // 2. Sync all Entries
+            val entries = database.entryDao().getEntriesInRange(0L, System.currentTimeMillis() + 86400000000L)
             for (entry in entries) {
-                if (entry.userId == userId) {
-                    syncEntry(context, entry)
+                if (entry.userId == userId || entry.userId == "guest_user") {
+                    val entryToSync = if (entry.userId != userId) entry.copy(userId = userId) else entry
+                    if (entry.userId != userId) {
+                        database.entryDao().insertOrUpdateEntry(entryToSync)
+                    }
+                    syncEntry(context, entryToSync)
                 }
             }
+            // 3. Sync all Goals
+            val goals = database.goalDao().getAllGoalsList()
+            for (goal in goals) {
+                if (goal.userId == userId || goal.userId == "guest_user") {
+                    val goalToSync = if (goal.userId != userId) goal.copy(userId = userId) else goal
+                    if (goal.userId != userId) {
+                        database.goalDao().insertOrUpdateGoal(goalToSync)
+                    }
+                    syncGoal(context, goalToSync)
+                }
+            }
+            // 4. Sync Disciples
+            val disciples = database.discipleDao().getDisciplesList(userId)
+            for (disciple in disciples) {
+                syncDisciple(context, disciple)
+            }
+            // 5. Sync Custom Domains
+            val customDomains = database.customDomainDao().getAllDomainsList()
+            for (cd in customDomains) {
+                if (cd.userId == userId || cd.userId == "guest_user") {
+                    val cdToSync = if (cd.userId != userId) cd.copy(userId = userId) else cd
+                    if (cd.userId != userId) {
+                        database.customDomainDao().insertCustomDomain(cdToSync)
+                    }
+                    syncCustomDomain(context, cdToSync)
+                }
+            }
+            // 6. Sync Proclamation Topics
             val procTopics = database.proclamationTopicDao().getTopicsForUser(userId)
             for (topic in procTopics) {
                 syncProclamationTopic(context, topic)

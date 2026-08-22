@@ -524,12 +524,15 @@ fun MainApp() {
 
                 composable(NavRoutes.SETTINGS) {
                     val settingsReminders by settingsViewModel.reminders.collectAsStateWithLifecycle()
+                    val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
                     SettingsScreen(
                         strings = strings,
                         user = currentUserState,
                         currentLanguage = currentLanguage,
                         currentTheme = currentTheme,
                         reminders = settingsReminders,
+                        isSyncing = isSyncing,
+                        onSyncCloudData = { settingsViewModel.syncCloudData() },
                         onUpdateLanguage = { settingsViewModel.updateLanguage(it) },
                         onUpdateTheme = { settingsViewModel.updateThemeMode(it) },
                         onUpdateProfileImage = { uri -> settingsViewModel.updateProfileImage(uri) },

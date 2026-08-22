@@ -22,6 +22,12 @@ interface DiscipleDao {
     @Delete
     suspend fun deleteDisciple(disciple: DiscipleEntity)
 
+    @Query("SELECT * FROM disciples WHERE userId = :userId ORDER BY name ASC")
+    suspend fun getDisciplesList(userId: String): List<DiscipleEntity>
+
+    @Query("UPDATE disciples SET userId = :newUserId")
+    suspend fun migrateUserDisciples(newUserId: String)
+
     @Query("DELETE FROM disciples WHERE id = :id")
     suspend fun deleteDiscipleById(id: String)
 }

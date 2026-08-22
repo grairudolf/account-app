@@ -27,6 +27,9 @@ interface GoalDao {
     @Query("DELETE FROM goals")
     suspend fun clearAllGoals()
 
+    @Query("SELECT * FROM goals")
+    suspend fun getAllGoalsList(): List<GoalEntity>
+
     @Query("UPDATE goals SET userId = :newUserId")
     suspend fun migrateUserGoals(newUserId: String)
 }

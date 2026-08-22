@@ -44,6 +44,8 @@ fun SettingsScreen(
     currentLanguage: AppLanguage,
     currentTheme: ThemeMode,
     reminders: List<ReminderEntity>,
+    isSyncing: Boolean = false,
+    onSyncCloudData: () -> Unit = {},
     onUpdateLanguage: (AppLanguage) -> Unit,
     onUpdateTheme: (ThemeMode) -> Unit,
     onUpdateProfileImage: (String) -> Unit = {},
@@ -869,7 +871,7 @@ fun SettingsScreen(
             }
         }
 
-        // Account Status & Sign Out
+        // Account Status, Cloud Sync & Sign Out
         item {
             Box(modifier = Modifier.widthIn(max = 840.dp).fillMaxWidth()) {
                 if (user?.isGuest == true) {
@@ -894,7 +896,7 @@ fun SettingsScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
-                                            Icons.Default.OfflinePin,
+                                            Icons.Default.CloudOff,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(20.dp)
@@ -903,13 +905,13 @@ fun SettingsScreen(
                                 }
                                 Column {
                                     Text(
-                                        "Guest Mode Active",
+                                        "Guest Mode Active (Offline)",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        "Your entries are saved locally on this device.",
+                                        "Your data is only stored on this device. Sign in to automatically sync and backup your records to the cloud.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -931,17 +933,101 @@ fun SettingsScreen(
                         }
                     }
                 } else {
-                    OutlinedButton(
-                        onClick = onSignOut,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("sign_out_button"),
-                        shape = RoundedCornerShape(20.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+                        // Cloud Sync Status Card
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = StatusSuccess.copy(alpha = 0.15f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                Icons.Default.CloudDone,
+                                                contentDescription = null,
+                                                tint = StatusSuccess,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            "Cloud Backup & Sync Active",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            if (!user?.email.isNullOrBlank()) "Linked to: ${user!!.email}" else "Connected to Firebase Cloud Database",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    "All your prayer sessions, scripture readings, fasts, disciples, goals, and reports are automatically backed up. If you switch phones, simply sign in with this account to restore all your data.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Button(
+                                    onClick = onSyncCloudData,
+                                    enabled = !isSyncing,
+                                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                ) {
+                                    if (isSyncing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Syncing with Cloud...", fontWeight = FontWeight.Bold)
+                                    } else {
+                                        Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Sync & Backup Now", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Sign Out Button
+                        OutlinedButton(
+                            onClick = onSignOut,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("sign_out_button"),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, StatusError.copy(alpha = 0.5f))
+                        ) {
+                            Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusError)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(strings.signOut, color = StatusError, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

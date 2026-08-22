@@ -41,7 +41,60 @@ class UserRepository(
     }
 
     suspend fun getOrCreateGuestUser(): UserEntity {
+        val fbUser = if (context != null && com.example.services.auth.FirebaseAuthHelper.isFirebaseAvailable(context)) {
+            com.example.services.auth.FirebaseAuthHelper.getCurrentUser()
+        } else null
+
         val existing = userDao.getCurrentUser()
+
+        if (fbUser != null) {
+            val fbUid = fbUser.uid
+            val fbEmail = fbUser.email ?: ""
+            val fbName = fbUser.displayName?.ifBlank { null }
+                ?: if (fbEmail.isNotBlank()) fbEmail.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() } else "Disciple"
+            val fbPhoto = fbUser.photoUrl?.toString()
+
+            if (existing != null && !existing.isGuest && existing.id == fbUid) {
+                return existing
+            }
+
+            // Sync with Firebase Auth user
+            val updated = (existing ?: UserEntity(
+                id = fbUid,
+                fullName = fbName,
+                email = fbEmail,
+                isGuest = false
+            )).copy(
+                id = fbUid,
+                fullName = if (existing?.fullName?.isNotBlank() == true && existing.fullName != "Disciple") existing.fullName else fbName,
+                email = fbEmail,
+                profileImageUri = fbPhoto ?: existing?.profileImageUri,
+                isGuest = false,
+                updatedAtMs = System.currentTimeMillis()
+            )
+            userDao.clearUserTable()
+            userDao.insertOrUpdateUser(updated)
+            hasCompletedAuthPrompt = true
+
+            if (context != null) {
+                try {
+                    val db = AppDatabase.getInstance(context)
+                    db.entryDao().migrateUserEntries(fbUid)
+                    db.goalDao().migrateUserGoals(fbUid)
+                    db.discipleDao().migrateUserDisciples(fbUid)
+                    db.customDomainDao().migrateUserCustomDomains(fbUid)
+                    db.proclamationTopicDao().migrateUserTopics(fbUid)
+                    FirestoreSyncManager.restoreUserDataFromCloud(context, db, fbUid)
+                    val fresh = userDao.getCurrentUser() ?: updated
+                    FirestoreSyncManager.syncUserProfile(context, fresh)
+                    FirestoreSyncManager.syncAllLocalDataToCloud(context, db, fbUid)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return updated
+        }
+
         if (existing != null) return existing
 
         val sysLangCode = java.util.Locale.getDefault().language.lowercase()
@@ -140,28 +193,30 @@ class UserRepository(
         localAssembly: String = ""
     ) {
         hasCompletedAuthPrompt = true
-        val current = getOrCreateGuestUser()
+        val current = userDao.getCurrentUser()
         val finalName = if (fullName.isNotBlank() && fullName != "Disciple") {
             fullName
-        } else if (current.fullName.isNotBlank() && current.fullName != "Disciple") {
+        } else if (current?.fullName?.isNotBlank() == true && current.fullName != "Disciple") {
             current.fullName
-        } else {
+        } else if (email.isNotBlank()) {
             email.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() }
+        } else {
+            "Disciple"
         }
 
         val finalImageUri = if (!profileImageUri.isNullOrBlank()) {
             profileImageUri
         } else {
-            current.profileImageUri
+            current?.profileImageUri
         }
 
         val finalAssembly = if (localAssembly.isNotBlank()) {
             localAssembly
         } else {
-            current.localAssembly
+            current?.localAssembly ?: ""
         }
 
-        val updated = current.copy(
+        val updated = (current ?: UserEntity(id = id, fullName = finalName, email = email)).copy(
             id = id,
             fullName = finalName,
             email = email,
@@ -174,21 +229,56 @@ class UserRepository(
         userDao.insertOrUpdateUser(updated)
 
         // Attempt cloud restore so user's existing goals, progress, streaks, reports, and disciples on that account are loaded!
+        // Also upload all local guest entries so everything is backed up to Firestore
         if (context != null) {
             try {
-                FirestoreSyncManager.restoreUserDataFromCloud(context, AppDatabase.getInstance(context), id)
-                // Backup current user profile if freshly updated
+                val db = AppDatabase.getInstance(context)
+                db.entryDao().migrateUserEntries(id)
+                db.goalDao().migrateUserGoals(id)
+                db.discipleDao().migrateUserDisciples(id)
+                db.customDomainDao().migrateUserCustomDomains(id)
+                db.proclamationTopicDao().migrateUserTopics(id)
+
+                FirestoreSyncManager.restoreUserDataFromCloud(context, db, id)
+                
                 val freshUser = userDao.getCurrentUser() ?: updated
                 FirestoreSyncManager.syncUserProfile(context, freshUser)
+                FirestoreSyncManager.syncAllLocalDataToCloud(context, db, id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
+    suspend fun syncAllCloudData(): Boolean {
+        if (context == null) return false
+        val user = userDao.getCurrentUser() ?: return false
+        if (user.isGuest || user.id.isBlank() || user.id == "guest_user") return false
+        return try {
+            val db = AppDatabase.getInstance(context)
+            FirestoreSyncManager.restoreUserDataFromCloud(context, db, user.id)
+            val freshUser = userDao.getCurrentUser() ?: user
+            FirestoreSyncManager.syncUserProfile(context, freshUser)
+            FirestoreSyncManager.syncAllLocalDataToCloud(context, db, user.id)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun signOut() {
         hasCompletedAuthPrompt = false
+        com.example.services.auth.FirebaseAuthHelper.signOut()
         userDao.clearUserTable()
-        getOrCreateGuestUser() // reset to guest
+        val defaultGuest = UserEntity(
+            id = "guest_user",
+            fullName = "Disciple",
+            email = "",
+            isGuest = true,
+            language = "en",
+            themeMode = "LIGHT"
+        )
+        userDao.insertOrUpdateUser(defaultGuest)
     }
 }

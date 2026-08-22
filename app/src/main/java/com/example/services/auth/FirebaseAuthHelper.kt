@@ -192,6 +192,17 @@ object FirebaseAuthHelper {
     }
 
     /**
+     * Retrieves the current authenticated Firebase User, if any.
+     */
+    fun getCurrentUser(): FirebaseUser? {
+        return try {
+            FirebaseAuth.getInstance().currentUser
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
      * Signs out of Firebase Auth.
      */
     fun signOut() {

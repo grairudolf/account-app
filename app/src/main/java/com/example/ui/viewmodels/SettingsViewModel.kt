@@ -100,6 +100,18 @@ class SettingsViewModel(
         }
     }
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    fun syncCloudData(onComplete: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val success = userRepository.syncAllCloudData()
+            _isSyncing.value = false
+            onComplete?.invoke(success)
+        }
+    }
+
     fun clearAllData() {
         viewModelScope.launch {
             accountabilityRepository.clearAllData()
