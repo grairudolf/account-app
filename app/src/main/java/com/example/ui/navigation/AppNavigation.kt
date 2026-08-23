@@ -466,6 +466,7 @@ fun MainApp() {
                         DomainDetailScreen(
                             domainId = domainId,
                             strings = strings,
+                            userId = currentUserState.id,
                             disciples = disciplesList,
                             onSaveDisciple = { entryViewModel.saveDisciple(it) },
                             onUpdateDisciple = { entryViewModel.updateDisciple(it) },
@@ -594,6 +595,7 @@ fun MainApp() {
                     TimerScreen(
                         domainId = domainId,
                         strings = strings,
+                        userId = currentUserState.id,
                         activeSession = activeTimerSession,
                         elapsedSeconds = timerElapsedSeconds,
                         onStartTimer = { dId ->

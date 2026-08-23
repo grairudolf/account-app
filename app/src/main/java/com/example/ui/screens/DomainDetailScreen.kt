@@ -48,6 +48,7 @@ data class BibleReadingSegment(
 fun DomainDetailScreen(
     domainId: String,
     strings: AppStrings,
+    userId: String = "guest_user",
     disciples: List<DiscipleEntity> = emptyList(),
     onSaveDisciple: (DiscipleEntity) -> Unit = {},
     onUpdateDisciple: (DiscipleEntity) -> Unit = {},
@@ -57,6 +58,7 @@ fun DomainDetailScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    var isSubmitting by remember { mutableStateOf(false) }
     var selectedDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var notes by remember { mutableStateOf("") }
 
@@ -1505,6 +1507,8 @@ fun DomainDetailScreen(
 
                             Button(
                                 onClick = {
+                                    if (isSubmitting) return@Button
+                                    isSubmitting = true
                                     val durSecs = (calculatedDurationMinutes * 60).toLong()
 
                                     // Build isolated entity according to DomainType
@@ -1513,7 +1517,7 @@ fun DomainDetailScreen(
                                             val combinedBook = bibleSegments.joinToString(", ") { "${it.book} ${it.startChapter}-${it.endChapter}" }
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1532,7 +1536,7 @@ fun DomainDetailScreen(
                                             val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1549,7 +1553,7 @@ fun DomainDetailScreen(
                                             val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1567,7 +1571,7 @@ fun DomainDetailScreen(
                                             val amt = givingAmountText.toDoubleOrNull() ?: 0.0
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1585,7 +1589,7 @@ fun DomainDetailScreen(
                                             val ePage = endPageText.toIntOrNull() ?: sPage
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1607,7 +1611,7 @@ fun DomainDetailScreen(
                                             val actJson = selectedActList.joinToString(";;")
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1623,7 +1627,7 @@ fun DomainDetailScreen(
                                         "fasting" -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1647,7 +1651,7 @@ fun DomainDetailScreen(
                                             }
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1660,7 +1664,7 @@ fun DomainDetailScreen(
                                         "soul_winning" -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1678,7 +1682,7 @@ fun DomainDetailScreen(
                                         "ddewg" -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1693,7 +1697,7 @@ fun DomainDetailScreen(
                                         "christian_lit_mem" -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1710,7 +1714,7 @@ fun DomainDetailScreen(
                                         "bible_mem" -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),
@@ -1727,7 +1731,7 @@ fun DomainDetailScreen(
                                         else -> {
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
-                                                userId = "guest_user",
+                                                userId = userId,
                                                 domainId = domainId,
                                                 dateIso = selectedDateIso,
                                                 timestampMs = System.currentTimeMillis(),

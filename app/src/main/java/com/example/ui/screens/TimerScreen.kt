@@ -43,6 +43,7 @@ import java.util.UUID
 fun TimerScreen(
     domainId: String,
     strings: AppStrings,
+    userId: String = "guest_user",
     activeSession: TimerSessionEntity?,
     elapsedSeconds: Long,
     onStartTimer: (domainId: String) -> Unit,
@@ -344,11 +345,11 @@ fun TimerScreen(
             formattedTime = formattedTime,
             elapsedSeconds = elapsedSeconds,
             strings = strings,
+            userId = userId,
             onDismiss = { showSaveDialog = false },
             onConfirm = { entry ->
-                onStopAndSaveTimer(entry)
                 showSaveDialog = false
-                onBack()
+                onStopAndSaveTimer(entry)
             }
         )
     }
@@ -361,10 +362,12 @@ fun SaveTimerDialog(
     formattedTime: String,
     elapsedSeconds: Long,
     strings: AppStrings,
+    userId: String = "guest_user",
     onDismiss: () -> Unit,
     onConfirm: (entry: AccountabilityEntryEntity) -> Unit
 ) {
     val context = LocalContext.current
+    var isSaving by remember { mutableStateOf(false) }
     var notes by remember { mutableStateOf("") }
     var reflection by remember { mutableStateOf("") }
 
@@ -876,6 +879,8 @@ fun SaveTimerDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
+                                if (isSaving) return@Button
+                                isSaving = true
                                 val nowIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                                 val endMs = System.currentTimeMillis()
                                 val timeFormatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
@@ -887,7 +892,7 @@ fun SaveTimerDialog(
                                         val combinedBook = bibleSegments.joinToString(", ") { "${it.book} ${it.startChapter}-${it.endChapter}" }
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -906,7 +911,7 @@ fun SaveTimerDialog(
                                         val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -923,7 +928,7 @@ fun SaveTimerDialog(
                                         val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -941,7 +946,7 @@ fun SaveTimerDialog(
                                         val ePage = endPageText.toIntOrNull() ?: sPage
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -962,7 +967,7 @@ fun SaveTimerDialog(
                                         val selectedActList = retreatActivities.filter { it.value }.keys.toList()
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -978,7 +983,7 @@ fun SaveTimerDialog(
                                     "soul_winning" -> {
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -996,7 +1001,7 @@ fun SaveTimerDialog(
                                         val amt = givingAmountText.toDoubleOrNull() ?: 0.0
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -1012,7 +1017,7 @@ fun SaveTimerDialog(
                                     "ddewg" -> {
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
@@ -1027,7 +1032,7 @@ fun SaveTimerDialog(
                                     else -> {
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
-                                            userId = "guest_user",
+                                            userId = userId,
                                             domainId = domainId,
                                             dateIso = nowIso,
                                             timestampMs = endMs,
