@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.entities.GoalEntity
 import com.example.data.repositories.AccountabilityRepository
+import com.example.data.local.entities.ReminderEntity
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -41,26 +42,79 @@ class GoalsViewModel(
         targetValue: Double,
         unit: String,
         frequency: String,
-        startDateIso: String
+        startDateIso: String,
+        fastingType: String = "COMPLETE",
+        periodDays: Int = 0,
+        isDailyReminderEnabled: Boolean = false,
+        reminderTimeIso: String = "08:00"
     ) {
         viewModelScope.launch {
+            val goalId = UUID.randomUUID().toString()
             val goal = GoalEntity(
-                id = UUID.randomUUID().toString(),
+                id = goalId,
                 userId = userId,
                 domainId = domainId,
                 title = title,
                 targetValue = targetValue,
                 unit = unit,
                 frequency = frequency,
-                startDateIso = startDateIso
+                startDateIso = startDateIso,
+                fastingType = fastingType,
+                periodDays = periodDays,
+                isDailyReminderEnabled = isDailyReminderEnabled,
+                reminderTimeIso = reminderTimeIso
             )
             accountabilityRepository.saveGoal(goal)
+
+            if (isDailyReminderEnabled) {
+                val timeParts = reminderTimeIso.split(":")
+                val rHour = timeParts.getOrNull(0)?.toIntOrNull() ?: 8
+                val rMinute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
+                val reminder = ReminderEntity(
+                    id = "reminder_goal_$goalId",
+                    userId = userId,
+                    title = "Goal Reminder: $title",
+                    message = "Time for your goal target ($targetValue $unit)!",
+                    hour = rHour,
+                    minute = rMinute,
+                    isEnabled = true,
+                    domainId = domainId
+                )
+                accountabilityRepository.saveReminder(reminder)
+            }
+        }
+    }
+
+    fun toggleGoalReminder(goal: GoalEntity, enabled: Boolean, reminderTimeIso: String = "08:00") {
+        viewModelScope.launch {
+            val updated = goal.copy(isDailyReminderEnabled = enabled, reminderTimeIso = reminderTimeIso, updatedAtMs = System.currentTimeMillis())
+            accountabilityRepository.saveGoal(updated)
+            val reminderId = "reminder_goal_${goal.id}"
+            if (enabled) {
+                val timeParts = reminderTimeIso.split(":")
+                val rHour = timeParts.getOrNull(0)?.toIntOrNull() ?: 8
+                val rMinute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
+                val reminder = ReminderEntity(
+                    id = reminderId,
+                    userId = goal.userId,
+                    title = "Goal Reminder: ${goal.title}",
+                    message = "Time for your goal target (${goal.targetValue} ${goal.unit})!",
+                    hour = rHour,
+                    minute = rMinute,
+                    isEnabled = true,
+                    domainId = goal.domainId
+                )
+                accountabilityRepository.saveReminder(reminder)
+            } else {
+                accountabilityRepository.deleteReminder(reminderId)
+            }
         }
     }
 
     fun deleteGoal(id: String) {
         viewModelScope.launch {
             accountabilityRepository.deleteGoal(id)
+            accountabilityRepository.deleteReminder("reminder_goal_$id")
         }
     }
 }

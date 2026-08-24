@@ -639,6 +639,18 @@ object FirestoreSyncManager {
         }
     }
 
+    suspend fun deleteProclamationTopic(context: Context, userId: String, topicId: String) = withContext(Dispatchers.IO) {
+        if (userId.isBlank() || userId == "guest_user") return@withContext
+        val firestore = getFirestore(context) ?: return@withContext
+        withTimeoutOrNull(TIMEOUT_MS) {
+            try {
+                firestore.collection("users").document(userId).collection("proclamation_topics").document(topicId).delete().await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to delete proclamation topic from cloud: ${e.message}")
+            }
+        }
+    }
+
     /**
      * Pushes a CustomDomain to Firestore
      */

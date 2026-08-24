@@ -30,13 +30,17 @@ import com.example.domain.models.PredefinedDomains
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.GoalWithProgress
 
+import com.example.ui.components.AppTimePickerDialog
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+
 @Composable
 fun GoalsScreen(
     strings: AppStrings,
     goalsWithProgress: List<GoalWithProgress>,
     selectedFrequency: String,
     onFrequencySelected: (String) -> Unit,
-    onAddGoal: (userId: String, domainId: String, title: String, target: Double, unit: String, freq: String, startDate: String) -> Unit,
+    onAddGoal: (userId: String, domainId: String, title: String, target: Double, unit: String, freq: String, startDate: String, fastingType: String, periodDays: Int, isDailyReminderEnabled: Boolean, reminderTimeIso: String) -> Unit,
     onDeleteGoal: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -160,8 +164,8 @@ fun GoalsScreen(
         AddGoalDialog(
             strings = strings,
             onDismiss = { showAddGoalDialog = false },
-            onConfirm = { domainId, title, target, unit, freq ->
-                onAddGoal("guest_user", domainId, title, target, unit, freq, java.time.LocalDate.now().toString())
+            onConfirm = { domainId, title, target, unit, freq, fastingType, periodDays, isReminder, reminderTime ->
+                onAddGoal("guest_user", domainId, title, target, unit, freq, java.time.LocalDate.now().toString(), fastingType, periodDays, isReminder, reminderTime)
                 showAddGoalDialog = false
             }
         )
@@ -242,12 +246,32 @@ fun GoalCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Text(
-                    text = "${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column {
+                    Text(
+                        text = "${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (goalItem.goal.domainId == "fasting" && goalItem.goal.fastingType.isNotBlank()) {
+                        Text(
+                            text = "Type: ${goalItem.goal.fastingType.lowercase().replaceFirstChar { it.uppercase() }} Fast",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    if (goalItem.goal.isDailyReminderEnabled) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Daily Reminder: ${goalItem.goal.reminderTimeIso}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
 
                 val isAchieved = goalItem.currentProgress >= goalItem.goal.targetValue
                 val statusText = if (isAchieved) "Achieved" else if (goalItem.progressPercentage >= 50) "On Track" else "Needs Focus"
@@ -299,7 +323,7 @@ fun GoalCard(
 fun AddGoalDialog(
     strings: AppStrings,
     onDismiss: () -> Unit,
-    onConfirm: (domainId: String, title: String, target: Double, unit: String, freq: String) -> Unit
+    onConfirm: (domainId: String, title: String, target: Double, unit: String, freq: String, fastingType: String, periodDays: Int, isReminder: Boolean, reminderTime: String) -> Unit
 ) {
     var selectedDomain by remember { mutableStateOf("bible_reading") }
     var selectedAspect by remember { mutableStateOf("Chapters Read") }
@@ -308,21 +332,28 @@ fun AddGoalDialog(
     var selectedUnit by remember { mutableStateOf(strings.unitChapters) }
     var frequency by remember { mutableStateOf("DAILY") }
 
+    // Fasting & Reminder Specifics
+    var fastingType by remember { mutableStateOf("COMPLETE") } // COMPLETE, PARTIAL, WATER_ONLY
+    var periodDaysInput by remember { mutableStateOf("3") }
+    var isDailyReminderEnabled by remember { mutableStateOf(false) }
+    var reminderTimeIso by remember { mutableStateOf("08:00") }
+    var showTimePicker by remember { mutableStateOf(false) }
+
     val allDomains = remember { PredefinedDomains.ALL }
 
     val domainAspects = remember(selectedDomain) {
         when (selectedDomain) {
             "bible_reading" -> listOf("Chapters Read", "Complete Whole Bible", "Gospel Study", "Epistles Study", "Custom")
             "ddewg" -> listOf("Daily Dynamic Encounters (DDEWG)", "Morning Watch Encounters", "Consistent Daily Encounters", "Custom")
-            "prayer_alone" -> listOf("Secret Place Devotion", "Intercession Hours", "Prayer Night Vigils", "15-Min Retreats", "Custom")
+            "prayer_alone" -> listOf("Secret Place Devotion", "Thanksgiving Topics Recorded", "Request Prayer Topics Recorded", "Intercession Hours", "Prayer Night Vigils", "15-Min Retreats", "Custom")
             "prayer_with_others" -> listOf("Corporate Prayer Sessions", "Prayer Siege Hours", "Family Altar Sessions", "Custom")
             "proclamation_importunity" -> listOf("Proclamation Repetitions", "Topic Breakthrough Target", "Custom")
             "retreats" -> listOf("Spiritual Retreat Hours", "Monthly Retreat Days", "Solitude & Silence", "Custom")
             "christian_lit" -> listOf("Pages Read", "Books Completed", "Custom")
             "christian_lit_mem" -> listOf("Pages Memorized", "Quotes Mastered", "Custom")
             "bible_mem" -> listOf("Verses Memorized", "Chapters Memorized", "Custom")
-            "fasting" -> listOf("Fasting Days", "21-Day Consecration", "Partial Fast Days", "Custom")
-            "giving" -> listOf("Giving Percentage (10% Tithe)", "Monthly Giving Amount", "First Fruits Pledge", "Custom")
+            "fasting" -> listOf("Fasting Days in Period", "Monthly 3-Day Fast", "Weekly Fast Routine", "Partial / Daniel Fast", "Custom")
+            "giving" -> listOf("Monthly Giving Amount (XAF)", "Giving Percentage (10% Tithe)", "First Fruits Pledge (XAF)", "Custom")
             "soul_winning" -> listOf("People Preached To", "Converts Won", "Baptisms Target", "Custom")
             else -> listOf("Discipline Practice", "Custom")
         }
@@ -341,8 +372,16 @@ fun AddGoalDialog(
                 frequency = "WEEKLY"
             }
             "prayer_alone", "prayer_with_others" -> {
-                selectedUnit = strings.unitMinutes
-                target = "60"
+                if (selectedAspect.contains("Thanksgiving")) {
+                    selectedUnit = "Thanksgiving Topics"
+                    target = "5"
+                } else if (selectedAspect.contains("Request")) {
+                    selectedUnit = "Request Topics"
+                    target = "5"
+                } else {
+                    selectedUnit = strings.unitMinutes
+                    target = "60"
+                }
             }
             "proclamation_importunity" -> {
                 selectedUnit = strings.proclamationsMade
@@ -363,8 +402,9 @@ fun AddGoalDialog(
                 frequency = "MONTHLY"
             }
             "giving" -> {
-                selectedUnit = strings.unitPercentage
-                target = "10"
+                selectedUnit = "XAF"
+                target = "10000"
+                frequency = "MONTHLY"
             }
             "soul_winning" -> {
                 selectedUnit = strings.unitSouls
@@ -379,6 +419,9 @@ fun AddGoalDialog(
     }
 
     val availableUnits = listOf(
+        "XAF",
+        "Thanksgiving Topics",
+        "Request Topics",
         strings.unitDdewg,
         strings.unitChapters,
         strings.unitPages,
@@ -388,8 +431,7 @@ fun AddGoalDialog(
         strings.unitDays,
         strings.unitSouls,
         strings.unitConverts,
-        strings.unitPercentage,
-        strings.unitAmount
+        strings.unitPercentage
     )
 
     AlertDialog(
@@ -451,6 +493,13 @@ fun AddGoalDialog(
                                     onClick = {
                                         selectedAspect = aspect
                                         aspectExp = false
+                                        if (aspect.contains("Thanksgiving")) {
+                                            selectedUnit = "Thanksgiving Topics"
+                                            target = "5"
+                                        } else if (aspect.contains("Request")) {
+                                            selectedUnit = "Request Topics"
+                                            target = "5"
+                                        }
                                     }
                                 )
                             }
@@ -464,6 +513,22 @@ fun AddGoalDialog(
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
+                    }
+                }
+
+                // Fasting Specific Controls
+                if (selectedDomain == "fasting") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Fasting Type", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("COMPLETE" to "Complete Fast", "PARTIAL" to "Partial / Daniel", "WATER_ONLY" to "Water Only").forEach { (typeKey, typeLabel) ->
+                                FilterChip(
+                                    selected = fastingType == typeKey,
+                                    onClick = { fastingType = typeKey },
+                                    label = { Text(typeLabel, style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -525,6 +590,41 @@ fun AddGoalDialog(
                         }
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                // Daily Reminder Setting
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Enable Daily Reminder", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text("Notification at scheduled time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Switch(
+                        checked = isDailyReminderEnabled,
+                        onCheckedChange = { isDailyReminderEnabled = it }
+                    )
+                }
+
+                if (isDailyReminderEnabled) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Reminder Time:", style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(onClick = { showTimePicker = true }) {
+                            Text(reminderTimeIso, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -536,7 +636,8 @@ fun AddGoalDialog(
                     } else {
                         selectedAspect
                     }
-                    onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency)
+                    val periodDays = periodDaysInput.toIntOrNull() ?: 0
+                    onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency, fastingType, periodDays, isDailyReminderEnabled, reminderTimeIso)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 modifier = Modifier.testTag("confirm_add_goal_button")
@@ -550,4 +651,15 @@ fun AddGoalDialog(
             }
         }
     )
+
+    if (showTimePicker) {
+        AppTimePickerDialog(
+            initialTime = reminderTimeIso,
+            onDismiss = { showTimePicker = false },
+            onTimeSelected = { selectedTime ->
+                reminderTimeIso = selectedTime
+                showTimePicker = false
+            }
+        )
+    }
 }

@@ -249,6 +249,58 @@ class ProclamationViewModel(
         }
     }
 
+    fun updateTopicCount(topic: ProclamationTopicEntity, newCount: Int) {
+        viewModelScope.launch {
+            val updated = topic.copy(
+                cumulativeCount = newCount.coerceAtLeast(0),
+                updatedAtMs = System.currentTimeMillis()
+            )
+            accountabilityRepository.saveProclamationTopic(updated)
+            if (_selectedTopic.value?.id == topic.id) {
+                _selectedTopic.value = updated
+                _counter.value = updated.cumulativeCount
+            }
+        }
+    }
+
+    fun saveManualSession(
+        dateIso: String,
+        topic: String,
+        count: Int,
+        durationMins: Long,
+        notes: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            val finalTopic = topic.ifBlank { "Jesus Christ is Lord" }
+            val durationSecs = durationMins * 60
+
+            val entry = AccountabilityEntryEntity(
+                id = UUID.randomUUID().toString(),
+                userId = user.id,
+                domainId = "proclamation_importunity",
+                dateIso = dateIso.ifBlank { LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) },
+                timestampMs = System.currentTimeMillis(),
+                timezoneId = java.util.TimeZone.getDefault().id,
+                durationSeconds = durationSecs,
+                proclamationTopic = finalTopic,
+                proclamationCount = count.coerceAtLeast(1),
+                proclamationTarget = 100,
+                notes = if (notes.isNotBlank()) "[Manual Log] $notes" else "[Manual Offline Session]",
+                reflection = ""
+            )
+
+            accountabilityRepository.recordProclamationSession(entry)
+            accountabilityRepository.logNotification(
+                context = context,
+                title = "Manual Proclamation Session Logged",
+                message = "Logged $count proclamations for '$finalTopic' on $dateIso ($durationMins min)."
+            )
+            onSuccess()
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()

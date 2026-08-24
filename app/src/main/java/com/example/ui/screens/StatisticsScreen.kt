@@ -39,6 +39,8 @@ fun StatisticsScreen(
     selectedDateEntries: List<AccountabilityEntryEntity> = emptyList(),
     allEntries: List<AccountabilityEntryEntity> = emptyList(),
     selectedTab: Int = 0,
+    selectedTimeRange: String = "ALL_TIME",
+    onTimeRangeSelected: (String) -> Unit = {},
     onTabSelected: (Int) -> Unit = {},
     onSelectDate: (LocalDate) -> Unit = {},
     onNextMonth: () -> Unit = {},
@@ -156,11 +158,75 @@ fun StatisticsScreen(
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     item {
-                        Text(
-                            text = strings.spiritualAnalytics,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = strings.spiritualAnalytics,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            var timeRangeExpanded by remember { mutableStateOf(false) }
+                            val ranges = listOf(
+                                "LAST_7_DAYS" to "Last 7 Days",
+                                "LAST_30_DAYS" to "Last Month",
+                                "LAST_3_MONTHS" to "Last 3 Months",
+                                "LAST_6_MONTHS" to "Last 6 Months",
+                                "LAST_1_YEAR" to "Last Year",
+                                "ALL_TIME" to "All Time"
+                            )
+                            val currentLabel = ranges.find { it.first == selectedTimeRange }?.second ?: "All Time"
+
+                            Box {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.clickable { timeRangeExpanded = true }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = currentLabel,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Filter time range",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                DropdownMenu(
+                                    expanded = timeRangeExpanded,
+                                    onDismissRequest = { timeRangeExpanded = false }
+                                ) {
+                                    ranges.forEach { (key, label) ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = label,
+                                                    fontWeight = if (key == selectedTimeRange) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                            },
+                                            onClick = {
+                                                onTimeRangeSelected(key)
+                                                timeRangeExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // Feature: Total Time Spent with God Today & Key Spiritual Metrics

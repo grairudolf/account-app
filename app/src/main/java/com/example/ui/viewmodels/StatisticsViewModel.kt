@@ -47,8 +47,11 @@ class StatisticsViewModel(
     private val _currentMonth = MutableStateFlow(YearMonth.now())
     val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
-    private val _selectedTab = MutableStateFlow(1)
+    private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
+
+    private val _selectedTimeRange = MutableStateFlow("ALL_TIME")
+    val selectedTimeRange: StateFlow<String> = _selectedTimeRange.asStateFlow()
 
     val allEntries: StateFlow<List<AccountabilityEntryEntity>> = accountabilityRepository.allEntriesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -86,17 +89,36 @@ class StatisticsViewModel(
         entries.filter { it.dateIso == iso }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val uiState: StateFlow<OverallStatisticsUiState> = accountabilityRepository.allEntriesFlow.map { entries ->
-        val streak = accountabilityRepository.calculateStreakStats(entries)
+    val uiState: StateFlow<OverallStatisticsUiState> = combine(
+        accountabilityRepository.allEntriesFlow,
+        _selectedTimeRange
+    ) { rawEntries, timeRange ->
+        val today = LocalDate.now()
+        val cutoffDate: LocalDate? = when (timeRange) {
+            "LAST_7_DAYS" -> today.minusDays(7)
+            "LAST_30_DAYS", "LAST_MONTH" -> today.minusDays(30)
+            "LAST_3_MONTHS" -> today.minusMonths(3)
+            "LAST_6_MONTHS" -> today.minusMonths(6)
+            "LAST_1_YEAR" -> today.minusYears(1)
+            else -> null
+        }
+
+        val entries = if (cutoffDate != null) {
+            val cutoffIso = cutoffDate.toString()
+            rawEntries.filter { it.dateIso >= cutoffIso }
+        } else {
+            rawEntries
+        }
+
+        val streak = accountabilityRepository.calculateStreakStats(rawEntries) // streak uses raw entries
         val bible = accountabilityRepository.calculateBibleStats(entries)
         val soul = accountabilityRepository.calculateSoulWinningStats(entries)
 
         val totalPrayerSecs = entries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }.sumOf { it.durationSeconds }
         val totalFasting = entries.filter { it.domainId == "fasting" }.sumOf { it.fastingDaysCount }
 
-        val today = LocalDate.now()
         val todayIso = today.toString()
-        val todayEntries = entries.filter { it.dateIso == todayIso }
+        val todayEntries = rawEntries.filter { it.dateIso == todayIso }
 
         val communionDomains = listOf("ddewg", "prayer_alone", "prayer_with_others", "bible_reading", "christian_lit", "christian_lit_mem", "bible_mem", "proclamation_importunity", "retreats")
         val todayTimeWithGod = todayEntries.filter { it.domainId in communionDomains }.sumOf { it.durationSeconds }
@@ -119,7 +141,7 @@ class StatisticsViewModel(
 
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val weekDays = (0..6).map { monday.plusDays(it.toLong()) }
-        val entriesByDate = entries.groupBy { it.dateIso }
+        val entriesByDate = rawEntries.groupBy { it.dateIso }
 
         val weekly = weekDays.map { date ->
             val dateStr = date.toString()
@@ -149,6 +171,10 @@ class StatisticsViewModel(
             totalBertouaPrayers = totalBertoua
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OverallStatisticsUiState())
+
+    fun setTimeRange(rangeKey: String) {
+        _selectedTimeRange.value = rangeKey
+    }
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date

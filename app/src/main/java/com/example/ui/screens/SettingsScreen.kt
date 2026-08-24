@@ -33,6 +33,7 @@ import com.example.data.local.entities.UserEntity
 import com.example.ui.components.PrivacyPolicyDialog
 import com.example.ui.components.SupportFeedbackDialog
 import com.example.ui.components.TermsAndConditionsDialog
+import com.example.ui.components.AppDatePickerDialog
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -1234,6 +1235,7 @@ fun EditProfileDialog(
     var maker by remember { mutableStateOf(user?.discipleMaker ?: "") }
     var phone by remember { mutableStateOf(user?.phoneNumber ?: "") }
     var convDate by remember { mutableStateOf(user?.conversionDate ?: "") }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1277,11 +1279,20 @@ fun EditProfileDialog(
                 )
                 OutlinedTextField(
                     value = convDate,
-                    onValueChange = { convDate = it },
+                    onValueChange = {},
+                    readOnly = true,
                     label = { Text(strings.conversionDate) },
-                    placeholder = { Text("YYYY-MM-DD (e.g. 2021-04-15)") },
+                    placeholder = { Text("Select Date") },
                     leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_conversion_date_input"),
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
+                        .testTag("edit_profile_conversion_date_input"),
                     singleLine = true
                 )
                 OutlinedTextField(
@@ -1312,6 +1323,17 @@ fun EditProfileDialog(
         },
         shape = RoundedCornerShape(28.dp)
     )
+
+    if (showDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = convDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { selectedDate ->
+                convDate = selectedDate
+                showDatePicker = false
+            }
+        )
+    }
 }
 
 @Composable

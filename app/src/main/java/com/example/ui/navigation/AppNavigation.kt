@@ -382,8 +382,8 @@ fun MainApp() {
                                     goalsWithProgress = goalsWithProgress,
                                     selectedFrequency = selectedGoalFreq,
                                     onFrequencySelected = { goalsViewModel.onFrequencySelected(it) },
-                                    onAddGoal = { uId, dId, title, target, unit, freq, startDate ->
-                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate)
+                                    onAddGoal = { uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime ->
+                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime)
                                     },
                                     onDeleteGoal = { goalsViewModel.deleteGoal(it) }
                                 )
@@ -396,6 +396,7 @@ fun MainApp() {
                                 val selectedDateEntries by statisticsViewModel.selectedDateEntries.collectAsStateWithLifecycle()
                                 val allEntries by statisticsViewModel.allEntries.collectAsStateWithLifecycle()
                                 val selectedTab by statisticsViewModel.selectedTab.collectAsStateWithLifecycle()
+                                val selectedTimeRange by statisticsViewModel.selectedTimeRange.collectAsStateWithLifecycle()
 
                                 StatisticsScreen(
                                     strings = strings,
@@ -406,6 +407,8 @@ fun MainApp() {
                                     selectedDateEntries = selectedDateEntries,
                                     allEntries = allEntries,
                                     selectedTab = selectedTab,
+                                    selectedTimeRange = selectedTimeRange,
+                                    onTimeRangeSelected = { statisticsViewModel.setTimeRange(it) },
                                     onTabSelected = { statisticsViewModel.setSelectedTab(it) },
                                     onSelectDate = { statisticsViewModel.selectDate(it) },
                                     onNextMonth = { statisticsViewModel.nextMonth() },

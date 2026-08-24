@@ -15,6 +15,10 @@ data class GoalEntity(
     val startDateIso: String,
     val endDateIso: String = "",
     val isPaused: Boolean = false,
+    val fastingType: String = "COMPLETE", // "COMPLETE", "PARTIAL", "WATER_ONLY"
+    val periodDays: Int = 0, // e.g., 3 days fast in a 30-day period
+    val isDailyReminderEnabled: Boolean = false,
+    val reminderTimeIso: String = "08:00",
     val createdAtMs: Long = System.currentTimeMillis(),
     val updatedAtMs: Long = System.currentTimeMillis()
 )

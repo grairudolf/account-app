@@ -112,6 +112,9 @@ class AccountabilityRepository(
 
     suspend fun deleteProclamationTopic(topic: ProclamationTopicEntity) {
         proclamationTopicDao.deleteTopic(topic)
+        if (context != null && topic.userId.isNotBlank() && topic.userId != "guest_user") {
+            FirestoreSyncManager.deleteProclamationTopic(context, topic.userId, topic.id)
+        }
     }
 
     suspend fun recordProclamationSession(entry: AccountabilityEntryEntity) {
@@ -434,9 +437,18 @@ class AccountabilityRepository(
                 }
             }
             "prayer_alone", "prayer_with_others" -> {
-                if (u.contains("hour") || u.contains("heure")) {
+                val tTitle = goal.title.lowercase()
+                if (u.contains("thanksgiving") || u.contains("remerciement") || tTitle.contains("thanksgiving") || tTitle.contains("action de grâce")) {
+                    relevantEntries.filter { it.prayerType.contains("Thanksgiving", ignoreCase = true) || it.notes.contains("thanksgiving", ignoreCase = true) }
+                        .sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
+                } else if (u.contains("request") || u.contains("requête") || tTitle.contains("request") || tTitle.contains("requête")) {
+                    relevantEntries.filter { it.prayerType.contains("Request", ignoreCase = true) || it.notes.contains("request", ignoreCase = true) }
+                        .sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
+                } else if (u.contains("topic") || u.contains("sujet")) {
+                    relevantEntries.sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
+                } else if (u.contains("hour") || u.contains("heure")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
-                } else if (u.contains("session") || u.contains("time") || u.contains("fois") || u.contains("topic") || u.contains("sujet")) {
+                } else if (u.contains("session") || u.contains("time") || u.contains("fois")) {
                     relevantEntries.size.toDouble()
                 } else {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
@@ -463,10 +475,15 @@ class AccountabilityRepository(
                 }
             }
             "fasting" -> {
+                val filteredFastingEntries = when (goal.fastingType.uppercase()) {
+                    "PARTIAL" -> relevantEntries.filter { it.fastingType.contains("Partial", ignoreCase = true) || it.notes.contains("partial", ignoreCase = true) }
+                    "COMPLETE" -> relevantEntries.filter { it.fastingType.isBlank() || it.fastingType.contains("Complete", ignoreCase = true) || !it.fastingType.contains("Partial", ignoreCase = true) }
+                    else -> relevantEntries
+                }
                 if (u.contains("hour") || u.contains("heure")) {
-                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
+                    filteredFastingEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
                 } else {
-                    relevantEntries.sumOf { it.fastingDaysCount.coerceAtLeast(1) }.toDouble()
+                    filteredFastingEntries.sumOf { it.fastingDaysCount.coerceAtLeast(1) }.toDouble()
                 }
             }
             "soul_winning" -> {

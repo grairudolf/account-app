@@ -43,6 +43,10 @@ import com.example.core.localization.EnglishStrings
 import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.ProclamationTopicEntity
+import com.example.ui.components.AppDatePickerDialog
+import androidx.compose.material3.ripple
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.ProclamationViewModel
 
@@ -423,72 +427,118 @@ fun ProclamationScreen(
                             }
                         }
 
-                        // Circular / Glow Counter Visualizer
+                        // Giant Circular Tap-to-Proclaim Button & Counter Visualizer
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isPressed by interactionSource.collectIsPressedAsState()
+                        val scale by animateFloatAsState(
+                            targetValue = if (isPressed) 0.94f else 1f,
+                            animationSpec = tween(durationMillis = 100),
+                            label = "button_scale"
+                        )
+
                         Box(
-                            modifier = Modifier
-                                .size(190.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                        )
-                                    )
-                                )
-                                .border(
-                                    width = 3.dp,
-                                    brush = Brush.sweepGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            AccentPurple,
-                                            BrandSlateBlue,
-                                            MaterialTheme.colorScheme.primary
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                )
-                                .clickable {
-                                    HapticHelper.vibrateClick(context)
-                                    showEditCounterDialog = true
-                                }
-                                .testTag("proclamation_counter_display"),
+                            modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                tonalElevation = 8.dp,
+                                shadowElevation = 12.dp,
+                                modifier = Modifier
+                                    .size(220.dp)
+                                    .scale(scale)
+                                    .clip(CircleShape)
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = ripple(bounded = true)
+                                    ) {
+                                        val nextCount = counter + 1
+                                        if (nextCount == targetCount || (nextCount > 0 && nextCount % 50 == 0)) {
+                                            HapticHelper.vibrateMilestone(context)
+                                        } else {
+                                            HapticHelper.vibrateProclamationTap(context)
+                                        }
+                                        viewModel.incrementCounter(1)
+                                    }
+                                    .testTag("tap_to_proclaim_button")
                             ) {
-                                Text(
-                                    text = counter.toString(),
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontSize = 54.sp,
-                                        fontWeight = FontWeight.Black
-                                    ),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "Target: $targetCount",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(top = 4.dp)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Edit count",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = strings.edit,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = topicText.ifBlank { "Proclamation Topic" },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(horizontal = 8.dp)
                                     )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Text(
+                                        text = counter.toString(),
+                                        style = MaterialTheme.typography.displayMedium.copy(
+                                            fontSize = 58.sp,
+                                            fontWeight = FontWeight.Black
+                                        ),
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AddCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = strings.tapToProclaim,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+                                    }
                                 }
+                            }
+
+                            // Quick Edit Counter Badge
+                            IconButton(
+                                onClick = {
+                                    HapticHelper.vibrateClick(context)
+                                    showEditCounterDialog = true
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(end = 16.dp)
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit count",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
 
@@ -523,54 +573,6 @@ fun ProclamationScreen(
                                     .clip(RoundedCornerShape(4.dp)),
                                 color = if (progress >= 1f) StatusSuccess else MaterialTheme.colorScheme.primary,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        }
-
-                        // Main Big Proclaim Button
-                        val interactionSource = remember { MutableInteractionSource() }
-                        val isPressed by interactionSource.collectIsPressedAsState()
-                        val scale by animateFloatAsState(
-                            targetValue = if (isPressed) 0.94f else 1f,
-                            animationSpec = tween(durationMillis = 100),
-                            label = "button_scale"
-                        )
-
-                        Button(
-                            onClick = {
-                                val nextCount = counter + 1
-                                if (nextCount == targetCount || (nextCount > 0 && nextCount % 50 == 0)) {
-                                    HapticHelper.vibrateMilestone(context)
-                                } else {
-                                    HapticHelper.vibrateProclamationTap(context)
-                                }
-                                viewModel.incrementCounter(1)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(64.dp)
-                                .scale(scale)
-                                .testTag("tap_to_proclaim_button"),
-                            shape = RoundedCornerShape(16.dp),
-                            interactionSource = interactionSource,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 4.dp,
-                                pressedElevation = 8.dp
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = strings.tapToProclaim,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
                             )
                         }
 
@@ -707,26 +709,61 @@ fun ProclamationScreen(
                 }
             }
 
-            // 5. Topics History & Lifetime Stats
-            if (topics.isNotEmpty()) {
-                item {
+            // 5. Topics History & Lifetime Stats with Plus Icon to add topic
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = strings.savedPrayerTopicsAndProgress,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontWeight = FontWeight.Bold
                     )
-                }
 
+                    IconButton(
+                        onClick = {
+                            viewModel.setTopicText("")
+                            focusManager.clearFocus()
+                        },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add new prayer topic",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
+            if (topics.isNotEmpty()) {
                 items(topics) { topicItem ->
                     TopicHistoryCard(
                         topic = topicItem,
                         strings = strings,
                         onResume = { viewModel.resumeTopicSession(topicItem) },
                         onStartFresh = { viewModel.startNewSessionForTopic(topicItem) },
+                        onEditCount = { newCount -> viewModel.updateTopicCount(topicItem, newCount) },
                         onDelete = { viewModel.deleteTopic(topicItem) }
                     )
                 }
+            }
+
+            // 6. Manual / Offline Session Recording (At the very bottom)
+            item {
+                ManualProclamationCard(
+                    initialTopic = topicText,
+                    onSaveManual = { date, topic, count, dur, notes, onSuccess ->
+                        viewModel.saveManualSession(date, topic, count, dur, notes, onSuccess)
+                    }
+                )
             }
         }
     }
@@ -926,8 +963,13 @@ private fun TopicHistoryCard(
     strings: AppStrings,
     onResume: () -> Unit,
     onStartFresh: () -> Unit,
+    onEditCount: (Int) -> Unit,
     onDelete: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editVal by remember { mutableStateOf(topic.cumulativeCount.toString()) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -943,63 +985,113 @@ private fun TopicHistoryCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = topic.topic,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape)
+                            .clickable { showEditDialog = true },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
+                        Text(
+                            text = "${topic.cumulativeCount}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = topic.topic,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${topic.cumulativeCount} ${strings.proclamationTitle}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                        Text(
-                            text = "${topic.totalDurationSeconds / 60}m",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (topic.lastPracticedIso.isNotBlank()) {
-                            Text(
-                                text = "${if (strings is FrenchStrings) "Dernier: " else "Last: "}${topic.lastPracticedIso}",
+                                text = "${topic.totalDurationSeconds / 60} min total",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if (topic.lastPracticedIso.isNotBlank()) {
+                                Text(
+                                    text = "• ${topic.lastPracticedIso}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
 
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = strings.delete,
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Topic options",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit Number / Count") },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                showEditDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue Session") },
+                            leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onResume()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (strings is FrenchStrings) "Nouvelle Session (+0)" else "Start Fresh (+0)") },
+                            leadingIcon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onStartFresh()
+                            }
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
                 }
             }
 
-            // Action Buttons Row: Resume from last count vs Fresh Session
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1022,7 +1114,7 @@ private fun TopicHistoryCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue from ${topic.cumulativeCount}",
+                        text = if (strings is FrenchStrings) "Proclamer (${topic.cumulativeCount})" else "Proclaim (${topic.cumulativeCount})",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1045,6 +1137,200 @@ private fun TopicHistoryCard(
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
+            }
+        }
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Topic Number / Count", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Set cumulative proclamations for '${topic.topic}':",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = editVal,
+                        onValueChange = { editVal = it.filter { c -> c.isDigit() } },
+                        label = { Text("Cumulative Count") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val count = editVal.toIntOrNull() ?: topic.cumulativeCount
+                    onEditCount(count)
+                    showEditDialog = false
+                }) {
+                    Text(strings.save)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ManualProclamationCard(
+    initialTopic: String,
+    onSaveManual: (dateIso: String, topic: String, count: Int, durationMins: Long, notes: String, onSuccess: () -> Unit) -> Unit
+) {
+    val context = LocalContext.current
+    var manualDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var showManualDatePicker by remember { mutableStateOf(false) }
+    var manualTopic by remember { mutableStateOf(initialTopic) }
+    var manualCountStr by remember { mutableStateOf("100") }
+    var manualDurationStr by remember { mutableStateOf("15") }
+    var manualNotes by remember { mutableStateOf("") }
+    var isSavingManual by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.EditCalendar,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Record Manual Offline Session",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Text(
+                text = "If you proclaimed or prayed away from your phone, record your past session manually here:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Date Selector
+            OutlinedTextField(
+                value = manualDateIso,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Session Date") },
+                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showManualDatePicker = true }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showManualDatePicker = true },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+
+            // Manual Topic
+            OutlinedTextField(
+                value = manualTopic,
+                onValueChange = { manualTopic = it },
+                label = { Text("Prayer Topic / Proclamation") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = manualCountStr,
+                    onValueChange = { manualCountStr = it.filter { c -> c.isDigit() } },
+                    label = { Text("Proclamations") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = manualDurationStr,
+                    onValueChange = { manualDurationStr = it.filter { c -> c.isDigit() } },
+                    label = { Text("Duration (mins)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+            }
+
+            OutlinedTextField(
+                value = manualNotes,
+                onValueChange = { manualNotes = it },
+                label = { Text("Notes / Impressions (Optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                maxLines = 2
+            )
+
+            Button(
+                onClick = {
+                    isSavingManual = true
+                    val count = manualCountStr.toIntOrNull() ?: 100
+                    val dur = manualDurationStr.toLongOrNull() ?: 15L
+                    onSaveManual(
+                        manualDateIso,
+                        manualTopic,
+                        count,
+                        dur,
+                        manualNotes
+                    ) {
+                        isSavingManual = false
+                        manualNotes = ""
+                        HapticHelper.vibrateSuccess(context)
+                    }
+                },
+                enabled = !isSavingManual && manualTopic.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Log Manual Session", fontWeight = FontWeight.Bold)
+            }
+
+            if (showManualDatePicker) {
+                AppDatePickerDialog(
+                    initialDateIso = manualDateIso,
+                    onDismiss = { showManualDatePicker = false },
+                    onDateSelected = { selDate ->
+                        manualDateIso = selDate
+                        showManualDatePicker = false
+                    }
+                )
             }
         }
     }

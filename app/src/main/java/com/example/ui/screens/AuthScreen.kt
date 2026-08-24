@@ -46,6 +46,8 @@ import com.example.ui.theme.*
 import com.example.services.auth.FirebaseAuthHelper
 import kotlinx.coroutines.launch
 
+import com.example.ui.components.AppDatePickerDialog
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
@@ -61,6 +63,8 @@ fun AuthScreen(
     var isSignUpMode by remember { mutableStateOf(false) }
     var nameInput by remember { mutableStateOf("") }
     var assemblyInput by remember { mutableStateOf("") }
+    var conversionDateInput by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var confirmPasswordInput by remember { mutableStateOf("") }
@@ -337,6 +341,26 @@ fun AuthScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                        )
+
+                        OutlinedTextField(
+                            value = conversionDateInput,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Date of Conversion (Optional)") },
+                            placeholder = { Text("Select Date") },
+                            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                            trailingIcon = {
+                                IconButton(onClick = { showDatePicker = true }) {
+                                    Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showDatePicker = true }
+                                .testTag("auth_conversion_date_input"),
+                            shape = RoundedCornerShape(14.dp),
+                            singleLine = true
                         )
                     }
 
@@ -745,6 +769,17 @@ fun AuthScreen(
                 }
             },
             shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    if (showDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = conversionDateInput,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { selectedDate ->
+                conversionDateInput = selectedDate
+                showDatePicker = false
+            }
         )
     }
 }
