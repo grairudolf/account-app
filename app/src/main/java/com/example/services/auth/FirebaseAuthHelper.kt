@@ -50,7 +50,7 @@ object FirebaseAuthHelper {
     }
 
     /**
-     * Creates a new user with Email and Password in Firebase Auth.
+     * Creates a new user with Email and Password in Firebase Auth and sends a verification email.
      */
     suspend fun signUpWithEmail(
         email: String,
@@ -72,9 +72,44 @@ object FirebaseAuthHelper {
                     Log.w(TAG, "Failed to update user profile display name: ${e.message}")
                 }
             }
+
+            // Automatically send email verification link/code
+            try {
+                user.sendEmailVerification().await()
+                Log.i(TAG, "Email verification sent to ${user.email}")
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not send verification email immediately: ${e.message}")
+            }
+
             Result.success(user)
         } catch (e: Exception) {
             Log.e(TAG, "Sign up error", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sends email verification to the provided user.
+     */
+    suspend fun sendEmailVerification(user: FirebaseUser): Result<Unit> {
+        return try {
+            user.sendEmailVerification().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send email verification", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Reloads the FirebaseUser state and checks if the email is verified.
+     */
+    suspend fun checkEmailVerified(user: FirebaseUser): Result<Boolean> {
+        return try {
+            user.reload().await()
+            Result.success(user.isEmailVerified)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to reload user state", e)
             Result.failure(e)
         }
     }

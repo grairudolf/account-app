@@ -77,6 +77,11 @@ fun AuthScreen(
     var isSubmitting by remember { mutableStateOf(false) }
     var isGoogleSubmitting by remember { mutableStateOf(false) }
 
+    var showEmailVerificationDialog by remember { mutableStateOf(false) }
+    var pendingVerificationUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
+    var pendingAssemblyInput by remember { mutableStateOf("") }
+    var isCheckingVerification by remember { mutableStateOf(false) }
+
     fun validateAndSubmit() {
         errorMessage = null
         val cleanEmail = emailInput.trim()
@@ -115,8 +120,14 @@ fun AuthScreen(
                     isSubmitting = false
                     result.fold(
                         onSuccess = { user ->
-                            Toast.makeText(context, "Account created successfully! Welcome, ${user.displayName ?: cleanName}.", Toast.LENGTH_SHORT).show()
-                            onSignInWithAccount(user.uid, user.displayName ?: cleanName, user.email ?: cleanEmail, user.photoUrl?.toString(), cleanAssembly)
+                            if (user.isEmailVerified) {
+                                Toast.makeText(context, "Account created successfully! Welcome, ${user.displayName ?: cleanName}.", Toast.LENGTH_SHORT).show()
+                                onSignInWithAccount(user.uid, user.displayName ?: cleanName, user.email ?: cleanEmail, user.photoUrl?.toString(), cleanAssembly)
+                            } else {
+                                pendingVerificationUser = user
+                                pendingAssemblyInput = cleanAssembly
+                                showEmailVerificationDialog = true
+                            }
                         },
                         onFailure = { err ->
                             errorMessage = err.localizedMessage ?: "Account creation failed. Please check your credentials and internet connection."
@@ -140,8 +151,14 @@ fun AuthScreen(
                     result.fold(
                         onSuccess = { user ->
                             val displayName = user.displayName ?: cleanEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
-                            Toast.makeText(context, "Signed in as $displayName", Toast.LENGTH_SHORT).show()
-                            onSignInWithAccount(user.uid, displayName, user.email ?: cleanEmail, user.photoUrl?.toString(), "")
+                            if (user.isEmailVerified) {
+                                Toast.makeText(context, "Signed in as $displayName", Toast.LENGTH_SHORT).show()
+                                onSignInWithAccount(user.uid, displayName, user.email ?: cleanEmail, user.photoUrl?.toString(), "")
+                            } else {
+                                pendingVerificationUser = user
+                                pendingAssemblyInput = ""
+                                showEmailVerificationDialog = true
+                            }
                         },
                         onFailure = { err ->
                             errorMessage = err.localizedMessage ?: "Invalid email or password. Please verify your details."
@@ -780,6 +797,106 @@ fun AuthScreen(
                 conversionDateInput = selectedDate
                 showDatePicker = false
             }
+        )
+    }
+
+    if (showEmailVerificationDialog && pendingVerificationUser != null) {
+        val pUser = pendingVerificationUser!!
+        val pEmail = pUser.email ?: emailInput
+
+        AlertDialog(
+            onDismissRequest = { showEmailVerificationDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.MarkEmailRead, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("Verify Email Address", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "For enhanced security, a verification link has been sent to:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = pEmail,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                    Text(
+                        "Please check your inbox or spam folder and click the link to verify your account.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isCheckingVerification = true
+                        coroutineScope.launch {
+                            val res = FirebaseAuthHelper.checkEmailVerified(pUser)
+                            isCheckingVerification = false
+                            res.fold(
+                                onSuccess = { verified ->
+                                    if (verified) {
+                                        showEmailVerificationDialog = false
+                                        val displayName = pUser.displayName ?: pEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
+                                        Toast.makeText(context, "Email verified successfully! Welcome $displayName", Toast.LENGTH_SHORT).show()
+                                        onSignInWithAccount(pUser.uid, displayName, pEmail, pUser.photoUrl?.toString(), pendingAssemblyInput)
+                                    } else {
+                                        Toast.makeText(context, "Email not verified yet. Please check your inbox or click 'Resend Email'.", Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                onFailure = { err ->
+                                    Toast.makeText(context, "Error checking verification status: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    },
+                    enabled = !isCheckingVerification,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    if (isCheckingVerification) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    } else {
+                        Text("I Have Verified My Email")
+                    }
+                }
+            },
+            dismissButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val res = FirebaseAuthHelper.sendEmailVerification(pUser)
+                                res.fold(
+                                    onSuccess = {
+                                        Toast.makeText(context, "Verification email resent to $pEmail!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFailure = { err ->
+                                        Toast.makeText(context, "Failed to resend: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+                    ) {
+                        Text("Resend Verification Email")
+                    }
+                    TextButton(onClick = { showEmailVerificationDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
