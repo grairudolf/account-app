@@ -751,6 +751,8 @@ fun EntryLogCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // Domain-Specific Log Details
                 if (entry.domainId == "fasting") {
                     val days = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
                     Text(
@@ -762,12 +764,68 @@ fun EntryLogCard(
                 } else if (entry.domainId == "giving") {
                     val gType = if (entry.givingType.isNotBlank()) " (${entry.givingType})" else ""
                     Text(
-                        text = "${strings.givingTitle}: $${entry.givingAmount}$gType",
+                        text = "${strings.givingTitle}: XAF ${entry.givingAmount}$gType",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
                     )
-                } else {
+                } else if (entry.domainId in listOf("christian_lit", "christian_lit_reading", "christian_lit_mem", "christian_lit_memory") || entry.bookTitle.isNotBlank()) {
+                    if (entry.bookTitle.isNotBlank()) {
+                        Text(
+                            text = "${strings.bookTitle}: ${entry.bookTitle}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (entry.bookAuthor.isNotBlank()) {
+                        Text(
+                            text = "${strings.author}: ${entry.bookAuthor}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    val pCount = if (entry.pagesRead > 0) entry.pagesRead else (entry.endPage - entry.startPage + 1).coerceAtLeast(1)
+                    Text(
+                        text = "Pages: ${entry.startPage} - ${entry.endPage} ($pCount pages)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    if (entry.isBookCompleted) {
+                        Text(
+                            text = "[Completed]",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = StreakGold
+                        )
+                    }
+                } else if (entry.domainId == "bible_reading" || entry.bibleBook.isNotBlank()) {
+                    if (entry.bibleBook.isNotBlank()) {
+                        Text(
+                            text = "Bible: ${entry.bibleBook}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (entry.chaptersCount > 0) {
+                        Text(
+                            text = "${strings.chaptersReadLabel}: ${entry.chaptersCount}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                } else if (entry.domainId in listOf("bible_mem", "bible_memory") || entry.bibleMemBook.isNotBlank()) {
+                    Text(
+                        text = "Memory: ${entry.bibleMemBook} Ch ${entry.bibleMemChapter} (${entry.bibleMemVerse})",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Time span & Duration
+                if (entry.domainId != "fasting" && entry.domainId != "giving") {
                     val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) {
                         "${entry.startTimeIso} - ${entry.endTimeIso}"
                     } else if (entry.timestampMs > 0 && entry.durationSeconds > 0) {
@@ -794,6 +852,7 @@ fun EntryLogCard(
                         color = MaterialTheme.colorScheme.secondary
                     )
                 }
+
                 if (entry.prayerType.isNotBlank()) {
                     val topicsStr = if (entry.prayerTopicsCount > 0) " (" + String.format(strings.topicsCountFormat, entry.prayerTopicsCount) + ")" else ""
                     Text(
@@ -835,17 +894,99 @@ fun EditEntryDialog(
     var givingAmt by remember { mutableStateOf(entry.givingAmount.toString()) }
     var givingType by remember { mutableStateOf(entry.givingType) }
 
+    // Christian Literature
+    var bookTitle by remember { mutableStateOf(entry.bookTitle) }
+    var bookAuthor by remember { mutableStateOf(entry.bookAuthor) }
+    var startPage by remember { mutableStateOf(entry.startPage.toString()) }
+    var endPage by remember { mutableStateOf(entry.endPage.toString()) }
+    var isBookCompleted by remember { mutableStateOf(entry.isBookCompleted) }
+
+    // Bible Reading & Memory
+    var bibleBook by remember { mutableStateOf(entry.bibleBook) }
+    var bibleMemBook by remember { mutableStateOf(entry.bibleMemBook) }
+    var bibleMemChapter by remember { mutableStateOf(entry.bibleMemChapter.toString()) }
+    var bibleMemVerse by remember { mutableStateOf(entry.bibleMemVerse) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(strings.editPastRecord) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text(strings.activityNotesPrompt) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (entry.domainId in listOf("christian_lit", "christian_lit_reading", "christian_lit_mem", "christian_lit_memory") || entry.bookTitle.isNotBlank()) {
+                    OutlinedTextField(
+                        value = bookTitle,
+                        onValueChange = { bookTitle = it },
+                        label = { Text(strings.bookTitle) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = bookAuthor,
+                        onValueChange = { bookAuthor = it },
+                        label = { Text(strings.author) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            value = startPage,
+                            onValueChange = { startPage = it },
+                            label = { Text(strings.startPageLabel) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = endPage,
+                            onValueChange = { endPage = it },
+                            label = { Text(strings.endPageLabel) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Mark Book as Completed", style = MaterialTheme.typography.bodyMedium)
+                        Switch(checked = isBookCompleted, onCheckedChange = { isBookCompleted = it })
+                    }
+                }
+
+                if (entry.domainId == "bible_reading") {
+                    OutlinedTextField(
+                        value = bibleBook,
+                        onValueChange = { bibleBook = it },
+                        label = { Text(strings.selectBibleBook) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = chapters,
+                        onValueChange = { chapters = it },
+                        label = { Text(strings.chaptersReadLabel) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (entry.domainId in listOf("bible_mem", "bible_memory")) {
+                    OutlinedTextField(
+                        value = bibleMemBook,
+                        onValueChange = { bibleMemBook = it },
+                        label = { Text(strings.selectBibleBook) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            value = bibleMemChapter,
+                            onValueChange = { bibleMemChapter = it },
+                            label = { Text(strings.startChapter) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = bibleMemVerse,
+                            onValueChange = { bibleMemVerse = it },
+                            label = { Text(strings.versesPrompt) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
                 if (entry.domainId == "giving") {
                     OutlinedTextField(
                         value = givingAmt,
@@ -859,13 +1000,9 @@ fun EditEntryDialog(
                         label = { Text(strings.givingTypePlaceholder) },
                         modifier = Modifier.fillMaxWidth()
                     )
-                } else if (entry.domainId != "fasting") {
-                    OutlinedTextField(
-                        value = chapters,
-                        onValueChange = { chapters = it },
-                        label = { Text(strings.chaptersReadLabel) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                }
+
+                if (entry.domainId != "giving" && entry.domainId != "fasting") {
                     OutlinedTextField(
                         value = prayerMins,
                         onValueChange = { prayerMins = it },
@@ -873,12 +1010,33 @@ fun EditEntryDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(strings.activityNotesPrompt) },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
+                val sPg = startPage.toIntOrNull() ?: entry.startPage
+                val ePg = endPage.toIntOrNull() ?: entry.endPage
+                val pRead = (ePg - sPg + 1).coerceAtLeast(1)
+
                 val updated = entry.copy(
                     notes = notes,
+                    bookTitle = bookTitle,
+                    bookAuthor = bookAuthor,
+                    startPage = sPg,
+                    endPage = ePg,
+                    pagesRead = pRead,
+                    isBookCompleted = isBookCompleted,
+                    bibleBook = bibleBook,
+                    bibleMemBook = bibleMemBook,
+                    bibleMemChapter = bibleMemChapter.toIntOrNull() ?: entry.bibleMemChapter,
+                    bibleMemVerse = bibleMemVerse,
                     chaptersCount = chapters.toIntOrNull() ?: entry.chaptersCount,
                     durationSeconds = if (entry.domainId == "giving" || entry.domainId == "fasting") 0L else ((prayerMins.toLongOrNull() ?: (entry.durationSeconds / 60)) * 60),
                     givingAmount = givingAmt.toDoubleOrNull() ?: entry.givingAmount,

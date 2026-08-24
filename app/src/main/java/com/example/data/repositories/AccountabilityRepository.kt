@@ -201,9 +201,12 @@ class AccountabilityRepository(
     }
 
     suspend fun deleteEntry(id: String, userId: String = "") {
+        val resolvedUserId = if (userId.isNotBlank()) userId else {
+            entryDao.getEntryById(id)?.userId ?: ""
+        }
         entryDao.deleteEntryById(id)
-        if (context != null && userId.isNotBlank() && userId != "guest_user") {
-            FirestoreSyncManager.deleteEntry(context, userId, id)
+        if (context != null && resolvedUserId.isNotBlank() && resolvedUserId != "guest_user") {
+            FirestoreSyncManager.deleteEntry(context, resolvedUserId, id)
         }
     }
 

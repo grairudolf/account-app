@@ -266,6 +266,7 @@ fun TimerScreen(
                                 Button(
                                     onClick = {
                                         HapticHelper.vibrateSuccess(context)
+                                        onPauseTimer()
                                         showSaveDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -304,6 +305,7 @@ fun TimerScreen(
                                 Button(
                                     onClick = {
                                         HapticHelper.vibrateSuccess(context)
+                                        onPauseTimer()
                                         showSaveDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(

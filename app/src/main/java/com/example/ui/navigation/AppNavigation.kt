@@ -463,11 +463,13 @@ fun MainApp() {
                     } else {
                         val entryViewModel: EntryViewModel = viewModel(factory = factory)
                         val disciplesList by entryViewModel.disciples.collectAsStateWithLifecycle()
+                        val allEntriesList by entryViewModel.allEntries.collectAsStateWithLifecycle()
                         DomainDetailScreen(
                             domainId = domainId,
                             strings = strings,
                             userId = currentUserState.id,
                             disciples = disciplesList,
+                            allEntries = allEntriesList,
                             onSaveDisciple = { entryViewModel.saveDisciple(it) },
                             onUpdateDisciple = { entryViewModel.updateDisciple(it) },
                             onDeleteDisciple = { entryViewModel.deleteDisciple(it) },

@@ -20,7 +20,7 @@ import com.example.data.local.entities.*
         ProclamationTopicEntity::class,
         DiscipleEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

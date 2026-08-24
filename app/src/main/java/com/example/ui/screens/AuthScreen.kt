@@ -201,31 +201,17 @@ fun AuthScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(14.dp),
+                        .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    val logoBitmap = remember {
-                        try {
-                            BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)?.asImageBitmap()
-                        } catch (e: Throwable) {
-                            null
-                        }
-                    }
-                    if (logoBitmap != null) {
-                        Image(
-                            bitmap = logoBitmap,
-                            contentDescription = "CMFI App Logo",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_cmfi_app_logo),
-                            contentDescription = "CMFI App Logo",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.app_logo),
+                        contentDescription = "CMFI App Logo",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
                 }
             }
 

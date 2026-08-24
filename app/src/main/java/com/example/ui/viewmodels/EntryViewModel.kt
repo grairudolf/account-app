@@ -22,6 +22,9 @@ class EntryViewModel(
         } ?: accountabilityRepository.getDisciplesFlow()
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allEntries: StateFlow<List<AccountabilityEntryEntity>> = accountabilityRepository.allEntriesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun saveEntry(context: Context, entry: AccountabilityEntryEntity) {
         viewModelScope.launch {
             accountabilityRepository.saveEntry(entry)

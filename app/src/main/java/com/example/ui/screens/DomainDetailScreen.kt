@@ -50,6 +50,7 @@ fun DomainDetailScreen(
     strings: AppStrings,
     userId: String = "guest_user",
     disciples: List<DiscipleEntity> = emptyList(),
+    allEntries: List<AccountabilityEntryEntity> = emptyList(),
     onSaveDisciple: (DiscipleEntity) -> Unit = {},
     onUpdateDisciple: (DiscipleEntity) -> Unit = {},
     onDeleteDisciple: (DiscipleEntity) -> Unit = {},
@@ -61,6 +62,13 @@ fun DomainDetailScreen(
     var isSubmitting by remember { mutableStateOf(false) }
     var selectedDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var notes by remember { mutableStateOf("") }
+
+    // Pickers & Validation
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showStopTimePicker by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isBookCompleted by remember { mutableStateOf(false) }
 
     // Start Time & Stop Time
     var startTimeText by remember { mutableStateOf("06:00") }
@@ -96,6 +104,56 @@ fun DomainDetailScreen(
     var endPageText by remember { mutableStateOf("10") }
     var timesReadText by remember { mutableStateOf("1") }
     var pagesMemorizedText by remember { mutableStateOf("5") }
+
+    LaunchedEffect(domainId, allEntries) {
+        if (allEntries.isNotEmpty()) {
+            val domainEntries = allEntries.filter { 
+                it.domainId == domainId || 
+                (domainId == "christian_lit" && it.domainId in listOf("christian_lit", "christian_lit_reading")) ||
+                (domainId == "christian_lit_mem" && it.domainId in listOf("christian_lit_mem", "christian_lit_memory")) ||
+                (domainId == "bible_mem" && it.domainId in listOf("bible_mem", "bible_memory"))
+            }.sortedByDescending { it.timestampMs }
+
+            val last = domainEntries.firstOrNull()
+            if (last != null) {
+                when (domainId) {
+                    "bible_reading" -> {
+                        val nextCh = if (last.endChapter > 0) last.endChapter + 1 else 1
+                        val book = last.bibleBook.ifBlank { "Genesis" }
+                        val maxCh = BibleMetadata.getChaptersForBook(book)
+                        val validCh = nextCh.coerceAtMost(maxCh)
+                        if (bibleSegments.isNotEmpty()) {
+                            bibleSegments[0] = BibleReadingSegment(book = book, startChapter = validCh, endChapter = validCh)
+                        }
+                    }
+                    "christian_lit", "christian_lit_reading" -> {
+                        if (!last.isBookCompleted && last.bookTitle.isNotBlank()) {
+                            bookTitle = last.bookTitle
+                            bookAuthor = last.bookAuthor
+                            val nextPg = if (last.endPage > 0) last.endPage + 1 else 1
+                            startPageText = nextPg.toString()
+                            endPageText = (nextPg + 9).toString()
+                        }
+                    }
+                    "christian_lit_mem", "christian_lit_memory" -> {
+                        if (last.bookTitle.isNotBlank()) {
+                            bookTitle = last.bookTitle
+                            bookAuthor = last.bookAuthor
+                            val nextPg = if (last.endPage > 0) last.endPage + 1 else 1
+                            startPageText = nextPg.toString()
+                            endPageText = (nextPg + 4).toString()
+                        }
+                    }
+                    "bible_mem", "bible_memory" -> {
+                        if (last.bibleMemBook.isNotBlank()) {
+                            bibleMemBook = last.bibleMemBook
+                            bibleMemChapter = last.bibleMemChapter + 1
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Fasting (Auto-calculated from Start Date & End Date)
     var fastingStartDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
@@ -353,7 +411,9 @@ fun DomainDetailScreen(
                                         Surface(
                                             shape = RoundedCornerShape(16.dp),
                                             color = MaterialTheme.colorScheme.primaryContainer,
-                                            modifier = Modifier.testTag("entry_date_selector")
+                                            modifier = Modifier
+                                                .testTag("entry_date_selector")
+                                                .clickable { showDatePicker = true }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -373,7 +433,13 @@ fun DomainDetailScreen(
                                         OutlinedIconButton(
                                             onClick = {
                                                 val current = LocalDate.parse(selectedDateIso, DateTimeFormatter.ISO_LOCAL_DATE)
-                                                selectedDateIso = current.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                val nextDate = current.plusDays(1)
+                                                if (nextDate.isAfter(LocalDate.now())) {
+                                                    errorMessage = "Cannot select future date."
+                                                } else {
+                                                    errorMessage = null
+                                                    selectedDateIso = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                }
                                             },
                                             modifier = Modifier.size(40.dp)
                                         ) {
@@ -390,8 +456,13 @@ fun DomainDetailScreen(
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                         OutlinedTextField(
                                             value = startTimeText,
-                                            onValueChange = { startTimeText = it },
+                                            onValueChange = { startTimeText = it; errorMessage = null },
                                             label = { Text(strings.startTimePlaceholder, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                                            trailingIcon = {
+                                                IconButton(onClick = { showStartTimePicker = true }) {
+                                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time")
+                                                }
+                                            },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_start_time"),
@@ -399,8 +470,13 @@ fun DomainDetailScreen(
                                         )
                                         OutlinedTextField(
                                             value = stopTimeText,
-                                            onValueChange = { stopTimeText = it },
+                                            onValueChange = { stopTimeText = it; errorMessage = null },
                                             label = { Text(strings.stopTimePlaceholder, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                                            trailingIcon = {
+                                                IconButton(onClick = { showStopTimePicker = true }) {
+                                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Stop Time")
+                                                }
+                                            },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("entry_stop_time"),
@@ -412,6 +488,22 @@ fun DomainDetailScreen(
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            if (errorMessage != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = errorMessage!!,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(12.dp)
                                     )
                                 }
                             }
@@ -821,6 +913,28 @@ fun DomainDetailScreen(
                                             modifier = Modifier.weight(1f),
                                             singleLine = true
                                         )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.fillMaxWidth().clickable { isBookCompleted = !isBookCompleted }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "Mark Book as Completed",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Switch(
+                                                checked = isBookCompleted,
+                                                onCheckedChange = { isBookCompleted = it }
+                                            )
+                                        }
                                     }
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
@@ -1508,6 +1622,24 @@ fun DomainDetailScreen(
                             Button(
                                 onClick = {
                                     if (isSubmitting) return@Button
+                                    val todayIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                    if (selectedDateIso > todayIso) {
+                                        errorMessage = "Cannot record activities for future dates."
+                                        return@Button
+                                    }
+                                    if (selectedDateIso == todayIso && domainId != "fasting" && domainId != "giving" && domainId != "making_disciples") {
+                                        try {
+                                            val parts = stopTimeText.split(":").map { it.trim().toInt() }
+                                            if (parts.size == 2) {
+                                                val stopLocalTime = java.time.LocalTime.of(parts[0], parts[1])
+                                                if (stopLocalTime.isAfter(java.time.LocalTime.now())) {
+                                                    errorMessage = "Cannot record end time in the future."
+                                                    return@Button
+                                                }
+                                            }
+                                        } catch (_: Exception) {}
+                                    }
+                                    errorMessage = null
                                     isSubmitting = true
                                     val durSecs = (calculatedDurationMinutes * 60).toLong()
 
@@ -1603,6 +1735,7 @@ fun DomainDetailScreen(
                                                 endPage = ePage,
                                                 pagesRead = calculatedLiteraturePages,
                                                 bookTimesRead = timesReadText.toIntOrNull() ?: 1,
+                                                isBookCompleted = isBookCompleted,
                                                 notes = notes
                                             )
                                         }
@@ -1923,6 +2056,28 @@ fun DomainDetailScreen(
                     Text(strings.cancel)
                 }
             }
+        )
+    }
+
+    if (showDatePicker) {
+        com.example.ui.components.AppDatePickerDialog(
+            initialDateIso = selectedDateIso,
+            onDateSelected = { selectedDateIso = it; errorMessage = null },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+    if (showStartTimePicker) {
+        com.example.ui.components.AppTimePickerDialog(
+            initialTime = startTimeText,
+            onTimeSelected = { startTimeText = it; errorMessage = null },
+            onDismiss = { showStartTimePicker = false }
+        )
+    }
+    if (showStopTimePicker) {
+        com.example.ui.components.AppTimePickerDialog(
+            initialTime = stopTimeText,
+            onTimeSelected = { stopTimeText = it; errorMessage = null },
+            onDismiss = { showStopTimePicker = false }
         )
     }
 }

@@ -59,6 +59,7 @@ data class AccountabilityEntryEntity(
     val litMemChapter: String = "",
     val litMemPassage: String = "",
     val litMemStatus: String = "", // Learning, Memorized, Reviewing
+    val isBookCompleted: Boolean = false,
 
     // Spiritual Retreats Fields
     val retreatFocus: String = "",
