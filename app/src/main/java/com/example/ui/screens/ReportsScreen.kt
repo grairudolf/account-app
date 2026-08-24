@@ -15,27 +15,50 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.ReportRecordEntity
 import com.example.data.local.entities.UserEntity
 import com.example.ui.theme.*
 import java.io.File
+
+private data class ReportDomainItem(
+    val id: String,
+    val title: String,
+    val icon: ImageVector
+)
 
 @Composable
 fun ReportsScreen(
@@ -270,67 +293,131 @@ fun ReportsScreen(
                         }
                     }
 
-                    // Domain Checkboxes Selection
+                    // Domain Chips Selection Grid
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = strings.selectDomainsToInclude,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f, fill = false)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = strings.selectDomainsToInclude,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    ) {
+                                        val totalCount = 13
+                                        Text(
+                                            text = "${selectedDomains.size}/$totalCount",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
                                 TextButton(
                                     onClick = onSelectAllDomains,
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
-                                    Text(strings.selectAll, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                    Text(
+                                        text = if (selectedDomains.size >= 13) "Deselect All" else strings.selectAll,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
 
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             val availableDomains = listOf(
-                                "ddewg" to strings.ddewgTitle,
-                                "bible_reading" to strings.bibleReadingTitle,
-                                "prayer_alone" to strings.prayerAloneTitle,
-                                "prayer_with_others" to strings.prayerWithOthersTitle,
-                                "proclamation_importunity" to strings.proclamationTitle,
-                                "fasting" to strings.fastingTitle,
-                                "giving" to strings.givingTitle,
-                                "christian_lit" to strings.christianLitTitle,
-                                "soul_winning" to strings.soulWinningTitle
+                                ReportDomainItem("ddewg", strings.ddewgTitle, Icons.Default.AutoAwesome),
+                                ReportDomainItem("bible_reading", strings.bibleReadingTitle, Icons.Default.MenuBook),
+                                ReportDomainItem("prayer_alone", strings.prayerAloneTitle, Icons.Default.SelfImprovement),
+                                ReportDomainItem("prayer_with_others", strings.prayerWithOthersTitle, Icons.Default.Groups),
+                                ReportDomainItem("proclamation_importunity", strings.proclamationTitle, Icons.Default.Campaign),
+                                ReportDomainItem("retreats", strings.retreatsTitle, Icons.Default.Landscape),
+                                ReportDomainItem("fasting", strings.fastingTitle, Icons.Default.Timer),
+                                ReportDomainItem("giving", strings.givingTitle, Icons.Default.VolunteerActivism),
+                                ReportDomainItem("christian_lit", strings.christianLitTitle, Icons.Default.AutoStories),
+                                ReportDomainItem("christian_lit_mem", strings.christianLitMemTitle, Icons.Default.Psychology),
+                                ReportDomainItem("bible_mem", strings.bibleMemTitle, Icons.Default.FormatQuote),
+                                ReportDomainItem("soul_winning", strings.soulWinningTitle, Icons.Default.GroupAdd),
+                                ReportDomainItem("making_disciples", strings.makingDisciplesTitle, Icons.Default.People)
                             )
 
-                            availableDomains.forEach { (id, title) ->
-                                val checked = selectedDomains.contains(id)
+                            // Render in neat 2-column grid rows
+                            availableDomains.chunked(2).forEach { rowPair ->
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable { onToggleDomainFilter(id) }
-                                        .padding(vertical = 4.dp)
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Checkbox(
-                                        checked = checked,
-                                        onCheckedChange = { onToggleDomainFilter(id) },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary,
-                                            uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (checked) FontWeight.Bold else FontWeight.Normal
-                                    )
+                                    rowPair.forEach { item ->
+                                        val isChecked = selectedDomains.contains(item.id)
+
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                            border = BorderStroke(
+                                                width = if (isChecked) 1.5.dp else 1.dp,
+                                                color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                            ),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .heightIn(min = 48.dp)
+                                                .clickable { onToggleDomainFilter(item.id) }
+                                                .testTag("domain_chip_${item.id}")
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = item.icon,
+                                                    contentDescription = null,
+                                                    tint = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Text(
+                                                    text = item.title,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isChecked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                if (isChecked) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.CheckCircle,
+                                                        contentDescription = "Selected",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (rowPair.size == 1) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }

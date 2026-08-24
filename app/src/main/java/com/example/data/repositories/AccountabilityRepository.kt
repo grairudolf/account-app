@@ -220,6 +220,10 @@ class AccountabilityRepository(
         }
     }
 
+    suspend fun getGoalById(id: String): GoalEntity? {
+        return goalDao.getGoalById(id)
+    }
+
     suspend fun deleteGoal(id: String, userId: String = "") {
         goalDao.deleteGoalById(id)
         if (context != null && userId.isNotBlank() && userId != "guest_user") {

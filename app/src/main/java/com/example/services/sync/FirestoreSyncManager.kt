@@ -36,7 +36,7 @@ data class SyncProgress(
 
 object FirestoreSyncManager {
     private const val TAG = "FirestoreSyncManager"
-    private const val TIMEOUT_MS = 6000L
+    private const val TIMEOUT_MS = 25000L
 
     private val _syncProgressFlow = MutableStateFlow(SyncProgress())
     val syncProgressFlow: StateFlow<SyncProgress> = _syncProgressFlow.asStateFlow()
@@ -117,21 +117,31 @@ object FirestoreSyncManager {
                         val data = userDoc.data
                         if (data != null) {
                             val existing = database.userDao().getCurrentUser()
+                            val remoteName = data["fullName"] as? String ?: ""
+                            val remoteEmail = data["email"] as? String ?: ""
+                            val remoteAssembly = data["localAssembly"] as? String ?: ""
+                            val remoteDiscipleMaker = data["discipleMaker"] as? String ?: ""
+                            val remotePhone = data["phoneNumber"] as? String ?: ""
+                            val remoteLang = data["language"] as? String ?: ""
+                            val remoteTheme = data["themeMode"] as? String ?: ""
+                            val remoteConversion = data["conversionDate"] as? String ?: ""
+                            val remoteDays = data["accountabilityDays"] as? String ?: ""
+
                             val restoredUser = UserEntity(
                                 id = userId,
-                                fullName = data["fullName"] as? String ?: existing?.fullName ?: "Disciple",
-                                email = data["email"] as? String ?: existing?.email ?: "",
-                                profileImageUri = data["profileImageUri"] as? String ?: existing?.profileImageUri,
-                                localAssembly = data["localAssembly"] as? String ?: existing?.localAssembly ?: "",
-                                discipleMaker = data["discipleMaker"] as? String ?: existing?.discipleMaker ?: "",
-                                phoneNumber = data["phoneNumber"] as? String ?: existing?.phoneNumber ?: "",
-                                language = data["language"] as? String ?: existing?.language ?: "en",
-                                themeMode = data["themeMode"] as? String ?: existing?.themeMode ?: "LIGHT",
-                                conversionDate = data["conversionDate"] as? String ?: existing?.conversionDate ?: "",
-                                accountabilityDays = data["accountabilityDays"] as? String ?: existing?.accountabilityDays ?: "MON,TUE,WED,THU,FRI,SAT,SUN",
+                                fullName = remoteName.ifBlank { existing?.fullName?.ifBlank { "Disciple" } ?: "Disciple" },
+                                email = remoteEmail.ifBlank { existing?.email ?: "" },
+                                profileImageUri = (data["profileImageUri"] as? String)?.ifBlank { null } ?: existing?.profileImageUri,
+                                localAssembly = remoteAssembly.ifBlank { existing?.localAssembly ?: "" },
+                                discipleMaker = remoteDiscipleMaker.ifBlank { existing?.discipleMaker ?: "" },
+                                phoneNumber = remotePhone.ifBlank { existing?.phoneNumber ?: "" },
+                                language = remoteLang.ifBlank { existing?.language ?: "en" },
+                                themeMode = remoteTheme.ifBlank { existing?.themeMode ?: "LIGHT" },
+                                conversionDate = remoteConversion.ifBlank { existing?.conversionDate ?: "" },
+                                accountabilityDays = remoteDays.ifBlank { existing?.accountabilityDays ?: "MON,TUE,WED,THU,FRI,SAT,SUN" },
                                 isGuest = false,
                                 syncStatus = "SYNCED",
-                                createdAtMs = (data["createdAtMs"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                                createdAtMs = (data["createdAtMs"] as? Number)?.toLong() ?: existing?.createdAtMs ?: System.currentTimeMillis(),
                                 updatedAtMs = (data["updatedAtMs"] as? Number)?.toLong() ?: System.currentTimeMillis()
                             )
                             database.userDao().clearUserTable()
@@ -421,20 +431,21 @@ object FirestoreSyncManager {
         val firestore = getFirestore(context) ?: return@withContext
         withTimeoutOrNull(TIMEOUT_MS) {
             try {
-                val map = hashMapOf(
+                val map = hashMapOf<String, Any>(
                     "id" to user.id,
-                    "fullName" to user.fullName,
-                    "email" to user.email,
-                    "profileImageUri" to (user.profileImageUri ?: ""),
-                    "localAssembly" to user.localAssembly,
-                    "discipleMaker" to user.discipleMaker,
-                    "phoneNumber" to user.phoneNumber,
-                    "language" to user.language,
-                    "themeMode" to user.themeMode,
-                    "conversionDate" to user.conversionDate,
-                    "accountabilityDays" to user.accountabilityDays,
                     "updatedAtMs" to user.updatedAtMs
                 )
+                if (user.fullName.isNotBlank()) map["fullName"] = user.fullName
+                if (user.email.isNotBlank()) map["email"] = user.email
+                if (!user.profileImageUri.isNullOrBlank()) map["profileImageUri"] = user.profileImageUri
+                if (user.localAssembly.isNotBlank()) map["localAssembly"] = user.localAssembly
+                if (user.discipleMaker.isNotBlank()) map["discipleMaker"] = user.discipleMaker
+                if (user.phoneNumber.isNotBlank()) map["phoneNumber"] = user.phoneNumber
+                if (user.language.isNotBlank()) map["language"] = user.language
+                if (user.themeMode.isNotBlank()) map["themeMode"] = user.themeMode
+                if (user.conversionDate.isNotBlank()) map["conversionDate"] = user.conversionDate
+                if (user.accountabilityDays.isNotBlank()) map["accountabilityDays"] = user.accountabilityDays
+
                 firestore.collection("users").document(user.id).set(map, SetOptions.merge()).await()
                 Log.d(TAG, "User profile backed up to Firestore: ${user.id}")
             } catch (e: Exception) {

@@ -93,6 +93,15 @@ class SettingsViewModel(
             } else {
                 ReminderManager.cancelReminder(context, updated.id)
             }
+
+            // Sync with GoalEntity if this is a goal reminder
+            if (reminder.id.startsWith("reminder_goal_")) {
+                val goalId = reminder.id.removePrefix("reminder_goal_")
+                val goal = accountabilityRepository.getGoalById(goalId)
+                if (goal != null) {
+                    accountabilityRepository.saveGoal(goal.copy(isDailyReminderEnabled = isEnabled))
+                }
+            }
         }
     }
 
@@ -100,6 +109,15 @@ class SettingsViewModel(
         viewModelScope.launch {
             accountabilityRepository.deleteReminder(id)
             ReminderManager.cancelReminder(context, id)
+
+            // Sync with GoalEntity if this is a goal reminder
+            if (id.startsWith("reminder_goal_")) {
+                val goalId = id.removePrefix("reminder_goal_")
+                val goal = accountabilityRepository.getGoalById(goalId)
+                if (goal != null) {
+                    accountabilityRepository.saveGoal(goal.copy(isDailyReminderEnabled = false))
+                }
+            }
         }
     }
 

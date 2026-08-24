@@ -31,12 +31,25 @@ class ReportsViewModel(
     private val _selectedReportType = MutableStateFlow("DAILY") // DAILY, WEEKLY, MONTHLY, CUSTOM
     val selectedReportType: StateFlow<String> = _selectedReportType.asStateFlow()
 
-    private val _selectedDomains = MutableStateFlow<Set<String>>(
-        setOf(
-            "ddewg", "bible_reading", "prayer_alone", "prayer_with_others",
-            "proclamation_importunity", "fasting", "giving", "christian_lit", "soul_winning"
+    companion object {
+        val ALL_SPIRITUAL_DOMAINS = setOf(
+            "ddewg",
+            "bible_reading",
+            "prayer_alone",
+            "prayer_with_others",
+            "proclamation_importunity",
+            "retreats",
+            "fasting",
+            "giving",
+            "christian_lit",
+            "christian_lit_mem",
+            "bible_mem",
+            "soul_winning",
+            "making_disciples"
         )
-    )
+    }
+
+    private val _selectedDomains = MutableStateFlow<Set<String>>(ALL_SPIRITUAL_DOMAINS)
     val selectedDomains: StateFlow<Set<String>> = _selectedDomains.asStateFlow()
 
     private val _targetDate = MutableStateFlow(LocalDate.now())
@@ -74,10 +87,11 @@ class ReportsViewModel(
     }
 
     fun selectAllDomains() {
-        _selectedDomains.value = setOf(
-            "ddewg", "bible_reading", "prayer_alone", "prayer_with_others",
-            "proclamation_importunity", "fasting", "giving", "christian_lit", "soul_winning"
-        )
+        if (_selectedDomains.value.size >= ALL_SPIRITUAL_DOMAINS.size) {
+            _selectedDomains.value = setOf("ddewg") // Keep at least one domain
+        } else {
+            _selectedDomains.value = ALL_SPIRITUAL_DOMAINS
+        }
     }
 
     fun generatePdfReport(context: Context, onPdfGenerated: (File) -> Unit) {

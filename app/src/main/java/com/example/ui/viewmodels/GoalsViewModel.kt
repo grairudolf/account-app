@@ -46,7 +46,8 @@ class GoalsViewModel(
         fastingType: String = "COMPLETE",
         periodDays: Int = 0,
         isDailyReminderEnabled: Boolean = false,
-        reminderTimeIso: String = "08:00"
+        reminderTimeIso: String = "08:00",
+        context: android.content.Context? = null
     ) {
         viewModelScope.launch {
             val goalId = UUID.randomUUID().toString()
@@ -81,11 +82,14 @@ class GoalsViewModel(
                     domainId = domainId
                 )
                 accountabilityRepository.saveReminder(reminder)
+                if (context != null) {
+                    com.example.services.notifications.ReminderManager.scheduleReminder(context, reminder)
+                }
             }
         }
     }
 
-    fun toggleGoalReminder(goal: GoalEntity, enabled: Boolean, reminderTimeIso: String = "08:00") {
+    fun toggleGoalReminder(goal: GoalEntity, enabled: Boolean, reminderTimeIso: String = "08:00", context: android.content.Context? = null) {
         viewModelScope.launch {
             val updated = goal.copy(isDailyReminderEnabled = enabled, reminderTimeIso = reminderTimeIso, updatedAtMs = System.currentTimeMillis())
             accountabilityRepository.saveGoal(updated)
@@ -105,16 +109,26 @@ class GoalsViewModel(
                     domainId = goal.domainId
                 )
                 accountabilityRepository.saveReminder(reminder)
+                if (context != null) {
+                    com.example.services.notifications.ReminderManager.scheduleReminder(context, reminder)
+                }
             } else {
                 accountabilityRepository.deleteReminder(reminderId)
+                if (context != null) {
+                    com.example.services.notifications.ReminderManager.cancelReminder(context, reminderId)
+                }
             }
         }
     }
 
-    fun deleteGoal(id: String) {
+    fun deleteGoal(id: String, context: android.content.Context? = null) {
         viewModelScope.launch {
             accountabilityRepository.deleteGoal(id)
-            accountabilityRepository.deleteReminder("reminder_goal_$id")
+            val reminderId = "reminder_goal_$id"
+            accountabilityRepository.deleteReminder(reminderId)
+            if (context != null) {
+                com.example.services.notifications.ReminderManager.cancelReminder(context, reminderId)
+            }
         }
     }
 }
