@@ -181,7 +181,11 @@ class AccountabilityRepository(
     }
 
     suspend fun deleteReportRecord(id: String) {
+        val existing = reportDao.getReportById(id)
         reportDao.deleteReportById(id)
+        if (context != null && existing != null && existing.userId.isNotBlank() && existing.userId != "guest_user") {
+            FirestoreSyncManager.deleteReportFromCloud(context, existing.userId, id)
+        }
     }
 
     fun getEntriesByDateFlow(dateIso: String): Flow<List<AccountabilityEntryEntity>> {

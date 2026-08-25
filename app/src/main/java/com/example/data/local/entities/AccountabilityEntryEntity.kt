@@ -27,6 +27,9 @@ data class AccountabilityEntryEntity(
     // Prayer Fields
     val prayerType: String = "", // Thanksgiving, Request, 15-Minute Retreat, Bertoua Message, Intercession, Worship, etc.
     val prayerTopicsCount: Int = 0,
+    val startPrayerTopicNumber: Int = 0,
+    val endPrayerTopicNumber: Int = 0,
+    val retreatPeriodOfDay: String = "", // Morning, Noon, Evening, Night
     val prayerParticipantsCount: Int = 1,
     val prayerParticipantNames: String = "",
 

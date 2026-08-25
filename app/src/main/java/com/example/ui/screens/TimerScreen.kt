@@ -205,8 +205,9 @@ fun TimerScreen(
                             )
                         }
 
+                        val displayDomainTitle = if (domainId == "ddewg") strings.ddewgAbbr else strings.getDomainTitleById(domainId)
                         Text(
-                            text = strings.getDomainTitleById(domainId).uppercase(),
+                            text = displayDomainTitle.uppercase(),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold
@@ -219,6 +220,31 @@ fun TimerScreen(
                             color = MaterialTheme.colorScheme.onSurface,
                             letterSpacing = 2.sp
                         )
+
+                        // Timer status badge
+                        Surface(
+                            shape = CircleShape,
+                            color = if (activeSession?.isRunning == true && activeSession.isPaused != true) StatusSuccess.copy(alpha = 0.15f) else StatusPending.copy(alpha = 0.15f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(if (activeSession?.isRunning == true && activeSession.isPaused != true) StatusSuccess else StatusPending)
+                                )
+                                Text(
+                                    text = if (activeSession?.isRunning == true && activeSession.isPaused != true) strings.timerRunning else strings.timerPaused,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (activeSession?.isRunning == true && activeSession.isPaused != true) StatusSuccess else StatusPending
+                                )
+                            }
+                        }
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -243,24 +269,24 @@ fun TimerScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(strings.startTimer, fontWeight = FontWeight.Bold)
                                 }
-                            } else if (activeSession.isRunning) {
+                            } else if (activeSession.isPaused || !activeSession.isRunning) {
                                 Button(
                                     onClick = {
                                         HapticHelper.vibrateClick(context)
-                                        onPauseTimer()
+                                        onResumeTimer()
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
                                     ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
-                                        .testTag("timer_pause_button")
+                                        .testTag("timer_resume_button")
                                 ) {
-                                    Icon(Icons.Default.Pause, contentDescription = "Pause")
+                                    Icon(Icons.Default.PlayArrow, contentDescription = "Resume")
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(strings.pauseTimer, fontWeight = FontWeight.Bold)
+                                    Text(strings.resumeTimer, fontWeight = FontWeight.Bold)
                                 }
 
                                 Button(
@@ -286,20 +312,20 @@ fun TimerScreen(
                                 Button(
                                     onClick = {
                                         HapticHelper.vibrateClick(context)
-                                        onResumeTimer()
+                                        onPauseTimer()
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                     ),
                                     shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier
                                         .height(52.dp)
-                                        .testTag("timer_resume_button")
+                                        .testTag("timer_pause_button")
                                 ) {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = "Resume")
+                                    Icon(Icons.Default.Pause, contentDescription = "Pause")
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(strings.resumeTimer, fontWeight = FontWeight.Bold)
+                                    Text(strings.pauseTimer, fontWeight = FontWeight.Bold)
                                 }
 
                                 Button(

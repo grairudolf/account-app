@@ -20,6 +20,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.ui.components.AppDatePickerDialog
+import com.example.ui.components.AppTimePickerDialog
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.ui.theme.*
@@ -806,8 +811,9 @@ fun EntryLogCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val domainLabel = if (entry.domainId == "ddewg") strings.ddewgAbbr else strings.getDomainTitleById(entry.domainId)
                 Text(
-                    text = strings.getDomainTitleById(entry.domainId).uppercase(),
+                    text = domainLabel.uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryBlue
@@ -821,16 +827,25 @@ fun EntryLogCard(
                 // Domain-Specific Log Details
                 if (entry.domainId == "fasting") {
                     val days = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
+                    val rangeStr = if (entry.fastingStartDateIso.isNotBlank() && entry.fastingEndDateIso.isNotBlank()) " (${entry.fastingStartDateIso} -> ${entry.fastingEndDateIso})" else ""
                     Text(
-                        text = "${strings.fastingTitle}: $days ${strings.days}" + if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else "",
+                        text = "${strings.fastingTitle}: $days ${strings.days}$rangeStr" + if (entry.fastingType.isNotBlank()) " [${entry.fastingType}]" else "",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
                     )
+                    if (entry.fastingPurpose.isNotBlank()) {
+                        Text(
+                            text = "${strings.purpose}: ${entry.fastingPurpose}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 } else if (entry.domainId == "giving") {
                     val gType = if (entry.givingType.isNotBlank()) " (${entry.givingType})" else ""
+                    val incRef = if (entry.givingIncomeReference > 0) " | Income Ref: XAF ${entry.givingIncomeReference}" else ""
                     Text(
-                        text = "${strings.givingTitle}: XAF ${entry.givingAmount}$gType",
+                        text = "${strings.givingTitle}: XAF ${entry.givingAmount}$gType$incRef",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentPurple
@@ -851,7 +866,7 @@ fun EntryLogCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    val pCount = if (entry.pagesRead > 0) entry.pagesRead else (entry.endPage - entry.startPage + 1).coerceAtLeast(1)
+                    val pCount = if (entry.pagesRead > 0) entry.pagesRead else if (entry.pagesMemorized > 0) entry.pagesMemorized else (entry.endPage - entry.startPage + 1).coerceAtLeast(1)
                     Text(
                         text = "Pages: ${entry.startPage} - ${entry.endPage} ($pCount pages)",
                         style = MaterialTheme.typography.bodySmall,
@@ -888,6 +903,15 @@ fun EntryLogCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                } else if (entry.domainId == "ddewg" || entry.reflection.isNotBlank()) {
+                    if (entry.reflection.isNotBlank()) {
+                        Text(
+                            text = "Encounter: ${entry.reflection}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
 
                 // Time span & Duration
@@ -920,9 +944,16 @@ fun EntryLogCard(
                 }
 
                 if (entry.prayerType.isNotBlank()) {
-                    val topicsStr = if (entry.prayerTopicsCount > 0) " (" + String.format(strings.topicsCountFormat, entry.prayerTopicsCount) + ")" else ""
+                    val topicsStr = if (entry.startPrayerTopicNumber > 0 && entry.endPrayerTopicNumber > 0) {
+                        " (Topics #${entry.startPrayerTopicNumber} - #${entry.endPrayerTopicNumber} = ${entry.prayerTopicsCount} topics)"
+                    } else if (entry.prayerTopicsCount > 0) {
+                        " (" + String.format(strings.topicsCountFormat, entry.prayerTopicsCount) + ")"
+                    } else ""
+
+                    val periodStr = if (entry.retreatPeriodOfDay.isNotBlank()) " [${entry.retreatPeriodOfDay}]" else ""
+                    val partStr = if (entry.prayerParticipantsCount > 1) " [${entry.prayerParticipantsCount} participants]" else ""
                     Text(
-                        text = "${strings.prayerFocus}: ${entry.prayerType}$topicsStr",
+                        text = "${strings.prayerFocus}: ${entry.prayerType}$periodStr$topicsStr$partStr",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -947,6 +978,7 @@ fun EntryLogCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEntryDialog(
     entry: AccountabilityEntryEntity,
@@ -954,134 +986,398 @@ fun EditEntryDialog(
     onDismiss: () -> Unit,
     onConfirm: (AccountabilityEntryEntity) -> Unit
 ) {
+    var dateIso by remember { mutableStateOf(entry.dateIso) }
     var notes by remember { mutableStateOf(entry.notes) }
-    var chapters by remember { mutableStateOf(entry.chaptersCount.toString()) }
-    var prayerMins by remember { mutableStateOf((entry.durationSeconds / 60).toString()) }
-    var givingAmt by remember { mutableStateOf(entry.givingAmount.toString()) }
-    var givingType by remember { mutableStateOf(entry.givingType) }
+    var startTimeIso by remember { mutableStateOf(entry.startTimeIso.ifBlank { "06:00" }) }
+    var endTimeIso by remember { mutableStateOf(entry.endTimeIso.ifBlank { "07:00" }) }
+
+    // Pickers
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+    var showFastingStartDatePicker by remember { mutableStateOf(false) }
+    var showFastingEndDatePicker by remember { mutableStateOf(false) }
+
+    // Prayer Alone & Prayer with Others
+    var prayerType by remember { mutableStateOf(entry.prayerType) }
+    var startPrayerTopicNum by remember { mutableStateOf(if (entry.startPrayerTopicNumber > 0) entry.startPrayerTopicNumber.toString() else "") }
+    var endPrayerTopicNum by remember { mutableStateOf(if (entry.endPrayerTopicNumber > 0) entry.endPrayerTopicNumber.toString() else "") }
+    var prayerTopicsCount by remember { mutableStateOf(if (entry.prayerTopicsCount > 0) entry.prayerTopicsCount.toString() else "1") }
+    var retreatPeriodOfDay by remember { mutableStateOf(entry.retreatPeriodOfDay.ifBlank { "Morning" }) }
+    var prayerParticipantsCount by remember { mutableStateOf(if (entry.prayerParticipantsCount > 0) entry.prayerParticipantsCount.toString() else "1") }
+
+    // DDEWG
+    var ddewgInspirationText by remember { mutableStateOf(entry.reflection) }
+
+    // Bible Reading & Memory
+    var bibleBook by remember { mutableStateOf(entry.bibleBook) }
+    var startChapter by remember { mutableStateOf(if (entry.startChapter > 0) entry.startChapter.toString() else "1") }
+    var endChapter by remember { mutableStateOf(if (entry.endChapter > 0) entry.endChapter.toString() else "1") }
+    var chaptersCount by remember { mutableStateOf(if (entry.chaptersCount > 0) entry.chaptersCount.toString() else "1") }
+    var bibleMemBook by remember { mutableStateOf(entry.bibleMemBook) }
+    var bibleMemChapter by remember { mutableStateOf(if (entry.bibleMemChapter > 0) entry.bibleMemChapter.toString() else "1") }
+    var bibleMemVerse by remember { mutableStateOf(entry.bibleMemVerse) }
 
     // Christian Literature
     var bookTitle by remember { mutableStateOf(entry.bookTitle) }
     var bookAuthor by remember { mutableStateOf(entry.bookAuthor) }
-    var startPage by remember { mutableStateOf(entry.startPage.toString()) }
-    var endPage by remember { mutableStateOf(entry.endPage.toString()) }
+    var startPage by remember { mutableStateOf(if (entry.startPage > 0) entry.startPage.toString() else "1") }
+    var endPage by remember { mutableStateOf(if (entry.endPage > 0) entry.endPage.toString() else "10") }
     var isBookCompleted by remember { mutableStateOf(entry.isBookCompleted) }
 
-    // Bible Reading & Memory
-    var bibleBook by remember { mutableStateOf(entry.bibleBook) }
-    var bibleMemBook by remember { mutableStateOf(entry.bibleMemBook) }
-    var bibleMemChapter by remember { mutableStateOf(entry.bibleMemChapter.toString()) }
-    var bibleMemVerse by remember { mutableStateOf(entry.bibleMemVerse) }
+    // Fasting
+    var fastingType by remember { mutableStateOf(entry.fastingType.ifBlank { "Complete Fast" }) }
+    var fastingStartDateIso by remember { mutableStateOf(entry.fastingStartDateIso.ifBlank { entry.dateIso }) }
+    var fastingEndDateIso by remember { mutableStateOf(entry.fastingEndDateIso.ifBlank { entry.dateIso }) }
+    var fastingPurpose by remember { mutableStateOf(entry.fastingPurpose) }
+
+    // Giving
+    var givingAmt by remember { mutableStateOf(if (entry.givingAmount > 0) entry.givingAmount.toString() else "0") }
+    var givingIncomeRef by remember { mutableStateOf(if (entry.givingIncomeReference > 0) entry.givingIncomeReference.toString() else "0") }
+    var givingType by remember { mutableStateOf(entry.givingType.ifBlank { "Tithe" }) }
+
+    // Discipleship
+    var discipleName by remember { mutableStateOf(entry.prayerParticipantNames) }
+    var discipleshipTopicsCovered by remember { mutableStateOf(entry.areasDiscussed) }
+
+    // Auto-calculate duration from start & end time
+    val calculatedDurationSeconds = remember(startTimeIso, endTimeIso) {
+        try {
+            val sParts = startTimeIso.split(":")
+            val eParts = endTimeIso.split(":")
+            val sMin = sParts[0].toInt() * 60 + sParts[1].toInt()
+            val eMin = eParts[0].toInt() * 60 + eParts[1].toInt()
+            val diff = if (eMin >= sMin) eMin - sMin else (24 * 60 - sMin + eMin)
+            diff.toLong() * 60L
+        } catch (_: Exception) {
+            entry.durationSeconds
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.editPastRecord) },
+        title = {
+            val titleDomain = if (entry.domainId == "ddewg") strings.ddewgAbbr else strings.getDomainTitleById(entry.domainId)
+            Text("${strings.editPastRecord}: $titleDomain")
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (entry.domainId in listOf("christian_lit", "christian_lit_reading", "christian_lit_mem", "christian_lit_memory") || entry.bookTitle.isNotBlank()) {
-                    OutlinedTextField(
-                        value = bookTitle,
-                        onValueChange = { bookTitle = it },
-                        label = { Text(strings.bookTitle) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = bookAuthor,
-                        onValueChange = { bookAuthor = it },
-                        label = { Text(strings.author) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedTextField(
-                            value = startPage,
-                            onValueChange = { startPage = it },
-                            label = { Text(strings.startPageLabel) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = endPage,
-                            onValueChange = { endPage = it },
-                            label = { Text(strings.endPageLabel) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Date Selector
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }
+                ) {
                     Row(
+                        modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("Date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(dateIso, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                // Time Span & Duration for timed domains
+                if (entry.domainId != "giving" && entry.domainId != "fasting") {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Mark Book as Completed", style = MaterialTheme.typography.bodyMedium)
-                        Switch(checked = isBookCompleted, onCheckedChange = { isBookCompleted = it })
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(strings.timeSpanLabel, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                    modifier = Modifier.weight(1f).clickable { showStartTimePicker = true }
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        Text(strings.startTime, style = MaterialTheme.typography.labelSmall)
+                                        Text(startTimeIso, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                    modifier = Modifier.weight(1f).clickable { showEndTimePicker = true }
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        Text(strings.stopTime, style = MaterialTheme.typography.labelSmall)
+                                        Text(endTimeIso, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            val autoMins = (calculatedDurationSeconds / 60).coerceAtLeast(1)
+                            val displayDur = if (autoMins >= 60) "${autoMins / 60} ${strings.hoursUnit} ${autoMins % 60} ${strings.minutesUnit}" else "$autoMins ${strings.minutesUnit}"
+                            Text(
+                                text = "${strings.duration} (Auto-calculated): $displayDur",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusSuccess
+                            )
+                        }
                     }
                 }
 
-                if (entry.domainId == "bible_reading") {
-                    OutlinedTextField(
-                        value = bibleBook,
-                        onValueChange = { bibleBook = it },
-                        label = { Text(strings.selectBibleBook) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = chapters,
-                        onValueChange = { chapters = it },
-                        label = { Text(strings.chaptersReadLabel) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                if (entry.domainId in listOf("bible_mem", "bible_memory")) {
-                    OutlinedTextField(
-                        value = bibleMemBook,
-                        onValueChange = { bibleMemBook = it },
-                        label = { Text(strings.selectBibleBook) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Domain specific inputs
+                when (entry.domainId) {
+                    "prayer_alone" -> {
                         OutlinedTextField(
-                            value = bibleMemChapter,
-                            onValueChange = { bibleMemChapter = it },
-                            label = { Text(strings.startChapter) },
-                            modifier = Modifier.weight(1f)
+                            value = prayerType,
+                            onValueChange = { prayerType = it },
+                            label = { Text(strings.prayerType) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (prayerType.equals("15-Minute Retreat", ignoreCase = true) || prayerType.contains("15")) {
+                            Text(strings.periodOfDay, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("Morning", "Noon", "Evening", "Night").forEach { period ->
+                                    FilterChip(
+                                        selected = retreatPeriodOfDay.equals(period, ignoreCase = true),
+                                        onClick = { retreatPeriodOfDay = period },
+                                        label = { Text(period, fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = startPrayerTopicNum,
+                                onValueChange = { startPrayerTopicNum = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.startTopicNumber) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = endPrayerTopicNum,
+                                onValueChange = { endPrayerTopicNum = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.endTopicNumber) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        val sTopic = startPrayerTopicNum.toIntOrNull() ?: 0
+                        val eTopic = endPrayerTopicNum.toIntOrNull() ?: 0
+                        if (sTopic > 0 && eTopic >= sTopic) {
+                            val autoTopics = eTopic - sTopic + 1
+                            Text(
+                                text = strings.totalTopicsAutoCalculated.format(autoTopics),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusSuccess
+                            )
+                        } else {
+                            OutlinedTextField(
+                                value = prayerTopicsCount,
+                                onValueChange = { prayerTopicsCount = it },
+                                label = { Text(strings.numTopicsRecorded) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    "prayer_with_others" -> {
+                        OutlinedTextField(
+                            value = prayerType,
+                            onValueChange = { prayerType = it },
+                            label = { Text(strings.prayerType) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
-                            value = bibleMemVerse,
-                            onValueChange = { bibleMemVerse = it },
-                            label = { Text(strings.versesPrompt) },
-                            modifier = Modifier.weight(1f)
+                            value = prayerParticipantsCount,
+                            onValueChange = { prayerParticipantsCount = it },
+                            label = { Text(strings.participantsCount) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
 
-                if (entry.domainId == "giving") {
-                    OutlinedTextField(
-                        value = givingAmt,
-                        onValueChange = { givingAmt = it },
-                        label = { Text(strings.givingAmountLabel) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = givingType,
-                        onValueChange = { givingType = it },
-                        label = { Text(strings.givingTypePlaceholder) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                    "ddewg" -> {
+                        OutlinedTextField(
+                            value = ddewgInspirationText,
+                            onValueChange = { ddewgInspirationText = it },
+                            label = { Text(strings.ddewgInspirationPrompt) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                if (entry.domainId != "giving" && entry.domainId != "fasting") {
-                    OutlinedTextField(
-                        value = prayerMins,
-                        onValueChange = { prayerMins = it },
-                        label = { Text(strings.durationMinutesLabel) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    "bible_reading" -> {
+                        OutlinedTextField(
+                            value = bibleBook,
+                            onValueChange = { bibleBook = it },
+                            label = { Text(strings.selectBibleBook) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = startChapter,
+                                onValueChange = { startChapter = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.startChapter) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = endChapter,
+                                onValueChange = { endChapter = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.endChapter) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    "bible_mem", "bible_memory" -> {
+                        OutlinedTextField(
+                            value = bibleMemBook,
+                            onValueChange = { bibleMemBook = it },
+                            label = { Text(strings.selectBibleBook) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = bibleMemChapter,
+                                onValueChange = { bibleMemChapter = it },
+                                label = { Text(strings.startChapter) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = bibleMemVerse,
+                                onValueChange = { bibleMemVerse = it },
+                                label = { Text(strings.versesPrompt) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    "christian_lit", "christian_lit_reading", "christian_lit_mem", "christian_lit_memory" -> {
+                        OutlinedTextField(
+                            value = bookTitle,
+                            onValueChange = { bookTitle = it },
+                            label = { Text(strings.bookTitle) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = bookAuthor,
+                            onValueChange = { bookAuthor = it },
+                            label = { Text(strings.author) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = startPage,
+                                onValueChange = { startPage = it },
+                                label = { Text(strings.startPageLabel) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = endPage,
+                                onValueChange = { endPage = it },
+                                label = { Text(strings.endPageLabel) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Mark Book as Completed", style = MaterialTheme.typography.bodyMedium)
+                            Switch(checked = isBookCompleted, onCheckedChange = { isBookCompleted = it })
+                        }
+                    }
+
+                    "fasting" -> {
+                        OutlinedTextField(
+                            value = fastingType,
+                            onValueChange = { fastingType = it },
+                            label = { Text(strings.fastingTypePrompt) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.weight(1f).clickable { showFastingStartDatePicker = true }
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(strings.startDateLabel, style = MaterialTheme.typography.labelSmall)
+                                    Text(fastingStartDateIso, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.weight(1f).clickable { showFastingEndDatePicker = true }
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(strings.endDateLabel, style = MaterialTheme.typography.labelSmall)
+                                    Text(fastingEndDateIso, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        OutlinedTextField(
+                            value = fastingPurpose,
+                            onValueChange = { fastingPurpose = it },
+                            label = { Text(strings.purpose) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "giving" -> {
+                        OutlinedTextField(
+                            value = givingAmt,
+                            onValueChange = { givingAmt = it },
+                            label = { Text(strings.givingAmountLabel) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = givingIncomeRef,
+                            onValueChange = { givingIncomeRef = it },
+                            label = { Text(strings.incomeReference) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = givingType,
+                            onValueChange = { givingType = it },
+                            label = { Text(strings.givingTypePlaceholder) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    "making_disciples", "discipleship" -> {
+                        OutlinedTextField(
+                            value = discipleName,
+                            onValueChange = { discipleName = it },
+                            label = { Text(strings.discipleName) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = discipleshipTopicsCovered,
+                            onValueChange = { discipleshipTopicsCovered = it },
+                            label = { Text(strings.topicsCovered) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
 
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text(strings.activityNotesPrompt) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
                 )
             }
         },
@@ -1091,22 +1387,60 @@ fun EditEntryDialog(
                 val ePg = endPage.toIntOrNull() ?: entry.endPage
                 val pRead = (ePg - sPg + 1).coerceAtLeast(1)
 
+                val sCh = startChapter.toIntOrNull() ?: entry.startChapter
+                val eCh = endChapter.toIntOrNull() ?: entry.endChapter
+                val calcCh = (eCh - sCh + 1).coerceAtLeast(1)
+
+                val sTopic = startPrayerTopicNum.toIntOrNull() ?: 0
+                val eTopic = endPrayerTopicNum.toIntOrNull() ?: 0
+                val calcTopics = if (sTopic > 0 && eTopic >= sTopic) (eTopic - sTopic + 1) else (prayerTopicsCount.toIntOrNull() ?: entry.prayerTopicsCount)
+
+                val fastingDays = try {
+                    val s = java.time.LocalDate.parse(fastingStartDateIso)
+                    val e = java.time.LocalDate.parse(fastingEndDateIso)
+                    val d = java.time.temporal.ChronoUnit.DAYS.between(s, e) + 1
+                    if (d >= 1) d.toInt() else 1
+                } catch (_: Exception) {
+                    entry.fastingDaysCount
+                }
+
                 val updated = entry.copy(
+                    dateIso = dateIso,
                     notes = notes,
+                    startTimeIso = startTimeIso,
+                    endTimeIso = endTimeIso,
+                    durationSeconds = if (entry.domainId == "giving" || entry.domainId == "fasting") 0L else calculatedDurationSeconds,
                     bookTitle = bookTitle,
                     bookAuthor = bookAuthor,
                     startPage = sPg,
                     endPage = ePg,
-                    pagesRead = pRead,
+                    pagesRead = if (entry.domainId in listOf("christian_lit", "christian_lit_reading")) pRead else entry.pagesRead,
+                    pagesMemorized = if (entry.domainId in listOf("christian_lit_mem", "christian_lit_memory")) pRead else entry.pagesMemorized,
                     isBookCompleted = isBookCompleted,
                     bibleBook = bibleBook,
+                    startChapter = sCh,
+                    endChapter = eCh,
+                    chaptersCount = calcCh,
                     bibleMemBook = bibleMemBook,
                     bibleMemChapter = bibleMemChapter.toIntOrNull() ?: entry.bibleMemChapter,
                     bibleMemVerse = bibleMemVerse,
-                    chaptersCount = chapters.toIntOrNull() ?: entry.chaptersCount,
-                    durationSeconds = if (entry.domainId == "giving" || entry.domainId == "fasting") 0L else ((prayerMins.toLongOrNull() ?: (entry.durationSeconds / 60)) * 60),
+                    prayerType = prayerType,
+                    startPrayerTopicNumber = sTopic,
+                    endPrayerTopicNumber = eTopic,
+                    prayerTopicsCount = calcTopics,
+                    retreatPeriodOfDay = retreatPeriodOfDay,
+                    prayerParticipantsCount = prayerParticipantsCount.toIntOrNull() ?: entry.prayerParticipantsCount,
+                    reflection = ddewgInspirationText,
+                    fastingType = fastingType,
+                    fastingStartDateIso = fastingStartDateIso,
+                    fastingEndDateIso = fastingEndDateIso,
+                    fastingDaysCount = fastingDays,
+                    fastingPurpose = fastingPurpose,
                     givingAmount = givingAmt.toDoubleOrNull() ?: entry.givingAmount,
+                    givingIncomeReference = givingIncomeRef.toDoubleOrNull() ?: entry.givingIncomeReference,
                     givingType = givingType,
+                    prayerParticipantNames = discipleName,
+                    areasDiscussed = discipleshipTopicsCovered,
                     updatedAtMs = System.currentTimeMillis()
                 )
                 onConfirm(updated)
@@ -1120,6 +1454,42 @@ fun EditEntryDialog(
             }
         }
     )
+
+    if (showDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = dateIso,
+            onDateSelected = { dateIso = it },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+    if (showStartTimePicker) {
+        AppTimePickerDialog(
+            initialTime = startTimeIso,
+            onTimeSelected = { startTimeIso = it },
+            onDismiss = { showStartTimePicker = false }
+        )
+    }
+    if (showEndTimePicker) {
+        AppTimePickerDialog(
+            initialTime = endTimeIso,
+            onTimeSelected = { endTimeIso = it },
+            onDismiss = { showEndTimePicker = false }
+        )
+    }
+    if (showFastingStartDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = fastingStartDateIso,
+            onDateSelected = { fastingStartDateIso = it },
+            onDismiss = { showFastingStartDatePicker = false }
+        )
+    }
+    if (showFastingEndDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = fastingEndDateIso,
+            onDateSelected = { fastingEndDateIso = it },
+            onDismiss = { showFastingEndDatePicker = false }
+        )
+    }
 }
 
 @Composable

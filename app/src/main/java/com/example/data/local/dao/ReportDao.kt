@@ -15,6 +15,9 @@ interface ReportDao {
     @Query("SELECT * FROM reports")
     suspend fun getAllReportsList(): List<ReportRecordEntity>
 
+    @Query("SELECT * FROM reports WHERE id = :id LIMIT 1")
+    suspend fun getReportById(id: String): ReportRecordEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReport(report: ReportRecordEntity)
 

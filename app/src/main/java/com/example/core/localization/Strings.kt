@@ -399,12 +399,49 @@ interface AppStrings {
     val prayerTypePrayerWalk: String
     val prayerTypePrayerNight: String
     val prayerTypePrayerSiege: String
+    val prayerTypePrayerCrusade: String
+    val prayerTypeMorningDevotion: String
+    val prayerTypeHouseChurch: String
+    val prayerTypePraiseAndAdoration: String
+    val prayerTypePrayerChain: String
     val prayerTypeCellGroup: String
     val prayerTypeFamilyAltar: String
     val prayerTypeCorporateAssembly: String
     val prayerTypeIntercessoryChain: String
     val prayerTypeCustom: String
     val customPrayerFocusPrompt: String
+
+    // 15-Minute Retreat Periods
+    val retreatPeriodMorning: String
+    val retreatPeriodNoon: String
+    val retreatPeriodEvening: String
+    val retreatPeriodNight: String
+    val retreatPeriodOfDayLabel: String
+    val periodOfDay: String
+    val retreatMorning: String
+    val retreatNoon: String
+    val retreatEvening: String
+    val retreatNight: String
+
+    // Topic Number Range
+    val startPrayerTopicNumberLabel: String
+    val endPrayerTopicNumberLabel: String
+    val totalTopicsAutoCalculated: String
+    val continueFromTopic: String
+    val continueFromTopicPrompt: String
+    val prayerTopics: String
+    val startTopicNumber: String
+    val endTopicNumber: String
+    val ddewgInspirationPrompt: String
+    val fastingTypePrompt: String
+    val incomeReference: String
+    val discipleName: String
+    val topicsCovered: String
+    val startTime: String
+    val stopTime: String
+    val timerRunning: String
+    val timerPaused: String
+    val ddewgAbbr: String
 
     // Giving to God
     val amountEarnedLabel: String
@@ -1070,8 +1107,8 @@ object EnglishStrings : AppStrings {
     override val domainNamePrompt = "Domain Name"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Measurement Unit (e.g., Pages, Minutes)"
-    override val haveYouSpentTimeWithGod = "Have you spent time with God today?"
-    override val timeWithGodSubtitle = "Reflect on your spiritual walk and record your devotional activities for today."
+    override val haveYouSpentTimeWithGod = "Reflect on your walk with God and record your time spent with God"
+    override val timeWithGodSubtitle = "Reflect on your walk with God and record your time spent with God"
     override val exploreDisciplines = "Record Disciplines"
     override val editReminderTitle = "Edit Daily Reminder"
 
@@ -1088,12 +1125,49 @@ object EnglishStrings : AppStrings {
     override val prayerTypePrayerWalk = "Prayer Walk"
     override val prayerTypePrayerNight = "Prayer Night"
     override val prayerTypePrayerSiege = "Prayer Siege"
+    override val prayerTypePrayerCrusade = "Prayer Crusade"
+    override val prayerTypeMorningDevotion = "Morning Devotion"
+    override val prayerTypeHouseChurch = "House Church"
+    override val prayerTypePraiseAndAdoration = "Praise and Adoration"
+    override val prayerTypePrayerChain = "Prayer Chain"
     override val prayerTypeCellGroup = "Cell Group / House Fellowship"
     override val prayerTypeFamilyAltar = "Family Altar"
     override val prayerTypeCorporateAssembly = "Corporate Assembly"
     override val prayerTypeIntercessoryChain = "Intercessory Chain"
-    override val prayerTypeCustom = "Custom Prayer Focus"
+    override val prayerTypeCustom = "Custom"
     override val customPrayerFocusPrompt = "Specify Custom Prayer Focus"
+
+    // 15-Minute Retreat Periods
+    override val retreatPeriodMorning = "Morning"
+    override val retreatPeriodNoon = "Noon"
+    override val retreatPeriodEvening = "Evening"
+    override val retreatPeriodNight = "Night"
+    override val retreatPeriodOfDayLabel = "Period of the Day"
+    override val periodOfDay = "Period of the Day"
+    override val retreatMorning = "Morning"
+    override val retreatNoon = "Noon"
+    override val retreatEvening = "Evening"
+    override val retreatNight = "Night"
+
+    // Topic Number Range
+    override val startPrayerTopicNumberLabel = "Start Prayer Topic #"
+    override val endPrayerTopicNumberLabel = "End Prayer Topic #"
+    override val totalTopicsAutoCalculated = "Total Topics Prayed: %d"
+    override val continueFromTopic = "Continue from topic #%d"
+    override val continueFromTopicPrompt = "Continue from topic #%d"
+    override val prayerTopics = "Prayer Topics"
+    override val startTopicNumber = "Start Topic #"
+    override val endTopicNumber = "End Topic #"
+    override val ddewgInspirationPrompt = "Encounter notes & scripture"
+    override val fastingTypePrompt = "Type of Fast"
+    override val incomeReference = "Gross Income Reference (XAF)"
+    override val discipleName = "Disciple Name"
+    override val topicsCovered = "Topics Covered"
+    override val startTime = "Start Time"
+    override val stopTime = "Stop Time"
+    override val timerRunning = "Running"
+    override val timerPaused = "Paused"
+    override val ddewgAbbr = "DDEWG"
 
     // Giving to God
     override val amountEarnedLabel = "Gross Income / Amount Earned"
@@ -1588,8 +1662,8 @@ object FrenchStrings : AppStrings {
     override val domainNamePrompt = "Nom du Domaine"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Unité de Mesure (ex. Pages, Minutes)"
-    override val haveYouSpentTimeWithGod = "Avez-vous passé du temps avec Dieu aujourd'hui ?"
-    override val timeWithGodSubtitle = "Méditez sur votre marche spirituelle et enregistrez vos activités de dévotion aujourd'hui."
+    override val haveYouSpentTimeWithGod = "Réfléchissez sur votre marche avec Dieu et enregistrez votre temps passé avec Dieu"
+    override val timeWithGodSubtitle = "Méditez sur votre marche avec Dieu et enregistrez votre temps passé avec Dieu"
     override val exploreDisciplines = "Enregistrer les disciplines"
     override val editReminderTitle = "Modifier le rappel quotidien"
 
@@ -1606,12 +1680,49 @@ object FrenchStrings : AppStrings {
     override val prayerTypePrayerWalk = "Marche de Prière"
     override val prayerTypePrayerNight = "Nuit de Prière"
     override val prayerTypePrayerSiege = "Siège de Prière"
+    override val prayerTypePrayerCrusade = "Croisade de Prière"
+    override val prayerTypeMorningDevotion = "Dévotion Matinale"
+    override val prayerTypeHouseChurch = "Église de Maison"
+    override val prayerTypePraiseAndAdoration = "Louange et Adoration"
+    override val prayerTypePrayerChain = "Chaîne de Prière"
     override val prayerTypeCellGroup = "Groupe de Maison / Cellule"
     override val prayerTypeFamilyAltar = "Autel Familial"
     override val prayerTypeCorporateAssembly = "Assemblée Générale"
     override val prayerTypeIntercessoryChain = "Chaîne d'Intercession"
-    override val prayerTypeCustom = "Autre Sujet Personnalisé"
+    override val prayerTypeCustom = "Personnalisé"
     override val customPrayerFocusPrompt = "Précisez votre Sujet de Prière"
+
+    // 15-Minute Retreat Periods
+    override val retreatPeriodMorning = "Matin"
+    override val retreatPeriodNoon = "Midi"
+    override val retreatPeriodEvening = "Soir"
+    override val retreatPeriodNight = "Nuit"
+    override val retreatPeriodOfDayLabel = "Période de la Journée"
+    override val periodOfDay = "Moment de la journée"
+    override val retreatMorning = "Matin"
+    override val retreatNoon = "Midi"
+    override val retreatEvening = "Soir"
+    override val retreatNight = "Nuit"
+
+    // Topic Number Range
+    override val startPrayerTopicNumberLabel = "N° de Sujet de Prière Début"
+    override val endPrayerTopicNumberLabel = "N° de Sujet de Prière Fin"
+    override val totalTopicsAutoCalculated = "Total des Sujets Priés : %d"
+    override val continueFromTopic = "Continuer à partir du sujet n°%d"
+    override val continueFromTopicPrompt = "Continuer à partir du sujet n°%d"
+    override val prayerTopics = "Sujets de Prière"
+    override val startTopicNumber = "N° de Sujet Début"
+    override val endTopicNumber = "N° de Sujet Fin"
+    override val ddewgInspirationPrompt = "Notes de rencontre & écriture"
+    override val fastingTypePrompt = "Type de jeûne"
+    override val incomeReference = "Référence de Revenu Brut (XAF)"
+    override val discipleName = "Nom du Disciple"
+    override val topicsCovered = "Sujets Abordés"
+    override val startTime = "Heure de Début"
+    override val stopTime = "Heure de Fin"
+    override val timerRunning = "En cours"
+    override val timerPaused = "En pause"
+    override val ddewgAbbr = "DREQD"
 
     // Giving to God
     override val amountEarnedLabel = "Revenu Brut / Montant Gagné"

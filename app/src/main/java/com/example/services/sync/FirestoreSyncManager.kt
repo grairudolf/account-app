@@ -711,6 +711,18 @@ object FirestoreSyncManager {
         }
     }
 
+    suspend fun deleteReportFromCloud(context: Context, userId: String, reportId: String) = withContext(Dispatchers.IO) {
+        if (userId.isBlank() || userId == "guest_user" || reportId.isBlank()) return@withContext
+        val firestore = getFirestore(context) ?: return@withContext
+        withTimeoutOrNull(TIMEOUT_MS) {
+            try {
+                firestore.collection("users").document(userId).collection("reports").document(reportId).delete().await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to delete report from cloud: ${e.message}")
+            }
+        }
+    }
+
     /**
      * Full local-to-cloud backup for all tables with guaranteed progress
      */

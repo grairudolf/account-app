@@ -43,6 +43,7 @@ val DividerColor: Color
 // Status Colors
 val StatusSuccess = Color(0xFF10B981)
 val StatusWarning = Color(0xFFFDBC0A)
+val StatusPending = Color(0xFFF59E0B)
 val StatusError = Color(0xFFEF4444)
 
 // Primary & Accent Aliases

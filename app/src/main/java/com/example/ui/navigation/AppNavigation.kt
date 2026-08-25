@@ -206,14 +206,16 @@ fun MainApp() {
                                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
+                                    val isRunningActive = activeTimer.isRunning && !activeTimer.isPaused
                                     Box(
                                         modifier = Modifier
                                             .size(10.dp)
                                             .clip(CircleShape)
-                                            .background(if (activeTimer.isRunning) StatusSuccess else AccentPurple)
+                                            .background(if (isRunningActive) StatusSuccess else AccentPurple)
                                     )
+                                    val domainLabel = if (activeTimer.domainId == "ddewg") strings.ddewgAbbr else strings.getDomainTitleById(activeTimer.domainId)
                                     Text(
-                                        text = "${strings.getDomainTitleById(activeTimer.domainId).uppercase()}: $timeStr",
+                                        text = "${domainLabel.uppercase()}: $timeStr",
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.bodyMedium,
                                         maxLines = 1,
@@ -225,8 +227,9 @@ fun MainApp() {
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.wrapContentWidth()
                                 ) {
+                                    val isRunningActive = activeTimer.isRunning && !activeTimer.isPaused
                                     Text(
-                                        text = strings.resumeTimer,
+                                        text = if (isRunningActive) strings.timerRunning else strings.timerPaused,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         fontWeight = FontWeight.Bold,

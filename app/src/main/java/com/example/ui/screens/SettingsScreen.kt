@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppLanguage
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.ReminderEntity
@@ -34,6 +35,7 @@ import com.example.ui.components.PrivacyPolicyDialog
 import com.example.ui.components.SupportFeedbackDialog
 import com.example.ui.components.TermsAndConditionsDialog
 import com.example.ui.components.AppDatePickerDialog
+import com.example.ui.components.AppTimePickerDialog
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -1345,16 +1347,20 @@ fun AddOrEditReminderDialog(
 ) {
     var title by remember { mutableStateOf(initialReminder?.title ?: "Daily DDEWG") }
     var msg by remember { mutableStateOf(initialReminder?.message ?: "Time for daily encounter with God!") }
-    var hourText by remember { mutableStateOf(String.format("%02d", initialReminder?.hour ?: 6)) }
-    var minText by remember { mutableStateOf(String.format("%02d", initialReminder?.minute ?: 0)) }
+    var selectedHour by remember { mutableStateOf(initialReminder?.hour ?: 6) }
+    var selectedMinute by remember { mutableStateOf(initialReminder?.minute ?: 0) }
+    var showTimePicker by remember { mutableStateOf(false) }
 
     val isEditing = initialReminder != null
+    val formattedTime = remember(selectedHour, selectedMinute) {
+        String.format(java.util.Locale.US, "%02d:%02d", selectedHour, selectedMinute)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (isEditing) strings.editReminderTitle else strings.addReminderTitle, fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -1367,31 +1373,59 @@ fun AddOrEditReminderDialog(
                     label = { Text(strings.messageLabel) },
                     modifier = Modifier.fillMaxWidth().testTag("reminder_message_input")
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showTimePicker = true }
+                        .testTag("reminder_time_picker_card")
                 ) {
-                    OutlinedTextField(
-                        value = hourText,
-                        onValueChange = { hourText = it },
-                        label = { Text(strings.hourLabel) },
-                        modifier = Modifier.weight(1f).testTag("reminder_hour_input")
-                    )
-                    OutlinedTextField(
-                        value = minText,
-                        onValueChange = { minText = it },
-                        label = { Text(strings.minuteLabel) },
-                        modifier = Modifier.weight(1f).testTag("reminder_min_input")
-                    )
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Column {
+                                Text(
+                                    text = "Reminder Time",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formattedTime,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = { showTimePicker = true },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Change Time", fontSize = 12.sp)
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val h = hourText.toIntOrNull()?.coerceIn(0, 23) ?: 6
-                    val m = minText.toIntOrNull()?.coerceIn(0, 59) ?: 0
-                    onConfirm(initialReminder?.domainId ?: "ddewg", title, msg, h, m)
+                    onConfirm(initialReminder?.domainId ?: "ddewg", title, msg, selectedHour, selectedMinute)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = BrandDarkNavy, contentColor = BrandBrightYellow),
                 modifier = Modifier.testTag("save_reminder_button")
@@ -1406,6 +1440,20 @@ fun AddOrEditReminderDialog(
         },
         shape = RoundedCornerShape(28.dp)
     )
+
+    if (showTimePicker) {
+        AppTimePickerDialog(
+            initialTime = formattedTime,
+            onTimeSelected = { timeStr ->
+                try {
+                    val parts = timeStr.split(":")
+                    selectedHour = parts[0].toInt().coerceIn(0, 23)
+                    selectedMinute = parts[1].toInt().coerceIn(0, 59)
+                } catch (_: Exception) {}
+            },
+            onDismiss = { showTimePicker = false }
+        )
+    }
 }
 
 private fun String?.isNull_Blank(): Boolean = this == null || this.isBlank()

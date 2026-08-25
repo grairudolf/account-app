@@ -93,6 +93,10 @@ fun DomainDetailScreen(
     var customPrayerFocus by remember { mutableStateOf("") }
     var prayerParticipantsCountText by remember { mutableStateOf("1") }
     var prayerTopicsCountText by remember { mutableStateOf("1") }
+    var startPrayerTopicNumberText by remember { mutableStateOf("") }
+    var endPrayerTopicNumberText by remember { mutableStateOf("") }
+    var retreatPeriodOfDay by remember { mutableStateOf("Morning") }
+    var previousEndTopicNumber by remember { mutableStateOf(0) }
 
     // DDEWG Field
     var ddewgInspirationText by remember { mutableStateOf("") }
@@ -150,6 +154,12 @@ fun DomainDetailScreen(
                             bibleMemChapter = last.bibleMemChapter + 1
                         }
                     }
+                    "prayer_alone", "prayer_with_others" -> {
+                        if (last.endPrayerTopicNumber > 0) {
+                            previousEndTopicNumber = last.endPrayerTopicNumber
+                            startPrayerTopicNumberText = (last.endPrayerTopicNumber + 1).toString()
+                        }
+                    }
                 }
             }
         }
@@ -158,6 +168,8 @@ fun DomainDetailScreen(
     // Fasting (Auto-calculated from Start Date & End Date)
     var fastingStartDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var fastingEndDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var showFastingStartDatePicker by remember { mutableStateOf(false) }
+    var showFastingEndDatePicker by remember { mutableStateOf(false) }
     val calculatedFastingDays = remember(fastingStartDateIso, fastingEndDateIso) {
         try {
             val s = LocalDate.parse(fastingStartDateIso)
@@ -740,14 +752,125 @@ fun DomainDetailScreen(
                                         )
                                     }
 
-                                    if (prayerFocusType == "Personal Supplication" || prayerFocusType == "Request" || prayerFocusType == "Requests" || prayerFocusType == "Thanksgiving" || prayerFocusType == "Custom") {
-                                        OutlinedTextField(
-                                            value = prayerTopicsCountText,
-                                            onValueChange = { prayerTopicsCountText = it },
-                                            label = { Text(strings.numTopicsRecorded) },
+                                    if (prayerFocusType == "15-Minute Retreat") {
+                                        Column(
                                             modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true
-                                        )
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = strings.periodOfDay,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                val periods: List<Pair<String, String>> = listOf(
+                                                    "Morning" to strings.retreatMorning,
+                                                    "Noon" to strings.retreatNoon,
+                                                    "Evening" to strings.retreatEvening,
+                                                    "Night" to strings.retreatNight
+                                                )
+                                                periods.forEach { (periodKey, periodLabel) ->
+                                                    val isSelected = retreatPeriodOfDay.equals(periodKey, ignoreCase = true)
+                                                    FilterChip(
+                                                        selected = isSelected,
+                                                        onClick = { retreatPeriodOfDay = periodKey },
+                                                        label = { Text(periodLabel, fontSize = 12.sp) },
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (prayerFocusType == "Personal Supplication" || prayerFocusType == "Request" || prayerFocusType == "Requests" || prayerFocusType == "Thanksgiving" || prayerFocusType == "Custom") {
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                Text(
+                                                    text = strings.prayerTopics,
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                if (previousEndTopicNumber > 0) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            startPrayerTopicNumberText = (previousEndTopicNumber + 1).toString()
+                                                        },
+                                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            text = strings.continueFromTopicPrompt.format(previousEndTopicNumber + 1),
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                ) {
+                                                    OutlinedTextField(
+                                                        value = startPrayerTopicNumberText,
+                                                        onValueChange = { startPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                                        label = { Text(strings.startTopicNumber) },
+                                                        placeholder = { Text("e.g. 20") },
+                                                        modifier = Modifier.weight(1f),
+                                                        singleLine = true
+                                                    )
+                                                    OutlinedTextField(
+                                                        value = endPrayerTopicNumberText,
+                                                        onValueChange = { endPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                                        label = { Text(strings.endTopicNumber) },
+                                                        placeholder = { Text("e.g. 30") },
+                                                        modifier = Modifier.weight(1f),
+                                                        singleLine = true
+                                                    )
+                                                }
+
+                                                val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
+                                                val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
+                                                if (startNum > 0 && endNum >= startNum) {
+                                                    val autoCalculated = endNum - startNum + 1
+                                                    Surface(
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        color = StatusSuccess.copy(alpha = 0.15f),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(
+                                                            text = strings.totalTopicsAutoCalculated.format(autoCalculated),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = StatusSuccess,
+                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                                        )
+                                                    }
+                                                } else {
+                                                    OutlinedTextField(
+                                                        value = prayerTopicsCountText,
+                                                        onValueChange = { prayerTopicsCountText = it },
+                                                        label = { Text(strings.numTopicsRecorded) },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        singleLine = true
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
@@ -756,12 +879,12 @@ fun DomainDetailScreen(
                                     val groupTypes = listOf(
                                         "Prayer Night" to strings.prayerTypePrayerNight,
                                         "Prayer Siege" to strings.prayerTypePrayerSiege,
-                                        "Cell Group" to strings.prayerTypeCellGroup,
-                                        "Prayer Walk" to strings.prayerTypePrayerWalk,
-                                        "Family Altar" to strings.prayerTypeFamilyAltar,
-                                        "Corporate Assembly" to strings.prayerTypeCorporateAssembly,
-                                        "Intercessory Chain" to strings.prayerTypeIntercessoryChain,
+                                        "Prayer Crusade" to strings.prayerTypePrayerCrusade,
+                                        "Morning Devotion" to strings.prayerTypeMorningDevotion,
+                                        "House Church" to strings.prayerTypeHouseChurch,
                                         "Intercession" to strings.prayerTypeIntercession,
+                                        "Praise and Adoration" to strings.prayerTypePraiseAndAdoration,
+                                        "Prayer Chain" to strings.prayerTypePrayerChain,
                                         "Custom" to strings.prayerTypeCustom
                                     )
 
@@ -1057,12 +1180,28 @@ fun DomainDetailScreen(
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.weight(1f)
                                             ) {
-                                                Column(modifier = Modifier.padding(10.dp)) {
-                                                    Text(
-                                                        text = strings.startDateLabel,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    )
+                                                Column(
+                                                    modifier = Modifier
+                                                        .clickable { showFastingStartDatePicker = true }
+                                                        .padding(10.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(
+                                                            text = strings.startDateLabel,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                        )
+                                                        Icon(
+                                                            Icons.Default.CalendarMonth,
+                                                            contentDescription = "Pick Date",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1101,12 +1240,28 @@ fun DomainDetailScreen(
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.weight(1f)
                                             ) {
-                                                Column(modifier = Modifier.padding(10.dp)) {
-                                                    Text(
-                                                        text = strings.endDateLabel,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    )
+                                                Column(
+                                                    modifier = Modifier
+                                                        .clickable { showFastingEndDatePicker = true }
+                                                        .padding(10.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(
+                                                            text = strings.endDateLabel,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                        )
+                                                        Icon(
+                                                            Icons.Default.CalendarMonth,
+                                                            contentDescription = "Pick Date",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1666,6 +1821,9 @@ fun DomainDetailScreen(
                                         }
                                         "prayer_alone" -> {
                                             val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
+                                            val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
+                                            val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
+                                            val calcTopics = if (startNum > 0 && endNum >= startNum) (endNum - startNum + 1) else (prayerTopicsCountText.toIntOrNull() ?: 0)
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
                                                 userId = userId,
@@ -1677,7 +1835,10 @@ fun DomainDetailScreen(
                                                 startTimeIso = startTimeText,
                                                 endTimeIso = stopTimeText,
                                                 prayerType = effectiveFocus,
-                                                prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
+                                                prayerTopicsCount = calcTopics,
+                                                startPrayerTopicNumber = startNum,
+                                                endPrayerTopicNumber = endNum,
+                                                retreatPeriodOfDay = if (prayerFocusType == "15-Minute Retreat") retreatPeriodOfDay else "",
                                                 notes = notes
                                             )
                                         }
@@ -2064,6 +2225,20 @@ fun DomainDetailScreen(
             initialDateIso = selectedDateIso,
             onDateSelected = { selectedDateIso = it; errorMessage = null },
             onDismiss = { showDatePicker = false }
+        )
+    }
+    if (showFastingStartDatePicker) {
+        com.example.ui.components.AppDatePickerDialog(
+            initialDateIso = fastingStartDateIso,
+            onDateSelected = { fastingStartDateIso = it },
+            onDismiss = { showFastingStartDatePicker = false }
+        )
+    }
+    if (showFastingEndDatePicker) {
+        com.example.ui.components.AppDatePickerDialog(
+            initialDateIso = fastingEndDateIso,
+            onDateSelected = { fastingEndDateIso = it },
+            onDismiss = { showFastingEndDatePicker = false }
         )
     }
     if (showStartTimePicker) {

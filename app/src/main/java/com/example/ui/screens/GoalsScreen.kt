@@ -31,6 +31,8 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodels.GoalWithProgress
 
 import com.example.ui.components.AppTimePickerDialog
+import com.example.ui.components.AppDatePickerDialog
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 
@@ -335,9 +337,12 @@ fun AddGoalDialog(
     // Fasting & Reminder Specifics
     var fastingType by remember { mutableStateOf("COMPLETE") } // COMPLETE, PARTIAL, WATER_ONLY
     var periodDaysInput by remember { mutableStateOf("3") }
-    var isDailyReminderEnabled by remember { mutableStateOf(false) }
+    var isReminderEnabled by remember { mutableStateOf(false) }
+    var reminderScheduleType by remember { mutableStateOf("DAILY") } // DAILY, SPECIFIC_DATE, WEEKLY, MONTHLY
+    var reminderDateIso by remember { mutableStateOf(java.time.LocalDate.now().plusDays(1).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
     var reminderTimeIso by remember { mutableStateOf("08:00") }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val allDomains = remember { PredefinedDomains.ALL }
 
@@ -593,7 +598,7 @@ fun AddGoalDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                // Daily Reminder Setting
+                // Flexible Goal Reminder Setting
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -603,25 +608,64 @@ fun AddGoalDialog(
                         Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text("Enable Daily Reminder", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                            Text("Notification at scheduled time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Enable Goal Reminder", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text("Stay consistent towards this target", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     Switch(
-                        checked = isDailyReminderEnabled,
-                        onCheckedChange = { isDailyReminderEnabled = it }
+                        checked = isReminderEnabled,
+                        onCheckedChange = { isReminderEnabled = it }
                     )
                 }
 
-                if (isDailyReminderEnabled) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Reminder Time:", style = MaterialTheme.typography.bodyMedium)
-                        OutlinedButton(onClick = { showTimePicker = true }) {
-                            Text(reminderTimeIso, fontWeight = FontWeight.Bold)
+                if (isReminderEnabled) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Reminder Cadence", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf(
+                                "DAILY" to "Daily",
+                                "SPECIFIC_DATE" to "Specific Date",
+                                "WEEKLY" to "Weekly",
+                                "MONTHLY" to "Monthly"
+                            ).forEach { (schedKey, schedLabel) ->
+                                FilterChip(
+                                    selected = reminderScheduleType == schedKey,
+                                    onClick = { reminderScheduleType = schedKey },
+                                    label = { Text(schedLabel, style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+
+                        if (reminderScheduleType == "SPECIFIC_DATE") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Reminder Date:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                OutlinedButton(
+                                    onClick = { showDatePicker = true },
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(reminderDateIso, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Reminder Time:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                            OutlinedButton(
+                                onClick = { showTimePicker = true },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(reminderTimeIso, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -637,7 +681,12 @@ fun AddGoalDialog(
                         selectedAspect
                     }
                     val periodDays = periodDaysInput.toIntOrNull() ?: 0
-                    onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency, fastingType, periodDays, isDailyReminderEnabled, reminderTimeIso)
+                    val finalReminderTime = if (reminderScheduleType == "SPECIFIC_DATE") {
+                        "$reminderDateIso $reminderTimeIso"
+                    } else {
+                        reminderTimeIso
+                    }
+                    onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency, fastingType, periodDays, isReminderEnabled, finalReminderTime)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 modifier = Modifier.testTag("confirm_add_goal_button")
@@ -651,6 +700,18 @@ fun AddGoalDialog(
             }
         }
     )
+
+    if (showDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = reminderDateIso,
+            maxDateIso = java.time.LocalDate.now().plusYears(2).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { date ->
+                reminderDateIso = date
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
 
     if (showTimePicker) {
         AppTimePickerDialog(
