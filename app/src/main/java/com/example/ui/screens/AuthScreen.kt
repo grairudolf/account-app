@@ -815,7 +815,7 @@ fun AuthScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "For enhanced security, a verification link has been sent to:",
+                        "For enhanced account security, a verification link has been sent to:",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Surface(
@@ -831,8 +831,30 @@ fun AuthScreen(
                             modifier = Modifier.padding(10.dp)
                         )
                     }
+
+                    // Spam Folder Notice Banner
+                    Surface(
+                        color = StreakGold.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, StreakGold.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = StreakGold, modifier = Modifier.size(18.dp))
+                            Text(
+                                text = "If you do not see the email in your inbox, please check your Spam or Junk folder. It is sent from noreply@firebaseapp.com.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
                     Text(
-                        "Please check your inbox or spam folder and click the link to verify your account.",
+                        "Please click the link inside the email to verify your address, then tap the button below to continue.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -853,7 +875,7 @@ fun AuthScreen(
                                         Toast.makeText(context, "Email verified successfully! Welcome $displayName", Toast.LENGTH_SHORT).show()
                                         onSignInWithAccount(pUser.uid, displayName, pEmail, pUser.photoUrl?.toString(), pendingAssemblyInput)
                                     } else {
-                                        Toast.makeText(context, "Email not verified yet. Please check your inbox or click 'Resend Email'.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Email not verified yet. Please check your spam/inbox or click 'Resend Verification Email'.", Toast.LENGTH_LONG).show()
                                     }
                                 },
                                 onFailure = { err ->
@@ -880,7 +902,7 @@ fun AuthScreen(
                                 val res = FirebaseAuthHelper.sendEmailVerification(pUser)
                                 res.fold(
                                     onSuccess = {
-                                        Toast.makeText(context, "Verification email resent to $pEmail!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Verification email resent! Please check your inbox and spam folder.", Toast.LENGTH_LONG).show()
                                     },
                                     onFailure = { err ->
                                         Toast.makeText(context, "Failed to resend: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
