@@ -600,12 +600,14 @@ fun MainApp() {
                     val timerViewModel: TimerViewModel = viewModel(factory = factory)
                     val activeTimerSession by timerViewModel.activeSession.collectAsStateWithLifecycle()
                     val timerElapsedSeconds by timerViewModel.elapsedSeconds.collectAsStateWithLifecycle()
+                    val timerAllEntries by timerViewModel.allEntries.collectAsStateWithLifecycle()
                     TimerScreen(
                         domainId = domainId,
                         strings = strings,
                         userId = currentUserState.id,
                         activeSession = activeTimerSession,
                         elapsedSeconds = timerElapsedSeconds,
+                        allEntries = timerAllEntries,
                         onStartTimer = { dId ->
                             timerViewModel.startTimer(currentUserState.id, dId)
                         },

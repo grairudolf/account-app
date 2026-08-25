@@ -543,6 +543,7 @@ interface AppStrings {
     val confirmDeleteDisciple: String
     val confirmDeleteDisciplePrompt: String
     val saveDiscipleButton: String
+    val markBookCompleted: String
 
     // Proclamation & Dashboard localization keys
     val completedDomainsCountFormat: String
@@ -1269,6 +1270,7 @@ object EnglishStrings : AppStrings {
     override val confirmDeleteDisciple = "Delete Disciple"
     override val confirmDeleteDisciplePrompt = "Are you sure you want to remove this disciple from your list?"
     override val saveDiscipleButton = "Save Disciple"
+    override val markBookCompleted = "Mark Book as Completed"
 
     // Proclamation & Dashboard localization keys
     override val completedDomainsCountFormat = "%d of %d Completed"
@@ -1824,6 +1826,7 @@ object FrenchStrings : AppStrings {
     override val confirmDeleteDisciple = "Supprimer le Disciple"
     override val confirmDeleteDisciplePrompt = "Êtes-vous sûr de vouloir supprimer ce disciple de votre liste ?"
     override val saveDiscipleButton = "Enregistrer le Disciple"
+    override val markBookCompleted = "Marquer le Livre comme Terminé"
 
     // Proclamation & Dashboard localization keys
     override val completedDomainsCountFormat = "%d sur %d Terminés"

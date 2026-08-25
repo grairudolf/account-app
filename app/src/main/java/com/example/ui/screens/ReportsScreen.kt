@@ -723,6 +723,17 @@ fun ReportsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        target.generatedFilePath?.let { path ->
+                            try {
+                                val f = File(path)
+                                if (f.exists()) f.delete()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        if (lastGeneratedFile?.absolutePath == target.generatedFilePath) {
+                            lastGeneratedFile = null
+                        }
                         onDeleteReport(target.id)
                         reportToDelete = null
                         Toast.makeText(context, if (isFrench) "Rapport supprimé" else "Report deleted", Toast.LENGTH_SHORT).show()

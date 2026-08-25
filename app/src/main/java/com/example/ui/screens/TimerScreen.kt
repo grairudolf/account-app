@@ -46,6 +46,7 @@ fun TimerScreen(
     userId: String = "guest_user",
     activeSession: TimerSessionEntity?,
     elapsedSeconds: Long,
+    allEntries: List<AccountabilityEntryEntity> = emptyList(),
     onStartTimer: (domainId: String) -> Unit,
     onPauseTimer: () -> Unit,
     onResumeTimer: () -> Unit,
@@ -79,6 +80,62 @@ fun TimerScreen(
     val minutes = (elapsedSeconds % 3600) / 60
     val seconds = elapsedSeconds % 60
     val formattedTime = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+    val continuedHint = remember(domainId, allEntries) {
+        if (allEntries.isEmpty()) null
+        else {
+            val relevant = allEntries.filter {
+                it.domainId == domainId ||
+                (domainId == "christian_lit" && it.domainId in listOf("christian_lit", "christian_lit_reading")) ||
+                (domainId == "christian_lit_mem" && it.domainId in listOf("christian_lit_mem", "christian_lit_memory")) ||
+                (domainId == "bible_mem" && it.domainId in listOf("bible_mem", "bible_memory")) ||
+                (domainId == "prayer_alone" && it.domainId in listOf("prayer_alone", "prayer_with_others"))
+            }.sortedByDescending { it.timestampMs }.firstOrNull()
+
+            if (relevant != null) {
+                when (domainId) {
+                    "bible_reading" -> {
+                        val rawBook = relevant.bibleBook.ifBlank { "Genesis" }
+                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
+                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
+                        }?.name ?: "Genesis"
+                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
+                        val lastEnd = if (relevant.endChapter > 0) relevant.endChapter else if (relevant.startChapter > 0) relevant.startChapter else 1
+                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
+                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
+                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
+                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
+                            } else {
+                                matchedBook to maxCh
+                            }
+                        } else {
+                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
+                        }
+                        "📖 Continuing: $targetBook Ch. $targetCh"
+                    }
+                    "christian_lit", "christian_lit_reading" -> {
+                        if (relevant.bookTitle.isNotBlank() && !relevant.isBookCompleted) {
+                            val nextPg = if (relevant.endPage > 0) relevant.endPage + 1 else 1
+                            "📚 Continuing: \"${relevant.bookTitle}\" (p. $nextPg)"
+                        } else null
+                    }
+                    "christian_lit_mem", "christian_lit_memory" -> {
+                        if (relevant.bookTitle.isNotBlank()) {
+                            val nextPg = if (relevant.endPage > 0) relevant.endPage + 1 else 1
+                            "🧠 Continuing: \"${relevant.bookTitle}\" (p. $nextPg)"
+                        } else null
+                    }
+                    "prayer_alone", "prayer_with_others" -> {
+                        val prevEnd = if (relevant.endPrayerTopicNumber > 0) relevant.endPrayerTopicNumber else relevant.prayerTopicsCount
+                        if (prevEnd > 0) {
+                            "🙏 ${strings.continueFromTopic.format(prevEnd + 1)}"
+                        } else null
+                    }
+                    else -> null
+                }
+            } else null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -220,6 +277,33 @@ fun TimerScreen(
                             color = MaterialTheme.colorScheme.onSurface,
                             letterSpacing = 2.sp
                         )
+
+                        if (continuedHint != null) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Bookmark,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = continuedHint,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
 
                         // Timer status badge
                         Surface(
@@ -374,6 +458,7 @@ fun TimerScreen(
             elapsedSeconds = elapsedSeconds,
             strings = strings,
             userId = userId,
+            allEntries = allEntries,
             onDismiss = { showSaveDialog = false },
             onConfirm = { entry ->
                 showSaveDialog = false
@@ -391,6 +476,7 @@ fun SaveTimerDialog(
     elapsedSeconds: Long,
     strings: AppStrings,
     userId: String = "guest_user",
+    allEntries: List<AccountabilityEntryEntity> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (entry: AccountabilityEntryEntity) -> Unit
 ) {
@@ -413,6 +499,9 @@ fun SaveTimerDialog(
     var customPrayerFocus by remember { mutableStateOf("") }
     var prayerParticipantsCountText by remember { mutableStateOf("1") }
     var prayerTopicsCountText by remember { mutableStateOf("1") }
+    var startPrayerTopicNumberText by remember { mutableStateOf("") }
+    var endPrayerTopicNumberText by remember { mutableStateOf("") }
+    var previousEndTopicNumber by remember { mutableStateOf(0) }
 
     // Christian Literature
     var bookTitle by remember { mutableStateOf("") }
@@ -420,6 +509,10 @@ fun SaveTimerDialog(
     var startPageText by remember { mutableStateOf("1") }
     var endPageText by remember { mutableStateOf("10") }
     var timesReadText by remember { mutableStateOf("1") }
+    var isBookCompleted by remember { mutableStateOf(false) }
+
+    // Continuation Banner
+    var continuationBanner by remember { mutableStateOf<String?>(null) }
 
     // Giving to God
     var givingIncomeText by remember { mutableStateOf("") }
@@ -443,6 +536,80 @@ fun SaveTimerDialog(
     // Soul Winning
     var preachedToCountText by remember { mutableStateOf("1") }
     var convertedCountText by remember { mutableStateOf("0") }
+
+    // Pre-populate continuation from past history
+    LaunchedEffect(domainId, allEntries) {
+        if (allEntries.isNotEmpty()) {
+            val domainEntries = allEntries.filter {
+                it.domainId == domainId ||
+                (domainId == "christian_lit" && it.domainId in listOf("christian_lit", "christian_lit_reading")) ||
+                (domainId == "christian_lit_mem" && it.domainId in listOf("christian_lit_mem", "christian_lit_memory")) ||
+                (domainId == "bible_mem" && it.domainId in listOf("bible_mem", "bible_memory")) ||
+                (domainId == "prayer_alone" && it.domainId in listOf("prayer_alone", "prayer_with_others"))
+            }.sortedByDescending { it.timestampMs }
+
+            val last = domainEntries.firstOrNull()
+            if (last != null) {
+                when (domainId) {
+                    "bible_reading" -> {
+                        val rawBook = last.bibleBook.ifBlank { "Genesis" }
+                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
+                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
+                        }?.name ?: "Genesis"
+                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
+                        val lastEnd = if (last.endChapter > 0) last.endChapter else if (last.startChapter > 0) last.startChapter else 1
+                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
+                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
+                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
+                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
+                            } else {
+                                matchedBook to maxCh
+                            }
+                        } else {
+                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
+                        }
+                        if (bibleSegments.isNotEmpty()) {
+                            bibleSegments[0] = BibleReadingSegment(book = targetBook, startChapter = targetCh, endChapter = targetCh)
+                        }
+                        continuationBanner = "Continuing: $targetBook Ch. $targetCh"
+                    }
+                    "christian_lit", "christian_lit_reading" -> {
+                        if (!last.isBookCompleted && last.bookTitle.isNotBlank()) {
+                            bookTitle = last.bookTitle
+                            bookAuthor = last.bookAuthor
+                            val nextPg = if (last.endPage > 0) last.endPage + 1 else 1
+                            startPageText = nextPg.toString()
+                            endPageText = (nextPg + 9).toString()
+                            timesReadText = if (last.bookTimesRead > 0) last.bookTimesRead.toString() else "1"
+                            continuationBanner = "Continuing: \"${last.bookTitle}\" (Page $nextPg)"
+                        }
+                    }
+                    "christian_lit_mem", "christian_lit_memory" -> {
+                        if (last.bookTitle.isNotBlank()) {
+                            bookTitle = last.bookTitle
+                            bookAuthor = last.bookAuthor
+                            val nextPg = if (last.endPage > 0) last.endPage + 1 else 1
+                            startPageText = nextPg.toString()
+                            endPageText = (nextPg + 4).toString()
+                            continuationBanner = "Continuing: \"${last.bookTitle}\" (Page $nextPg)"
+                        }
+                    }
+                    "prayer_alone", "prayer_with_others" -> {
+                        val prevEnd = if (last.endPrayerTopicNumber > 0) last.endPrayerTopicNumber else last.prayerTopicsCount
+                        if (prevEnd > 0) {
+                            previousEndTopicNumber = prevEnd
+                            startPrayerTopicNumberText = (prevEnd + 1).toString()
+                            endPrayerTopicNumberText = (prevEnd + 5).toString()
+                            continuationBanner = strings.continueFromTopic.format(prevEnd + 1)
+                        }
+                        if (last.prayerType.isNotBlank()) {
+                            prayerFocusType = last.prayerType
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Computed Values
     val calculatedTotalBibleChapters = remember(bibleSegments.toList()) {
@@ -486,6 +653,36 @@ fun SaveTimerDialog(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
+                }
+
+                if (continuationBanner != null) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Bookmark,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = continuationBanner ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Domain-Specific Metadata Inputs
@@ -656,6 +853,7 @@ fun SaveTimerDialog(
                                 }
                             }
                             if (prayerFocusType == "Custom") {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = customPrayerFocus,
                                     onValueChange = { customPrayerFocus = it },
@@ -664,14 +862,94 @@ fun SaveTimerDialog(
                                     singleLine = true
                                 )
                             }
-                            if (prayerFocusType == "Personal Supplication" || prayerFocusType == "Request" || prayerFocusType == "Requests" || prayerFocusType == "Thanksgiving" || prayerFocusType == "Custom") {
-                                OutlinedTextField(
-                                    value = prayerTopicsCountText,
-                                    onValueChange = { prayerTopicsCountText = it },
-                                    label = { Text(strings.numTopicsRecorded) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Prayer Topics Section with continuation
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = strings.prayerTopics,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    if (previousEndTopicNumber > 0) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                startPrayerTopicNumberText = (previousEndTopicNumber + 1).toString()
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = strings.continueFromTopicPrompt.format(previousEndTopicNumber + 1),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = startPrayerTopicNumberText,
+                                            onValueChange = { startPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                            label = { Text(strings.startTopicNumber) },
+                                            placeholder = { Text("e.g. 20") },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                        OutlinedTextField(
+                                            value = endPrayerTopicNumberText,
+                                            onValueChange = { endPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                            label = { Text(strings.endTopicNumber) },
+                                            placeholder = { Text("e.g. 30") },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
+                                    }
+
+                                    val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
+                                    val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
+                                    if (startNum > 0 && endNum >= startNum) {
+                                        val autoCalculated = endNum - startNum + 1
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = StatusSuccess.copy(alpha = 0.15f),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = strings.totalTopicsAutoCalculated.format(autoCalculated),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = StatusSuccess,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                            )
+                                        }
+                                    } else {
+                                        OutlinedTextField(
+                                            value = prayerTopicsCountText,
+                                            onValueChange = { prayerTopicsCountText = it.filter { ch -> ch.isDigit() } },
+                                            label = { Text(strings.numTopicsRecorded) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -680,14 +958,14 @@ fun SaveTimerDialog(
                         item {
                             Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             val groupTypes = listOf(
-                                "Prayer Walk" to strings.prayerTypePrayerWalk,
                                 "Prayer Night" to strings.prayerTypePrayerNight,
                                 "Prayer Siege" to strings.prayerTypePrayerSiege,
-                                "Cell Group" to strings.prayerTypeCellGroup,
-                                "Family Altar" to strings.prayerTypeFamilyAltar,
-                                "Corporate Assembly" to strings.prayerTypeCorporateAssembly,
-                                "Intercessory Chain" to strings.prayerTypeIntercessoryChain,
+                                "Prayer Crusade" to strings.prayerTypePrayerCrusade,
+                                "Morning Devotion" to strings.prayerTypeMorningDevotion,
+                                "House Church" to strings.prayerTypeHouseChurch,
                                 "Intercession" to strings.prayerTypeIntercession,
+                                "Praise and Adoration" to strings.prayerTypePraiseAndAdoration,
+                                "Prayer Chain" to strings.prayerTypePrayerChain,
                                 "Custom" to strings.prayerTypeCustom
                             )
 
@@ -752,14 +1030,14 @@ fun SaveTimerDialog(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedTextField(
                                     value = startPageText,
-                                    onValueChange = { startPageText = it },
+                                    onValueChange = { startPageText = it.filter { ch -> ch.isDigit() } },
                                     label = { Text(strings.startPageLabel) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true
                                 )
                                 OutlinedTextField(
                                     value = endPageText,
-                                    onValueChange = { endPageText = it },
+                                    onValueChange = { endPageText = it.filter { ch -> ch.isDigit() } },
                                     label = { Text(strings.endPageLabel) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true
@@ -773,6 +1051,22 @@ fun SaveTimerDialog(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(10.dp)
                                 )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { isBookCompleted = !isBookCompleted }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isBookCompleted,
+                                    onCheckedChange = { isBookCompleted = it }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(strings.markBookCompleted, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -937,6 +1231,13 @@ fun SaveTimerDialog(
                                     }
                                     "prayer_alone" -> {
                                         val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
+                                        val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
+                                        val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
+                                        val calcTopics = if (startNum > 0 && endNum >= startNum) {
+                                            endNum - startNum + 1
+                                        } else {
+                                            prayerTopicsCountText.toIntOrNull() ?: 0
+                                        }
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
                                             userId = userId,
@@ -948,7 +1249,9 @@ fun SaveTimerDialog(
                                             startTimeIso = startFormatted,
                                             endTimeIso = endFormatted,
                                             prayerType = effectiveFocus,
-                                            prayerTopicsCount = prayerTopicsCountText.toIntOrNull() ?: 0,
+                                            prayerTopicsCount = calcTopics,
+                                            startPrayerTopicNumber = startNum,
+                                            endPrayerTopicNumber = endNum,
                                             notes = notes
                                         )
                                     }
@@ -988,6 +1291,7 @@ fun SaveTimerDialog(
                                             endPage = ePage,
                                             pagesRead = calculatedLiteraturePages,
                                             bookTimesRead = timesReadText.toIntOrNull() ?: 1,
+                                            isBookCompleted = isBookCompleted,
                                             notes = notes
                                         )
                                     }

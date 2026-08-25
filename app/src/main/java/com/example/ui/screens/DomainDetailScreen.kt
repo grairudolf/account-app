@@ -122,12 +122,24 @@ fun DomainDetailScreen(
             if (last != null) {
                 when (domainId) {
                     "bible_reading" -> {
-                        val nextCh = if (last.endChapter > 0) last.endChapter + 1 else 1
-                        val book = last.bibleBook.ifBlank { "Genesis" }
-                        val maxCh = BibleMetadata.getChaptersForBook(book)
-                        val validCh = nextCh.coerceAtMost(maxCh)
+                        val rawBook = last.bibleBook.ifBlank { "Genesis" }
+                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
+                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
+                        }?.name ?: "Genesis"
+                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
+                        val lastEnd = if (last.endChapter > 0) last.endChapter else if (last.startChapter > 0) last.startChapter else 1
+                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
+                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
+                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
+                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
+                            } else {
+                                matchedBook to maxCh
+                            }
+                        } else {
+                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
+                        }
                         if (bibleSegments.isNotEmpty()) {
-                            bibleSegments[0] = BibleReadingSegment(book = book, startChapter = validCh, endChapter = validCh)
+                            bibleSegments[0] = BibleReadingSegment(book = targetBook, startChapter = targetCh, endChapter = targetCh)
                         }
                     }
                     "christian_lit", "christian_lit_reading" -> {
@@ -137,6 +149,7 @@ fun DomainDetailScreen(
                             val nextPg = if (last.endPage > 0) last.endPage + 1 else 1
                             startPageText = nextPg.toString()
                             endPageText = (nextPg + 9).toString()
+                            timesReadText = if (last.bookTimesRead > 0) last.bookTimesRead.toString() else "1"
                         }
                     }
                     "christian_lit_mem", "christian_lit_memory" -> {
@@ -155,9 +168,14 @@ fun DomainDetailScreen(
                         }
                     }
                     "prayer_alone", "prayer_with_others" -> {
-                        if (last.endPrayerTopicNumber > 0) {
-                            previousEndTopicNumber = last.endPrayerTopicNumber
-                            startPrayerTopicNumberText = (last.endPrayerTopicNumber + 1).toString()
+                        val prevEnd = if (last.endPrayerTopicNumber > 0) last.endPrayerTopicNumber else last.prayerTopicsCount
+                        if (prevEnd > 0) {
+                            previousEndTopicNumber = prevEnd
+                            startPrayerTopicNumberText = (prevEnd + 1).toString()
+                            endPrayerTopicNumberText = (prevEnd + 5).toString()
+                        }
+                        if (last.prayerType.isNotBlank()) {
+                            prayerFocusType = last.prayerType
                         }
                     }
                 }

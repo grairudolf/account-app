@@ -216,6 +216,40 @@ class ProclamationViewModel(
             )
 
             accountabilityRepository.recordProclamationSession(entry)
+
+            // Update or save proclamation topic cumulative count so it updates in Proclamation Screen
+            val sel = _selectedTopic.value
+            if (sel != null) {
+                val updatedTopic = sel.copy(
+                    cumulativeCount = currentTotal,
+                    lastPracticedIso = todayIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                accountabilityRepository.saveProclamationTopic(updatedTopic)
+            } else {
+                val existingTopic = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
+                if (existingTopic != null) {
+                    val updatedTopic = existingTopic.copy(
+                        cumulativeCount = currentTotal,
+                        lastPracticedIso = todayIso,
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                    accountabilityRepository.saveProclamationTopic(updatedTopic)
+                } else {
+                    val newTopic = ProclamationTopicEntity(
+                        id = UUID.randomUUID().toString(),
+                        userId = user.id,
+                        topic = finalTopic,
+                        targetCount = _targetCount.value,
+                        cumulativeCount = currentTotal,
+                        lastPracticedIso = todayIso,
+                        createdAtMs = System.currentTimeMillis(),
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                    accountabilityRepository.saveProclamationTopic(newTopic)
+                }
+            }
+
             val notifMessage = if (isResumed && starting > 0) {
                 "Proclaimed '$finalTopic': reached $currentTotal total (+$addedCount today, ${duration / 60}m). Victory in Jesus!"
             } else {
