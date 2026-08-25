@@ -63,6 +63,13 @@ object FirestoreSyncManager {
 
     fun isFirestoreAvailable(context: Context): Boolean {
         return try {
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                try {
+                    FirebaseApp.initializeApp(context)
+                } catch (e: Exception) {
+                    Log.w(TAG, "FirebaseApp init attempt: ${e.message}")
+                }
+            }
             FirebaseApp.getApps(context).isNotEmpty()
         } catch (e: Exception) {
             false

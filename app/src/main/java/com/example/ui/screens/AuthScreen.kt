@@ -803,6 +803,8 @@ fun AuthScreen(
     if (showEmailVerificationDialog && pendingVerificationUser != null) {
         val pUser = pendingVerificationUser!!
         val pEmail = pUser.email ?: emailInput
+        val displayName = pUser.displayName?.ifBlank { null }
+            ?: pEmail.substringBefore("@").replace(".", " ").replaceFirstChar { it.uppercase() }
 
         AlertDialog(
             onDismissRequest = { showEmailVerificationDialog = false },
@@ -846,7 +848,7 @@ fun AuthScreen(
                         ) {
                             Icon(Icons.Default.Info, contentDescription = null, tint = StreakGold, modifier = Modifier.size(18.dp))
                             Text(
-                                text = "If you do not see the email in your inbox, please check your Spam or Junk folder. It is sent from noreply@firebaseapp.com.",
+                                text = "If you do not see the email in your inbox, check your Spam or Junk folder. It is sent from noreply@firebaseapp.com.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -854,48 +856,73 @@ fun AuthScreen(
                     }
 
                     Text(
-                        "Please click the link inside the email to verify your address, then tap the button below to continue.",
+                        "Please click the link inside the email to verify your address. You can also tap 'Continue to App' below to log in and sync your cloud data right away.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        isCheckingVerification = true
-                        coroutineScope.launch {
-                            val res = FirebaseAuthHelper.checkEmailVerified(pUser)
-                            isCheckingVerification = false
-                            res.fold(
-                                onSuccess = { verified ->
-                                    if (verified) {
-                                        showEmailVerificationDialog = false
-                                        val displayName = pUser.displayName ?: pEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
-                                        Toast.makeText(context, "Email verified successfully! Welcome $displayName", Toast.LENGTH_SHORT).show()
-                                        onSignInWithAccount(pUser.uid, displayName, pEmail, pUser.photoUrl?.toString(), pendingAssemblyInput)
-                                    } else {
-                                        Toast.makeText(context, "Email not verified yet. Please check your spam/inbox or click 'Resend Verification Email'.", Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                onFailure = { err ->
-                                    Toast.makeText(context, "Error checking verification status: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                    },
-                    enabled = !isCheckingVerification,
-                    shape = RoundedCornerShape(10.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (isCheckingVerification) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-                    } else {
-                        Text("I Have Verified My Email")
+                    Button(
+                        onClick = {
+                            isCheckingVerification = true
+                            coroutineScope.launch {
+                                val res = FirebaseAuthHelper.checkEmailVerified(pUser)
+                                isCheckingVerification = false
+                                res.fold(
+                                    onSuccess = { verified ->
+                                        if (verified) {
+                                            showEmailVerificationDialog = false
+                                            Toast.makeText(context, "Email verified successfully! Welcome $displayName", Toast.LENGTH_SHORT).show()
+                                            onSignInWithAccount(pUser.uid, displayName, pEmail, pUser.photoUrl?.toString(), pendingAssemblyInput)
+                                        } else {
+                                            Toast.makeText(context, "Email not verified yet. Please check your spam/inbox or click 'Resend Verification Email'.", Toast.LENGTH_LONG).show()
+                                        }
+                                    },
+                                    onFailure = { err ->
+                                        Toast.makeText(context, "Checking verification status: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        },
+                        enabled = !isCheckingVerification,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isCheckingVerification) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Checking status...")
+                        } else {
+                            Text("I Have Verified My Email")
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            showEmailVerificationDialog = false
+                            Toast.makeText(context, "Welcome back, $displayName! Syncing cloud data...", Toast.LENGTH_SHORT).show()
+                            onSignInWithAccount(pUser.uid, displayName, pEmail, pUser.photoUrl?.toString(), pendingAssemblyInput)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Continue to App & Sync Cloud Data")
                     }
                 }
             },
             dismissButton = {
-                Column(horizontalAlignment = Alignment.End) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     TextButton(
                         onClick = {
                             coroutineScope.launch {
@@ -911,7 +938,7 @@ fun AuthScreen(
                             }
                         }
                     ) {
-                        Text("Resend Verification Email")
+                        Text("Resend Email")
                     }
                     TextButton(onClick = { showEmailVerificationDialog = false }) {
                         Text("Cancel")

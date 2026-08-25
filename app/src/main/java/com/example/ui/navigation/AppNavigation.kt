@@ -87,6 +87,13 @@ fun MainApp() {
 
     CmfiTheme(themeMode = currentTheme) {
         val currentUserState = currentUser
+
+        LaunchedEffect(currentUserState?.id) {
+            if (currentUserState != null && !currentUserState.isGuest) {
+                settingsViewModel.syncCloudData()
+            }
+        }
+
         if (currentUserState == null) {
             Box(
                 modifier = Modifier
