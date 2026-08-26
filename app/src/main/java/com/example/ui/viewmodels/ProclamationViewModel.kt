@@ -96,9 +96,13 @@ class ProclamationViewModel(
 
     fun setTopicText(newTopic: String) {
         _topicText.value = newTopic
-        _selectedTopic.value = null
-        _isResumedSession.value = false
-        _startingCount.value = 0
+        val existing = topicsFlow.value.find { it.topic.equals(newTopic.trim(), ignoreCase = true) }
+        if (existing != null) {
+            _selectedTopic.value = existing
+            _targetCount.value = existing.targetCount
+        } else {
+            _selectedTopic.value = null
+        }
     }
 
     fun setNotes(newNotes: String) {
@@ -180,7 +184,7 @@ class ProclamationViewModel(
         pauseTimer()
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
-            val finalTopic = _topicText.value.ifBlank { "Jesus Christ is Lord" }
+            val finalTopic = _topicText.value.trim().ifBlank { "Jesus Christ is Lord" }
             val currentTotal = _counter.value
             val starting = _startingCount.value
             val isResumed = _isResumedSession.value
@@ -201,6 +205,40 @@ class ProclamationViewModel(
                 _notes.value
             }
 
+            // Update or create the ProclamationTopicEntity with the new cumulative count
+            val existing = _selectedTopic.value ?: accountabilityRepository.getProclamationTopics(user.id).find {
+                it.topic.equals(finalTopic, ignoreCase = true)
+            }
+            val finalCumulative = if (existing != null) {
+                if (isResumed) existing.cumulativeCount + addedCount else maxOf(existing.cumulativeCount, currentTotal)
+            } else {
+                currentTotal
+            }
+
+            val updatedTopic = if (existing != null) {
+                existing.copy(
+                    cumulativeCount = finalCumulative,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else existing.targetCount,
+                    totalDurationSeconds = existing.totalDurationSeconds + duration,
+                    lastPracticedIso = todayIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            } else {
+                ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    topic = finalTopic,
+                    cumulativeCount = finalCumulative,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else 100,
+                    totalDurationSeconds = duration,
+                    lastPracticedIso = todayIso,
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            }
+            accountabilityRepository.saveProclamationTopic(updatedTopic)
+
+            // Save Entry
             val entry = AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
                 userId = user.id,
@@ -210,18 +248,17 @@ class ProclamationViewModel(
                 timezoneId = java.util.TimeZone.getDefault().id,
                 durationSeconds = duration,
                 proclamationTopic = finalTopic,
-                proclamationCount = if (isResumed) addedCount else currentTotal,
+                proclamationCount = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1),
                 proclamationTarget = _targetCount.value,
                 notes = sessionNote,
                 reflection = _reflection.value
             )
-
-            accountabilityRepository.recordProclamationSession(entry)
+            accountabilityRepository.saveEntry(entry)
 
             val notifMessage = if (isResumed && starting > 0) {
-                "Proclaimed '$finalTopic': reached $currentTotal total (+$addedCount today, ${duration / 60}m). Victory in Jesus!"
+                "Proclaimed '$finalTopic': reached $finalCumulative total (+$addedCount today, ${duration / 60}m). Victory in Jesus!"
             } else {
-                "Proclaimed '$finalTopic' $currentTotal times (${duration / 60}m). Victory in Jesus!"
+                "Proclaimed '$finalTopic' $finalCumulative times (${duration / 60}m). Victory in Jesus!"
             }
             accountabilityRepository.logNotification(
                 context = context,
@@ -265,6 +302,43 @@ class ProclamationViewModel(
         }
     }
 
+    fun savePrayerTopic(topicText: String, targetCount: Int = 100, currentCount: Int = 0, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            val finalTopic = topicText.trim().ifBlank { "Jesus Christ is Lord" }
+            val existing = accountabilityRepository.getProclamationTopics(user.id).find { it.topic.equals(finalTopic, ignoreCase = true) }
+            val updatedTopic = if (existing != null) {
+                existing.copy(
+                    cumulativeCount = if (currentCount > 0) currentCount else existing.cumulativeCount,
+                    targetCount = targetCount.coerceAtLeast(1),
+                    lastPracticedIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            } else {
+                ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    topic = finalTopic,
+                    targetCount = targetCount.coerceAtLeast(1),
+                    cumulativeCount = currentCount.coerceAtLeast(0),
+                    lastPracticedIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            }
+            accountabilityRepository.saveProclamationTopic(updatedTopic)
+            _selectedTopic.value = updatedTopic
+            _topicText.value = updatedTopic.topic
+            _targetCount.value = updatedTopic.targetCount
+            if (currentCount > 0) {
+                _counter.value = currentCount
+                _startingCount.value = currentCount
+                _isResumedSession.value = true
+            }
+            onSuccess()
+        }
+    }
+
     fun saveManualSession(
         dateIso: String,
         topic: String,
@@ -277,6 +351,7 @@ class ProclamationViewModel(
             val user = userRepository.getOrCreateGuestUser()
             val finalTopic = topic.ifBlank { "Jesus Christ is Lord" }
             val durationSecs = durationMins * 60
+            val safeCount = count.coerceAtLeast(1)
 
             val entry = AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
@@ -287,19 +362,18 @@ class ProclamationViewModel(
                 timezoneId = java.util.TimeZone.getDefault().id,
                 durationSeconds = durationSecs,
                 proclamationTopic = finalTopic,
-                proclamationCount = count.coerceAtLeast(1),
+                proclamationCount = safeCount,
                 proclamationTarget = 100,
                 notes = if (notes.isNotBlank()) "[Manual Log] $notes" else "[Manual Offline Session]",
                 reflection = ""
             )
+            accountabilityRepository.saveEntry(entry)
 
-            val safeCount = count.coerceAtLeast(1)
-            accountabilityRepository.recordProclamationSession(entry)
-
-            val existingTopic = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
+            val existingTopic = accountabilityRepository.getProclamationTopics(user.id).find { it.topic.equals(finalTopic, ignoreCase = true) }
             if (existingTopic != null) {
                 val updatedTopic = existingTopic.copy(
                     cumulativeCount = existingTopic.cumulativeCount + safeCount,
+                    totalDurationSeconds = existingTopic.totalDurationSeconds + durationSecs,
                     lastPracticedIso = dateIso,
                     updatedAtMs = System.currentTimeMillis()
                 )
@@ -311,6 +385,7 @@ class ProclamationViewModel(
                     topic = finalTopic,
                     targetCount = 100,
                     cumulativeCount = safeCount,
+                    totalDurationSeconds = durationSecs,
                     lastPracticedIso = dateIso,
                     createdAtMs = System.currentTimeMillis(),
                     updatedAtMs = System.currentTimeMillis()
@@ -323,37 +398,6 @@ class ProclamationViewModel(
                 title = "Manual Proclamation Session Logged",
                 message = "Logged $count proclamations for '$finalTopic' on $dateIso ($durationMins min)."
             )
-            onSuccess()
-        }
-    }
-
-    fun savePrayerTopic(topicText: String, targetCount: Int = 100, onSuccess: () -> Unit = {}) {
-        viewModelScope.launch {
-            val user = userRepository.getOrCreateGuestUser()
-            val finalTopic = topicText.trim()
-            if (finalTopic.isNotBlank()) {
-                val existing = accountabilityRepository.getProclamationTopics(user.id).find { it.topic.equals(finalTopic, ignoreCase = true) }
-                if (existing == null) {
-                    val newTopic = ProclamationTopicEntity(
-                        id = UUID.randomUUID().toString(),
-                        userId = user.id,
-                        topic = finalTopic,
-                        targetCount = targetCount.coerceAtLeast(1),
-                        cumulativeCount = 0,
-                        lastPracticedIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                        createdAtMs = System.currentTimeMillis(),
-                        updatedAtMs = System.currentTimeMillis()
-                    )
-                    accountabilityRepository.saveProclamationTopic(newTopic)
-                    _selectedTopic.value = newTopic
-                    _topicText.value = newTopic.topic
-                    _targetCount.value = newTopic.targetCount
-                } else {
-                    _selectedTopic.value = existing
-                    _topicText.value = existing.topic
-                    _targetCount.value = existing.targetCount
-                }
-            }
             onSuccess()
         }
     }

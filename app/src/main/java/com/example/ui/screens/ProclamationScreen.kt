@@ -191,13 +191,19 @@ fun ProclamationScreen(
                             TextButton(
                                 onClick = {
                                     if (topicText.isNotBlank()) {
-                                        viewModel.savePrayerTopic(topicText) {
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
+                                        viewModel.savePrayerTopic(
+                                            topicText = topicText,
+                                            targetCount = targetCount,
+                                            currentCount = counter,
+                                            onSuccess = {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                                onNavigateBack()
+                                            }
+                                        )
                                     } else {
                                         showAddTopicDialog = true
                                     }
@@ -206,7 +212,7 @@ fun ProclamationScreen(
                             ) {
                                 Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Save Topic", style = MaterialTheme.typography.labelMedium)
+                                Text(if (strings is com.example.core.localization.FrenchStrings) "Enregistrer" else "Save Topic", style = MaterialTheme.typography.labelMedium)
                             }
                         }
 

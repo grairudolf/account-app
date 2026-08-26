@@ -44,7 +44,7 @@ fun StatisticsScreen(
     selectedDateEntries: List<AccountabilityEntryEntity> = emptyList(),
     allEntries: List<AccountabilityEntryEntity> = emptyList(),
     selectedTab: Int = 0,
-    selectedTimeRange: String = "ALL_TIME",
+    selectedTimeRange: String = "LAST_7_DAYS",
     onTimeRangeSelected: (String) -> Unit = {},
     onTabSelected: (Int) -> Unit = {},
     onSelectDate: (LocalDate) -> Unit = {},
@@ -158,6 +158,16 @@ fun StatisticsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (selectedTab == 0) {
+                val timeRangeRanges = listOf(
+                    "LAST_7_DAYS" to if (isFrench) "7 Derniers Jours" else "Last 7 Days",
+                    "LAST_30_DAYS" to if (isFrench) "30 Derniers Jours" else "Last 30 Days",
+                    "LAST_3_MONTHS" to if (isFrench) "3 Derniers Mois" else "Last 3 Months",
+                    "LAST_6_MONTHS" to if (isFrench) "6 Derniers Mois" else "Last 6 Months",
+                    "LAST_1_YEAR" to if (isFrench) "Dernière Année" else "Last Year",
+                    "ALL_TIME" to if (isFrench) "Tout l'Historique" else "All Time"
+                )
+                val currentRangeLabel = timeRangeRanges.find { it.first == selectedTimeRange }?.second ?: (if (isFrench) "7 Derniers Jours" else "Last 7 Days")
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
@@ -175,15 +185,6 @@ fun StatisticsScreen(
                             )
 
                             var timeRangeExpanded by remember { mutableStateOf(false) }
-                            val ranges = listOf(
-                                "LAST_7_DAYS" to "Last 7 Days",
-                                "LAST_30_DAYS" to "Last Month",
-                                "LAST_3_MONTHS" to "Last 3 Months",
-                                "LAST_6_MONTHS" to "Last 6 Months",
-                                "LAST_1_YEAR" to "Last Year",
-                                "ALL_TIME" to "All Time"
-                            )
-                            val currentLabel = ranges.find { it.first == selectedTimeRange }?.second ?: "All Time"
 
                             Box {
                                 Surface(
@@ -196,7 +197,7 @@ fun StatisticsScreen(
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
                                         Text(
-                                            text = currentLabel,
+                                            text = currentRangeLabel,
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -215,7 +216,7 @@ fun StatisticsScreen(
                                     expanded = timeRangeExpanded,
                                     onDismissRequest = { timeRangeExpanded = false }
                                 ) {
-                                    ranges.forEach { (key, label) ->
+                                    timeRangeRanges.forEach { (key, label) ->
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
@@ -287,7 +288,7 @@ fun StatisticsScreen(
                                 )
 
                                 Text(
-                                    text = "${strings.totalTimeWithGod} (${strings.allPeriod.lowercase()}): ${formatStatsDuration(uiState.totalTimeWithGodSeconds, isFrench)}",
+                                    text = "${strings.totalTimeWithGod} ($currentRangeLabel): ${formatStatsDuration(uiState.totalTimeWithGodSeconds, isFrench)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )

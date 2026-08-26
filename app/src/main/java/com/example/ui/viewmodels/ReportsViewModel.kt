@@ -133,15 +133,17 @@ class ReportsViewModel(
     fun generatePdfReport(context: Context, onPdfGenerated: (File) -> Unit) {
         viewModelScope.launch {
             try {
-                val user = userRepository.getOrCreateGuestUser()
-                val entries = try {
-                    val directList = accountabilityRepository.getAllEntriesList()
-                    if (directList.isNotEmpty()) directList else accountabilityRepository.allEntriesFlow.first()
-                } catch (_: Exception) {
+                val user = userRepository.currentUserFlow.first() ?: userRepository.getOrCreateGuestUser()
+                val entries = withContext(Dispatchers.IO) {
                     try {
-                        accountabilityRepository.allEntriesFlow.first()
+                        val directList = accountabilityRepository.getAllEntriesList()
+                        if (directList.isNotEmpty()) directList else accountabilityRepository.allEntriesFlow.first()
                     } catch (_: Exception) {
-                        emptyList<com.example.data.local.entities.AccountabilityEntryEntity>()
+                        try {
+                            accountabilityRepository.allEntriesFlow.first()
+                        } catch (_: Exception) {
+                            emptyList<com.example.data.local.entities.AccountabilityEntryEntity>()
+                        }
                     }
                 }
                 val reportType = _selectedReportType.value

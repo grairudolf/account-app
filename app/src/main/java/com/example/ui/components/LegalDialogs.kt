@@ -1,10 +1,13 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.HelpCenter
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -189,6 +192,9 @@ fun SupportFeedbackDialog(
     isFrench: Boolean = false,
     onDismiss: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -221,14 +227,77 @@ fun SupportFeedbackDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = if (isFrench) "Email Officiel de Support :" else "Official Support Email:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "support.cmfiaccap@gmail.com",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString("support.cmfiaccap@gmail.com"))
+                                    android.widget.Toast.makeText(context, if (isFrench) "Email copié !" else "Email copied!", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy Email",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                data = android.net.Uri.parse("mailto:support.cmfiaccap@gmail.com")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "[CMFI Accap] Support & Feedback")
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "support.cmfiaccap@gmail.com", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (isFrench) "Envoyer un Email" else "Send Email")
+                }
+
                 Text(
                     text = if (isFrench)
-                        "• Email de support : support.cmfiaccap@gmail.com\n" +
-                                "• Communion CMFI : Contactez votre assemblée locale ou votre faiseur de disciples pour un accompagnement spirituel direct.\n" +
+                        "• Communion CMFI : Contactez votre assemblée locale ou votre faiseur de disciples pour un accompagnement spirituel direct.\n" +
                                 "• Vos commentaires sont précieux pour nous aider à améliorer cet outil de discipulat."
                     else
-                        "• Support Email: support.cmfiaccap@gmail.com\n" +
-                                "• CMFI Fellowship: Contact your local assembly or disciple maker for direct spiritual guidance.\n" +
+                        "• CMFI Fellowship: Contact your local assembly or disciple maker for direct spiritual guidance.\n" +
                                 "• Your feedback helps us continuously improve this discipleship tool.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -236,7 +305,7 @@ fun SupportFeedbackDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text(if (isFrench) "Fermer" else "Close")
             }
         },
