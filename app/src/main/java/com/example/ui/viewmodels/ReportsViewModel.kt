@@ -94,93 +94,158 @@ class ReportsViewModel(
         }
     }
 
+    private fun parseEntryDate(entry: com.example.data.local.entities.AccountabilityEntryEntity): LocalDate {
+        if (entry.dateIso.isNotBlank()) {
+            try {
+                return LocalDate.parse(entry.dateIso.trim().take(10), DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (_: Exception) {}
+        }
+        if (entry.timestampMs > 0) {
+            try {
+                return java.time.Instant.ofEpochMilli(entry.timestampMs)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+            } catch (_: Exception) {}
+        }
+        return LocalDate.now()
+    }
+
+    private fun normalizeDomainId(domainId: String): String {
+        val lower = domainId.lowercase().trim()
+        return when {
+            lower == "ddewg" || lower == "dreqd" -> "ddewg"
+            lower.startsWith("bible_read") || lower == "bible" -> "bible_reading"
+            lower.startsWith("bible_mem") -> "bible_mem"
+            lower == "prayer_alone" || lower == "prayer" -> "prayer_alone"
+            lower.startsWith("prayer_with") || lower.startsWith("prayer_group") -> "prayer_with_others"
+            lower.startsWith("proclamation") -> "proclamation_importunity"
+            lower.startsWith("christian_lit_mem") || lower.startsWith("lit_mem") -> "christian_lit_mem"
+            lower.startsWith("christian_lit") || lower.startsWith("literature") -> "christian_lit"
+            lower.startsWith("soul") || lower.startsWith("evangelism") -> "soul_winning"
+            lower.startsWith("making_disciple") || lower.startsWith("disciple") || lower == "accountability" -> "making_disciples"
+            lower.startsWith("fast") -> "fasting"
+            lower.startsWith("giv") || lower.startsWith("offrand") -> "giving"
+            lower.startsWith("retreat") -> "retreats"
+            else -> lower
+        }
+    }
+
     fun generatePdfReport(context: Context, onPdfGenerated: (File) -> Unit) {
         viewModelScope.launch {
-            val user = userRepository.getOrCreateGuestUser()
-            val entries = accountabilityRepository.allEntriesFlow.first()
-            val reportType = _selectedReportType.value
-            val activeDomains = _selectedDomains.value
-            val refDate = _targetDate.value
-
-            val startD = _startDate.value
-            val endD = _endDate.value
-
-            val dateRangeLabel = when (reportType) {
-                "DAILY" -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                "WEEKLY" -> "Week of ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-                "MONTHLY" -> "${refDate.month} ${refDate.year}"
-                "CUSTOM" -> "${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-                else -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-            }
-
-            val filteredByPeriod = when (reportType) {
-                "DAILY" -> {
-                    val targetIso = refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    entries.filter { it.dateIso == targetIso }
-                }
-                "WEEKLY" -> {
-                    val startOfWeek = refDate.minusDays(6)
-                    entries.filter {
-                        try {
-                            val d = LocalDate.parse(it.dateIso)
-                            !d.isBefore(startOfWeek) && !d.isAfter(refDate)
-                        } catch (e: Exception) { false }
+            try {
+                val user = userRepository.getOrCreateGuestUser()
+                val entries = try {
+                    val directList = accountabilityRepository.getAllEntriesList()
+                    if (directList.isNotEmpty()) directList else accountabilityRepository.allEntriesFlow.first()
+                } catch (_: Exception) {
+                    try {
+                        accountabilityRepository.allEntriesFlow.first()
+                    } catch (_: Exception) {
+                        emptyList<com.example.data.local.entities.AccountabilityEntryEntity>()
                     }
                 }
-                "MONTHLY" -> {
-                    entries.filter {
-                        try {
-                            val d = LocalDate.parse(it.dateIso)
-                            d.month == refDate.month && d.year == refDate.year
-                        } catch (e: Exception) { false }
+                val reportType = _selectedReportType.value
+                val activeDomains = _selectedDomains.value
+                val refDate = _targetDate.value
+
+                val startD = _startDate.value
+                val endD = _endDate.value
+
+                val currentAppLang = try {
+                    userRepository.currentLanguageFlow.first()
+                } catch (_: Exception) {
+                    com.example.core.localization.AppLanguage.ENGLISH
+                }
+                val isFrench = currentAppLang == com.example.core.localization.AppLanguage.FRENCH
+
+                val dateRangeLabel = when (reportType) {
+                    "DAILY" -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    "WEEKLY" -> if (isFrench) "Semaine du ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} au ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+                                else "Week of ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+                    "MONTHLY" -> {
+                        val mName = refDate.format(DateTimeFormatter.ofPattern("MMMM", if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH))
+                        "$mName ${refDate.year}"
+                    }
+                    "CUSTOM" -> if (isFrench) "Du ${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} au ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+                                else "${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+                    else -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                }
+
+                val filteredByPeriod = when (reportType) {
+                    "DAILY" -> {
+                        val targetIso = refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        entries.filter { 
+                            val parsed = parseEntryDate(it)
+                            parsed == refDate || it.dateIso.trim().take(10) == targetIso
+                        }
+                    }
+                    "WEEKLY" -> {
+                        val startOfWeek = refDate.minusDays(6)
+                        entries.filter {
+                            val parsed = parseEntryDate(it)
+                            !parsed.isBefore(startOfWeek) && !parsed.isAfter(refDate)
+                        }
+                    }
+                    "MONTHLY" -> {
+                        entries.filter {
+                            val parsed = parseEntryDate(it)
+                            parsed.month == refDate.month && parsed.year == refDate.year
+                        }
+                    }
+                    "CUSTOM" -> {
+                        val actualStart = if (startD.isAfter(endD)) endD else startD
+                        val actualEnd = if (endD.isBefore(startD)) startD else endD
+                        entries.filter {
+                            val parsed = parseEntryDate(it)
+                            !parsed.isBefore(actualStart) && !parsed.isAfter(actualEnd)
+                        }
+                    }
+                    else -> entries
+                }
+
+                // Filter by checked domains with normalization
+                val isAllSelected = activeDomains.size >= ALL_SPIRITUAL_DOMAINS.size
+                val finalEntries = if (isAllSelected) {
+                    filteredByPeriod
+                } else {
+                    filteredByPeriod.filter { entry ->
+                        val norm = normalizeDomainId(entry.domainId)
+                        activeDomains.contains(entry.domainId) || activeDomains.contains(norm)
                     }
                 }
-                "CUSTOM" -> {
-                    entries.filter {
-                        try {
-                            val d = LocalDate.parse(it.dateIso)
-                            !d.isBefore(startD) && !d.isAfter(endD)
-                        } catch (e: Exception) { false }
-                    }
+
+                val pdfFile = withContext(Dispatchers.IO) {
+                    PdfReportGenerator.generatePdfReport(
+                        context = context,
+                        user = user,
+                        reportType = reportType,
+                        dateRangeLabel = dateRangeLabel,
+                        entries = finalEntries,
+                        isFrench = isFrench
+                    )
                 }
-                else -> entries
-            }
 
-            // Filter by checked domains
-            val finalEntries = filteredByPeriod.filter { activeDomains.contains(it.domainId) }
-
-            val langCode = user.language.lowercase()
-            val isFrench = langCode.startsWith("fr")
-
-            val pdfFile = withContext(Dispatchers.IO) {
-                PdfReportGenerator.generatePdfReport(
-                    context = context,
-                    user = user,
+                val record = ReportRecordEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
                     reportType = reportType,
                     dateRangeLabel = dateRangeLabel,
-                    entries = finalEntries,
-                    isFrench = isFrench
+                    selectedDomainsCsv = activeDomains.joinToString(","),
+                    generatedFilePath = pdfFile.absolutePath
                 )
+                accountabilityRepository.saveReportRecord(record)
+
+                accountabilityRepository.logNotification(
+                    context = context,
+                    title = if (isFrench) "Rapport Généré" else "Report Generated",
+                    message = if (isFrench) "Rapport PDF $reportType généré ($dateRangeLabel)" else "Generated $reportType PDF report ($dateRangeLabel)",
+                    type = "REPORT"
+                )
+
+                onPdfGenerated(pdfFile)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-            val record = ReportRecordEntity(
-                id = UUID.randomUUID().toString(),
-                userId = user.id,
-                reportType = reportType,
-                dateRangeLabel = dateRangeLabel,
-                selectedDomainsCsv = activeDomains.joinToString(","),
-                generatedFilePath = pdfFile.absolutePath
-            )
-            accountabilityRepository.saveReportRecord(record)
-
-            accountabilityRepository.logNotification(
-                context = context,
-                title = "Report Generated",
-                message = "Generated $reportType PDF report ($dateRangeLabel)",
-                type = "REPORT"
-            )
-
-            onPdfGenerated(pdfFile)
         }
     }
 

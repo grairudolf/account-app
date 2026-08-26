@@ -50,7 +50,7 @@ class StatisticsViewModel(
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
-    private val _selectedTimeRange = MutableStateFlow("ALL_TIME")
+    private val _selectedTimeRange = MutableStateFlow("LAST_7_DAYS")
     val selectedTimeRange: StateFlow<String> = _selectedTimeRange.asStateFlow()
 
     val allEntries: StateFlow<List<AccountabilityEntryEntity>> = accountabilityRepository.allEntriesFlow

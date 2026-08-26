@@ -177,6 +177,7 @@ class ProclamationViewModel(
     }
 
     fun saveSession(onSuccess: () -> Unit = {}) {
+        pauseTimer()
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
             val finalTopic = _topicText.value.ifBlank { "Jesus Christ is Lord" }
@@ -217,39 +218,6 @@ class ProclamationViewModel(
 
             accountabilityRepository.recordProclamationSession(entry)
 
-            // Update or save proclamation topic cumulative count so it updates in Proclamation Screen
-            val sel = _selectedTopic.value
-            if (sel != null) {
-                val updatedTopic = sel.copy(
-                    cumulativeCount = if (isResumed) currentTotal else (sel.cumulativeCount + addedCount),
-                    lastPracticedIso = todayIso,
-                    updatedAtMs = System.currentTimeMillis()
-                )
-                accountabilityRepository.saveProclamationTopic(updatedTopic)
-            } else {
-                val existingTopic = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
-                if (existingTopic != null) {
-                    val updatedTopic = existingTopic.copy(
-                        cumulativeCount = if (isResumed) currentTotal else (existingTopic.cumulativeCount + addedCount),
-                        lastPracticedIso = todayIso,
-                        updatedAtMs = System.currentTimeMillis()
-                    )
-                    accountabilityRepository.saveProclamationTopic(updatedTopic)
-                } else {
-                    val newTopic = ProclamationTopicEntity(
-                        id = UUID.randomUUID().toString(),
-                        userId = user.id,
-                        topic = finalTopic,
-                        targetCount = _targetCount.value,
-                        cumulativeCount = addedCount,
-                        lastPracticedIso = todayIso,
-                        createdAtMs = System.currentTimeMillis(),
-                        updatedAtMs = System.currentTimeMillis()
-                    )
-                    accountabilityRepository.saveProclamationTopic(newTopic)
-                }
-            }
-
             val notifMessage = if (isResumed && starting > 0) {
                 "Proclaimed '$finalTopic': reached $currentTotal total (+$addedCount today, ${duration / 60}m). Victory in Jesus!"
             } else {
@@ -262,13 +230,13 @@ class ProclamationViewModel(
             )
 
             // Reset session
-            pauseTimer()
             _counter.value = 0
             _startingCount.value = 0
             _isResumedSession.value = false
             _elapsedSeconds.value = 0L
             _notes.value = ""
             _reflection.value = ""
+            _selectedTopic.value = null
 
             onSuccess()
         }
@@ -364,7 +332,7 @@ class ProclamationViewModel(
             val user = userRepository.getOrCreateGuestUser()
             val finalTopic = topicText.trim()
             if (finalTopic.isNotBlank()) {
-                val existing = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
+                val existing = accountabilityRepository.getProclamationTopics(user.id).find { it.topic.equals(finalTopic, ignoreCase = true) }
                 if (existing == null) {
                     val newTopic = ProclamationTopicEntity(
                         id = UUID.randomUUID().toString(),
@@ -377,6 +345,13 @@ class ProclamationViewModel(
                         updatedAtMs = System.currentTimeMillis()
                     )
                     accountabilityRepository.saveProclamationTopic(newTopic)
+                    _selectedTopic.value = newTopic
+                    _topicText.value = newTopic.topic
+                    _targetCount.value = newTopic.targetCount
+                } else {
+                    _selectedTopic.value = existing
+                    _topicText.value = existing.topic
+                    _targetCount.value = existing.targetCount
                 }
             }
             onSuccess()

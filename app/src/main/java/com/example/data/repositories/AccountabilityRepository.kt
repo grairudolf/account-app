@@ -188,6 +188,10 @@ class AccountabilityRepository(
         }
     }
 
+    suspend fun getAllEntriesList(): List<AccountabilityEntryEntity> {
+        return entryDao.getAllEntriesList()
+    }
+
     fun getEntriesByDateFlow(dateIso: String): Flow<List<AccountabilityEntryEntity>> {
         return entryDao.getEntriesByDateFlow(dateIso)
     }

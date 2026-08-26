@@ -167,20 +167,20 @@ object PdfReportGenerator {
         y += 82f
 
         // 3. Aggregate Domain Metrics Calculation for ALL 13 Domains
-        val ddewgEntries = entries.filter { it.domainId == "ddewg" }
-        val prayerAloneEntries = entries.filter { it.domainId == "prayer_alone" }
-        val prayerGroupEntries = entries.filter { it.domainId == "prayer_with_others" }
-        val allPrayerEntries = entries.filter { it.domainId.startsWith("prayer") }
-        val bibleEntries = entries.filter { it.domainId == "bible_reading" }
-        val bibleMemEntries = entries.filter { it.domainId == "bible_mem" }
-        val litEntries = entries.filter { it.domainId == "christian_lit" }
-        val litMemEntries = entries.filter { it.domainId == "christian_lit_mem" }
-        val proclamationEntries = entries.filter { it.domainId == "proclamation_importunity" }
-        val soulEntries = entries.filter { it.domainId == "soul_winning" }
-        val discipleshipEntries = entries.filter { it.domainId == "making_disciples" || it.domainId == "accountability" }
-        val fastingEntries = entries.filter { it.domainId == "fasting" }
-        val givingEntries = entries.filter { it.domainId == "giving" }
-        val retreatEntries = entries.filter { it.domainId == "retreats" }
+        val ddewgEntries = entries.filter { it.domainId.equals("ddewg", true) || it.domainId.equals("dreqd", true) }
+        val prayerAloneEntries = entries.filter { it.domainId.equals("prayer_alone", true) || it.domainId.equals("prayer", true) }
+        val prayerGroupEntries = entries.filter { it.domainId.startsWith("prayer_with", true) || it.domainId.startsWith("prayer_group", true) }
+        val allPrayerEntries = entries.filter { it.domainId.startsWith("prayer", true) }
+        val bibleEntries = entries.filter { it.domainId.startsWith("bible_read", true) || it.domainId.equals("bible", true) }
+        val bibleMemEntries = entries.filter { it.domainId.startsWith("bible_mem", true) }
+        val litEntries = entries.filter { it.domainId.equals("christian_lit", true) || it.domainId.startsWith("christian_lit_read", true) || it.domainId.equals("literature", true) }
+        val litMemEntries = entries.filter { it.domainId.startsWith("christian_lit_mem", true) || it.domainId.startsWith("lit_mem", true) }
+        val proclamationEntries = entries.filter { it.domainId.startsWith("proclamation", true) }
+        val soulEntries = entries.filter { it.domainId.startsWith("soul", true) || it.domainId.startsWith("evangel", true) }
+        val discipleshipEntries = entries.filter { it.domainId.startsWith("making_disciple", true) || it.domainId.startsWith("disciple", true) || it.domainId.equals("accountability", true) }
+        val fastingEntries = entries.filter { it.domainId.startsWith("fast", true) }
+        val givingEntries = entries.filter { it.domainId.startsWith("giv", true) || it.domainId.startsWith("offrand", true) }
+        val retreatEntries = entries.filter { it.domainId.startsWith("retreat", true) }
 
         // Specific Metrics across all 13 domains:
         val ddewgCount = ddewgEntries.size
@@ -286,17 +286,17 @@ object PdfReportGenerator {
         paint.color = Color.parseColor("#1E293B")
         paint.textSize = 8f
         paint.typeface = Typeface.DEFAULT
-        canvas.drawText("• DREQD : $ddewgCount (${formatDurationShort(ddewgTimeSecs, isFrench)})", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• DREQD : $ddewgCount (${formatDurationShort(ddewgTimeSecs, isFrench)})" else "• DDEWG : $ddewgCount (${formatDurationShort(ddewgTimeSecs, isFrench)})", 34f, cy, paint)
         cy += 12f
-        canvas.drawText("• Prière Seul : ${formatDurationShort(prayerAloneTimeSecs, isFrench)}", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• Prière Seul : ${formatDurationShort(prayerAloneTimeSecs, isFrench)}" else "• Prayer Alone : ${formatDurationShort(prayerAloneTimeSecs, isFrench)}", 34f, cy, paint)
         cy += 12f
-        canvas.drawText("• Grâce/Requêtes : $thanksgivingCount / $requestCount", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• Grâce/Requêtes : $thanksgivingCount / $requestCount" else "• Thanks/Requests : $thanksgivingCount / $requestCount", 34f, cy, paint)
         cy += 12f
-        canvas.drawText("• Prière Groupe : $groupPrayerSessions sess ($totalGroupParticipants p)", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• Prière Groupe : $groupPrayerSessions sess ($totalGroupParticipants p)" else "• Group Prayer : $groupPrayerSessions sess ($totalGroupParticipants p)", 34f, cy, paint)
         cy += 12f
-        canvas.drawText("• Proclamations : $pCount (${formatDurationShort(pTimeSecs, isFrench)})", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• Proclamations : $pCount (${formatDurationShort(pTimeSecs, isFrench)})" else "• Proclamations : $pCount (${formatDurationShort(pTimeSecs, isFrench)})", 34f, cy, paint)
         cy += 12f
-        canvas.drawText("• Retraites : $retreatCount (${formatDurationShort(retreatTimeSecs, isFrench)})", 34f, cy, paint)
+        canvas.drawText(if (isFrench) "• Retraites : $retreatCount (${formatDurationShort(retreatTimeSecs, isFrench)})" else "• Retreats : $retreatCount (${formatDurationShort(retreatTimeSecs, isFrench)})", 34f, cy, paint)
 
         // Pillar 2: LA PAROLE & LITTÉRATURE
         cy = y + 14f
@@ -309,16 +309,16 @@ object PdfReportGenerator {
         paint.color = Color.parseColor("#1E293B")
         paint.textSize = 8f
         paint.typeface = Typeface.DEFAULT
-        canvas.drawText("• Bible : $totalBibleChapters ch (${formatDurationShort(bibleTimeSecs, isFrench)})", 216f, cy, paint)
+        canvas.drawText(if (isFrench) "• Bible : $totalBibleChapters ch (${formatDurationShort(bibleTimeSecs, isFrench)})" else "• Bible : $totalBibleChapters chs (${formatDurationShort(bibleTimeSecs, isFrench)})", 216f, cy, paint)
         cy += 12f
-        canvas.drawText("• Mém. Bible : $bibleMemVerses versets", 216f, cy, paint)
+        canvas.drawText(if (isFrench) "• Mém. Bible : $bibleMemVerses versets" else "• Bible Mem : $bibleMemVerses verses", 216f, cy, paint)
         cy += 12f
-        canvas.drawText("• Littérature : $totalLitPages p (${formatDurationShort(litTimeSecs, isFrench)})", 216f, cy, paint)
+        canvas.drawText(if (isFrench) "• Littérature : $totalLitPages p (${formatDurationShort(litTimeSecs, isFrench)})" else "• Literature : $totalLitPages p (${formatDurationShort(litTimeSecs, isFrench)})", 216f, cy, paint)
         cy += 12f
-        canvas.drawText("• Mém. Lit. : $litMemQuotes citations", 216f, cy, paint)
+        canvas.drawText(if (isFrench) "• Mém. Lit. : $litMemQuotes citations" else "• Lit Mem : $litMemQuotes quotes", 216f, cy, paint)
         cy += 12f
         val topBook = booksReadMap.keys.firstOrNull()?.take(22) ?: "-"
-        canvas.drawText("• Livre : $topBook", 216f, cy, paint)
+        canvas.drawText(if (isFrench) "• Livre : $topBook" else "• Book : $topBook", 216f, cy, paint)
         cy += 12f
         canvas.drawText("• Bertoua/15-Min : $bertouaPrayedCount / $retreats15MinCount", 216f, cy, paint)
 
@@ -333,15 +333,15 @@ object PdfReportGenerator {
         paint.color = Color.parseColor("#1E293B")
         paint.textSize = 8f
         paint.typeface = Typeface.DEFAULT
-        canvas.drawText("• Évangélisation : $sPreached prêchés", 398f, cy, paint)
+        canvas.drawText(if (isFrench) "• Évangélisation : $sPreached prêchés" else "• Evangelism : $sPreached preached", 398f, cy, paint)
         cy += 12f
-        canvas.drawText("• Convertis : $sConverts âmes", 398f, cy, paint)
+        canvas.drawText(if (isFrench) "• Convertis : $sConverts âmes" else "• Converts : $sConverts souls", 398f, cy, paint)
         cy += 12f
-        canvas.drawText("• Disciples Suivis : $disciplesMentored", 398f, cy, paint)
+        canvas.drawText(if (isFrench) "• Disciples Suivis : $disciplesMentored" else "• Disciples Mentored : $disciplesMentored", 398f, cy, paint)
         cy += 12f
-        canvas.drawText("• Jeûne : $fDays jours", 398f, cy, paint)
+        canvas.drawText(if (isFrench) "• Jeûne : $fDays jours" else "• Fasting : $fDays days", 398f, cy, paint)
         cy += 12f
-        canvas.drawText("• Offrandes : $gAmountXAF XAF", 398f, cy, paint)
+        canvas.drawText(if (isFrench) "• Offrandes : $gAmountXAF XAF" else "• Giving : $gAmountXAF XAF", 398f, cy, paint)
 
         y += 132f
 
@@ -578,17 +578,17 @@ object PdfReportGenerator {
 
                 // Column 2: Volume & Time
                 val volSummary = when (domId) {
-                    "ddewg" -> "${domEntries.size} enc (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
-                    "bible_reading" -> "${domEntries.sumOf { it.chaptersCount }} ch (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
-                    "bible_mem" -> "${domEntries.sumOf { if (it.chaptersCount > 0) it.chaptersCount else 1 }} v"
+                    "ddewg" -> "${domEntries.size} ${if (isFrench) "rencontres" else "enc"} (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
+                    "bible_reading" -> "${domEntries.sumOf { it.chaptersCount }} ${if (isFrench) "ch" else "chs"} (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
+                    "bible_mem" -> "${domEntries.sumOf { if (it.chaptersCount > 0) it.chaptersCount else 1 }} ${if (isFrench) "vers." else "verses"}"
                     "prayer_alone" -> formatDuration(domEntries.sumOf { it.durationSeconds }, isFrench)
                     "prayer_with_others" -> "${domEntries.size} sess (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
                     "proclamation_importunity" -> "${domEntries.sumOf { it.proclamationCount }}x (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
                     "christian_lit" -> "${domEntries.sumOf { it.pagesRead }} p (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
-                    "christian_lit_mem" -> "${domEntries.sumOf { if (it.pagesRead > 0) it.pagesRead else 1 }} cit."
-                    "soul_winning" -> "${domEntries.sumOf { it.preachedToCount }} prêchés, ${domEntries.sumOf { it.convertedCount }} conv."
+                    "christian_lit_mem" -> "${domEntries.sumOf { if (it.pagesRead > 0) it.pagesRead else 1 }} ${if (isFrench) "cit." else "quotes"}"
+                    "soul_winning" -> if (isFrench) "${domEntries.sumOf { it.preachedToCount }} prêchés, ${domEntries.sumOf { it.convertedCount }} conv." else "${domEntries.sumOf { it.preachedToCount }} preached, ${domEntries.sumOf { it.convertedCount }} converts"
                     "making_disciples" -> "${domEntries.sumOf { if (it.prayerParticipantsCount > 0) it.prayerParticipantsCount else 1 }} disc."
-                    "fasting" -> "${domEntries.sumOf { it.fastingDaysCount.coerceAtLeast(1) }} j"
+                    "fasting" -> "${domEntries.sumOf { it.fastingDaysCount.coerceAtLeast(1) }} ${if (isFrench) "j" else "days"}"
                     "giving" -> "${domEntries.sumOf { it.givingAmount }} XAF"
                     "retreats" -> "${domEntries.size} sess (${formatDurationShort(domEntries.sumOf { it.durationSeconds }, isFrench)})"
                     else -> "${domEntries.size} rec"
@@ -596,7 +596,7 @@ object PdfReportGenerator {
                 activeCanvas.drawText(if (domEntries.isNotEmpty()) volSummary else "-", 180f, y + 13f, paint)
 
                 // Column 3: Consistency
-                val consistencyText = if (domEntries.isNotEmpty()) "$activeDaysCount/$totalDays j (${(activeDaysCount * 100 / totalDays)}%)" else "-"
+                val consistencyText = if (domEntries.isNotEmpty()) "$activeDaysCount/$totalDays ${if (isFrench) "j" else "days"} (${(activeDaysCount * 100 / totalDays)}%)" else "-"
                 activeCanvas.drawText(consistencyText, 330f, y + 13f, paint)
 
                 // Column 4: Highlights / Notes
@@ -608,31 +608,29 @@ object PdfReportGenerator {
 
             drawFooter(activeCanvas, currentPageNum, user, isFrench)
             document.finishPage(activePage)
+
+            // Also append itemized activity records for Weekly & Monthly if entries exist
+            if (entries.isNotEmpty()) {
+                currentPageNum++
+                val newPageInfo = PdfDocument.PageInfo.Builder(595, 842, currentPageNum).create()
+                val logPage = document.startPage(newPageInfo)
+                val logCanvas = logPage.canvas
+                var logY = 35f
+
+                paint.color = Color.parseColor("#0F2942")
+                paint.textSize = 11f
+                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                val detailedLogTitle = if (isFrench) "JOURNAL DÉTAILLÉ DES ACTIVITÉS & TRANSACTIONS" else "ITEMIZED SPIRITUAL ACTIVITIES & TRANSACTION LOG"
+                logCanvas.drawText(detailedLogTitle, 28f, logY, paint)
+                logY += 16f
+
+                drawTableHeader(logCanvas, logY, isFrench)
+                logY += 20f
+                renderEntriesLoop(document, logPage, logCanvas, currentPageNum, logY, entries, user, isFrench)
+            }
         } else {
             // DAILY or CUSTOM report: render raw entry log table
-            fun drawTableHeader(c: Canvas, startY: Float) {
-                paint.style = Paint.Style.FILL
-                paint.color = Color.parseColor("#0F2942")
-                c.drawRect(28f, startY, 567f, startY + 20f, paint)
-
-                paint.color = Color.WHITE
-                paint.textSize = 9f
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-
-                val hDate = if (isFrench) "Date (Jour)" else "Date (Day)"
-                val hActivity = if (isFrench) "Activité" else "Activity"
-                val hTimeSpan = if (isFrench) "Plage Horaire" else "Time span"
-                val hDuration = if (isFrench) "Durée" else "Duration"
-                val hNotes = if (isFrench) "Notes & Réflexions" else "Notes & reflection"
-
-                c.drawText(hDate, 32f, startY + 14f, paint)
-                c.drawText(hActivity, 125f, startY + 14f, paint)
-                c.drawText(hTimeSpan, 280f, startY + 14f, paint)
-                c.drawText(hDuration, 355f, startY + 14f, paint)
-                c.drawText(hNotes, 415f, startY + 14f, paint)
-            }
-
-            if (y > 700f) {
+            if (y > 680f) {
                 drawFooter(canvas, 1, user, isFrench)
                 document.finishPage(page)
 
@@ -640,11 +638,11 @@ object PdfReportGenerator {
                 val page2 = document.startPage(newPageInfo)
                 val activeCanvas = page2.canvas
                 y = 35f
-                drawTableHeader(activeCanvas, y)
+                drawTableHeader(activeCanvas, y, isFrench)
                 y += 20f
                 renderEntriesLoop(document, page2, activeCanvas, 2, y, entries, user, isFrench)
             } else {
-                drawTableHeader(canvas, y)
+                drawTableHeader(canvas, y, isFrench)
                 y += 20f
                 renderEntriesLoop(document, page, canvas, 1, y, entries, user, isFrench)
             }
@@ -660,6 +658,29 @@ object PdfReportGenerator {
         document.close()
 
         return pdfFile
+    }
+
+    private fun drawTableHeader(c: Canvas, startY: Float, isFrench: Boolean) {
+        val paint = Paint().apply { isAntiAlias = true }
+        paint.style = Paint.Style.FILL
+        paint.color = Color.parseColor("#0F2942")
+        c.drawRect(28f, startY, 567f, startY + 20f, paint)
+
+        paint.color = Color.WHITE
+        paint.textSize = 9f
+        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+
+        val hDate = if (isFrench) "Date (Jour)" else "Date (Day)"
+        val hActivity = if (isFrench) "Activité" else "Activity"
+        val hTimeSpan = if (isFrench) "Plage Horaire" else "Time span"
+        val hDuration = if (isFrench) "Durée" else "Duration"
+        val hNotes = if (isFrench) "Notes & Réflexions" else "Notes & reflection"
+
+        c.drawText(hDate, 32f, startY + 14f, paint)
+        c.drawText(hActivity, 125f, startY + 14f, paint)
+        c.drawText(hTimeSpan, 280f, startY + 14f, paint)
+        c.drawText(hDuration, 355f, startY + 14f, paint)
+        c.drawText(hNotes, 415f, startY + 14f, paint)
     }
 
     private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
@@ -866,61 +887,85 @@ object PdfReportGenerator {
     }
 
     private fun getDomainDisplayName(domainId: String, isFrench: Boolean): String {
-        return when (domainId) {
-            "ddewg" -> if (isFrench) "DREQD (DDEWG)" else "DDEWG"
-            "bible_reading" -> if (isFrench) "Lecture Biblique" else "Bible Reading"
-            "prayer_alone" -> if (isFrench) "Prière Seul" else "Prayer Alone"
-            "prayer_with_others" -> if (isFrench) "Prière en Groupe" else "Prayer With Others"
-            "proclamation_importunity" -> if (isFrench) "Proclamation & Importunité" else "Proclamation"
-            "fasting" -> if (isFrench) "Jeûne" else "Fasting"
-            "giving" -> if (isFrench) "Offrandes / Dîmes" else "Giving"
-            "accountability" -> if (isFrench) "Redevabilité Disciple" else "Discipleship"
-            "christian_lit" -> if (isFrench) "Littérature Chrétienne" else "Christian Literature"
-            "christian_lit_mem" -> if (isFrench) "Mémorisation Lit." else "Lit. Memorization"
-            "bible_mem" -> if (isFrench) "Mémorisation Bible" else "Bible Memorization"
-            "soul_winning" -> if (isFrench) "Évangélisation" else "Soul Winning"
-            "retreats" -> if (isFrench) "Retraite Spirituelle" else "Spiritual Retreat"
-            else -> if (isFrench) "Autre Discipline" else "Custom Discipline"
+        val lower = domainId.lowercase().trim()
+        return when {
+            lower == "ddewg" || lower == "dreqd" -> if (isFrench) "DREQD (DDEWG)" else "DDEWG"
+            lower.startsWith("bible_read") || lower == "bible" -> if (isFrench) "Lecture Biblique" else "Bible Reading"
+            lower.startsWith("bible_mem") -> if (isFrench) "Mémorisation Bible" else "Bible Memorization"
+            lower == "prayer_alone" || lower == "prayer" -> if (isFrench) "Prière Seul" else "Prayer Alone"
+            lower.startsWith("prayer_with") || lower.startsWith("prayer_group") -> if (isFrench) "Prière en Groupe" else "Prayer With Others"
+            lower.startsWith("proclamation") -> if (isFrench) "Proclamation & Importunité" else "Proclamation"
+            lower.startsWith("fast") -> if (isFrench) "Jeûne" else "Fasting"
+            lower.startsWith("giv") || lower.startsWith("offrand") -> if (isFrench) "Offrandes / Dîmes" else "Giving"
+            lower.startsWith("making_disciple") || lower.startsWith("disciple") || lower == "accountability" -> if (isFrench) "Redevabilité Disciple" else "Discipleship"
+            lower.startsWith("christian_lit_mem") || lower.startsWith("lit_mem") -> if (isFrench) "Mémorisation Lit." else "Lit. Memorization"
+            lower.startsWith("christian_lit") || lower.startsWith("literature") -> if (isFrench) "Littérature Chrétienne" else "Christian Literature"
+            lower.startsWith("soul") || lower.startsWith("evangel") -> if (isFrench) "Évangélisation" else "Soul Winning"
+            lower.startsWith("retreat") -> if (isFrench) "Retraite Spirituelle" else "Spiritual Retreat"
+            else -> domainId.replace("_", " ").replaceFirstChar { it.uppercase() }
         }
     }
 
     private fun getEntrySummaryDetails(entry: AccountabilityEntryEntity, isFrench: Boolean): String {
-        return when (entry.domainId) {
-            "ddewg" -> {
+        val lower = entry.domainId.lowercase().trim()
+        return when {
+            lower == "ddewg" || lower == "dreqd" -> {
                 val durStr = formatDuration(entry.durationSeconds, isFrench)
-                "${if (isFrench) "Rencontre" else "Encounter"} ($durStr) ${entry.notes}".trim()
+                "${if (isFrench) "Rencontre" else "Encounter"} ($durStr)"
             }
-            "prayer_alone" -> {
+            lower == "prayer_alone" || lower == "prayer" -> {
                 val durStr = formatDuration(entry.durationSeconds, isFrench)
                 val type = entry.prayerType.ifBlank { if (isFrench) "Prière" else "Prayer" }
                 val topics = if (entry.prayerTopicsCount > 0) " (${entry.prayerTopicsCount} ${if (isFrench) "sujets" else "topics"})" else ""
                 "$type: $durStr$topics"
             }
-            "prayer_with_others" -> {
+            lower.startsWith("prayer_with") || lower.startsWith("prayer_group") -> {
                 val durStr = formatDuration(entry.durationSeconds, isFrench)
                 "${if (isFrench) "Prière de groupe" else "Group prayer"}: $durStr (${entry.prayerParticipantsCount} p)"
             }
-            "proclamation_importunity" -> {
+            lower.startsWith("proclamation") -> {
                 val topic = entry.proclamationTopic.ifBlank { if (isFrench) "Proclamation" else "Proclamation" }
                 val durStr = formatDuration(entry.durationSeconds, isFrench)
                 "$topic: ${entry.proclamationCount}x ($durStr)"
             }
-            "bible_reading" -> {
+            lower.startsWith("bible_read") || lower == "bible" -> {
                 val durStr = if (entry.durationSeconds > 0) " (${formatDuration(entry.durationSeconds, isFrench)})" else ""
-                "${entry.bibleBook} ${entry.startChapter}-${entry.endChapter} (${entry.chaptersCount} chs)$durStr"
+                val book = entry.bibleBook.ifBlank { if (isFrench) "Bible" else "Bible" }
+                "$book ${entry.startChapter}-${entry.endChapter} (${entry.chaptersCount} chs)$durStr"
             }
-            "soul_winning" -> {
+            lower.startsWith("bible_mem") -> {
+                val book = entry.bibleMemBook.ifBlank { entry.bibleBook.ifBlank { if (isFrench) "Passage" else "Scripture" } }
+                val ch = if (entry.bibleMemChapter > 0) entry.bibleMemChapter else entry.startChapter
+                val verse = entry.bibleMemVerse.ifBlank { "1" }
+                "$book $ch:$verse (${if (isFrench) "Mémorisation" else "Memory"})"
+            }
+            lower.startsWith("christian_lit_mem") || lower.startsWith("lit_mem") -> {
+                val durStr = if (entry.durationSeconds > 0) " (${formatDuration(entry.durationSeconds, isFrench)})" else ""
+                val count = if (entry.pagesMemorized > 0) entry.pagesMemorized else entry.pagesRead
+                "${entry.bookTitle.ifBlank { if (isFrench) "Livre" else "Book" }} ($count ${if (isFrench) "pages mémorisées" else "pages memorized"})$durStr"
+            }
+            lower.startsWith("christian_lit") || lower.startsWith("literature") -> {
+                val durStr = if (entry.durationSeconds > 0) " - ${formatDuration(entry.durationSeconds, isFrench)}" else ""
+                val author = if (entry.bookAuthor.isNotBlank()) " par ${entry.bookAuthor}" else ""
+                "${entry.bookTitle}$author (${entry.pagesRead} p)$durStr"
+            }
+            lower.startsWith("soul") || lower.startsWith("evangel") -> {
                 val pText = if (isFrench) "Prêchés" else "Preached"
                 val cText = if (isFrench) "Convertis" else "Converts"
                 "$pText: ${entry.preachedToCount}, $cText: ${entry.convertedCount}"
             }
-            "giving" -> "${if (isFrench) "Don" else "Giving"}: ${entry.givingAmount} XAF (${entry.givingType})"
-            "fasting" -> "${if (isFrench) "Jeûne" else "Fast"}: ${entry.fastingDaysCount} ${if (isFrench) "j" else "d"} (${entry.fastingType})"
-            "christian_lit" -> {
-                val durStr = if (entry.durationSeconds > 0) " - ${formatDuration(entry.durationSeconds, isFrench)}" else ""
-                "${entry.bookTitle} (${entry.pagesRead} p)$durStr"
+            lower.startsWith("making_disciple") || lower.startsWith("disciple") || lower == "accountability" -> {
+                val areas = if (entry.areasDiscussed.isNotBlank()) ": ${entry.areasDiscussed}" else ""
+                val durStr = if (entry.durationSeconds > 0) " (${formatDuration(entry.durationSeconds, isFrench)})" else ""
+                "${if (isFrench) "Suivi Disciple" else "Discipleship"}$areas$durStr"
             }
-            "retreats" -> {
+            lower.startsWith("giv") || lower.startsWith("offrand") -> {
+                "${if (isFrench) "Don" else "Giving"}: ${entry.givingAmount} XAF (${entry.givingType})"
+            }
+            lower.startsWith("fast") -> {
+                "${if (isFrench) "Jeûne" else "Fast"}: ${entry.fastingDaysCount} ${if (isFrench) "j" else "d"} (${entry.fastingType})"
+            }
+            lower.startsWith("retreat") -> {
                 val durStr = formatDuration(entry.durationSeconds, isFrench)
                 "${entry.retreatFocus.ifBlank { if (isFrench) "Retraite" else "Retreat" }}: $durStr"
             }

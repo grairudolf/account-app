@@ -223,11 +223,11 @@ fun SupportFeedbackDialog(
                 )
                 Text(
                     text = if (isFrench)
-                        "• Email de support : support@cmfi-accap.org\n" +
+                        "• Email de support : support.cmfiaccap@gmail.com\n" +
                                 "• Communion CMFI : Contactez votre assemblée locale ou votre faiseur de disciples pour un accompagnement spirituel direct.\n" +
                                 "• Vos commentaires sont précieux pour nous aider à améliorer cet outil de discipulat."
                     else
-                        "• Support Email: support@cmfi-accap.org\n" +
+                        "• Support Email: support.cmfiaccap@gmail.com\n" +
                                 "• CMFI Fellowship: Contact your local assembly or disciple maker for direct spiritual guidance.\n" +
                                 "• Your feedback helps us continuously improve this discipleship tool.",
                     style = MaterialTheme.typography.bodySmall,

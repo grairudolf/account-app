@@ -191,7 +191,13 @@ fun ProclamationScreen(
                             TextButton(
                                 onClick = {
                                     if (topicText.isNotBlank()) {
-                                        viewModel.savePrayerTopic(topicText)
+                                        viewModel.savePrayerTopic(topicText) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     } else {
                                         showAddTopicDialog = true
                                     }

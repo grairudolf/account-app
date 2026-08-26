@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.ui.components.AppDatePickerDialog
 
 import com.example.core.localization.AppStrings
 import com.example.data.local.entities.ReportRecordEntity
@@ -767,93 +768,229 @@ fun ReportDatePickerDialog(
     onConfirmRange: (java.time.LocalDate, java.time.LocalDate) -> Unit
 ) {
     val isFrench = strings is com.example.core.localization.FrenchStrings
-    var targetDateText by remember { mutableStateOf(currentTargetDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
-    var startDateText by remember { mutableStateOf(currentStartDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
-    var endDateText by remember { mutableStateOf(currentEndDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var selectedDate by remember { mutableStateOf(currentTargetDate) }
+    var selectedStart by remember { mutableStateOf(currentStartDate) }
+    var selectedEnd by remember { mutableStateOf(currentEndDate) }
+
+    var showTargetPicker by remember { mutableStateOf(false) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
 
     val today = java.time.LocalDate.now()
+    val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = if (currentReportType == "CUSTOM") (if (isFrench) "Sélectionner la plage de dates" else "Select Custom Date Range") else (if (isFrench) "Sélectionner la date du rapport" else "Select Report Date"),
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = if (currentReportType == "CUSTOM")
+                        (if (isFrench) "Sélectionner la période" else "Select Date Range")
+                    else
+                        (if (isFrench) "Sélectionner la date" else "Select Date"),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 // Quick Presets
-                Text(if (isFrench) "Sélection rapide :" else "Quick Preset Selection:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = if (isFrench) "Raccourcis rapides :" else "Quick Presets:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     FilterChip(
-                        selected = false,
+                        selected = selectedDate == today,
                         onClick = {
-                            targetDateText = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                            startDateText = today.minusDays(7).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                            endDateText = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            selectedDate = today
+                            selectedStart = today.minusDays(6)
+                            selectedEnd = today
                         },
                         label = { Text(strings.today) },
-                        shape = CircleShape
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    FilterChip(
+                        selected = selectedDate == today.minusDays(1),
+                        onClick = {
+                            val yest = today.minusDays(1)
+                            selectedDate = yest
+                            selectedStart = today.minusDays(7)
+                            selectedEnd = yest
+                        },
+                        label = { Text(if (isFrench) "Hier" else "Yesterday") },
+                        shape = RoundedCornerShape(12.dp)
                     )
                     FilterChip(
                         selected = false,
                         onClick = {
-                            val yest = today.minusDays(1)
-                            targetDateText = yest.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                            startDateText = today.minusDays(14).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                            endDateText = yest.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            selectedStart = today.minusDays(29)
+                            selectedEnd = today
+                            selectedDate = today
                         },
-                        label = { Text(if (isFrench) "Hier" else "Yesterday") },
-                        shape = CircleShape
+                        label = { Text(if (isFrench) "30 Jours" else "30 Days") },
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
 
-                HorizontalDivider(color = DividerColor)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                 if (currentReportType == "CUSTOM") {
-                    OutlinedTextField(
-                        value = startDateText,
-                        onValueChange = { startDateText = it },
-                        label = { Text(if (isFrench) "Date de début (AAAA-MM-JJ)" else "Start Date (YYYY-MM-DD)") },
-                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                    // Start Date Button Card
+                    Text(
+                        text = if (isFrench) "Date de début :" else "Start Date:",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    OutlinedTextField(
-                        value = endDateText,
-                        onValueChange = { endDateText = it },
-                        label = { Text(if (isFrench) "Date de fin (AAAA-MM-JJ)" else "End Date (YYYY-MM-DD)") },
-                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showStartPicker = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Text(
+                                    text = selectedStart.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Text(
+                                text = if (isFrench) "Modifier" else "Change",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // End Date Button Card
+                    Text(
+                        text = if (isFrench) "Date de fin :" else "End Date:",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showEndPicker = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Text(
+                                    text = selectedEnd.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Text(
+                                text = if (isFrench) "Modifier" else "Change",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 } else {
-                    OutlinedTextField(
-                        value = targetDateText,
-                        onValueChange = { targetDateText = it },
-                        label = { Text(if (isFrench) "Date cible (AAAA-MM-JJ)" else "Target Date (YYYY-MM-DD)") },
-                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                    // Single Date Button Card
+                    Text(
+                        text = when (currentReportType) {
+                            "DAILY" -> if (isFrench) "Jour du rapport :" else "Report Date:"
+                            "WEEKLY" -> if (isFrench) "Fin de la semaine :" else "Week Ending Date:"
+                            "MONTHLY" -> if (isFrench) "Mois / Année cible :" else "Target Month / Year:"
+                            else -> if (isFrench) "Date :" else "Date:"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showTargetPicker = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                Text(
+                                    text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Text(
+                                text = if (isFrench) "Choisir" else "Pick",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    try {
-                        if (currentReportType == "CUSTOM") {
-                            val s = java.time.LocalDate.parse(startDateText)
-                            val e = java.time.LocalDate.parse(endDateText)
-                            onConfirmRange(s, e)
-                        } else {
-                            val d = java.time.LocalDate.parse(targetDateText)
-                            onConfirmDate(d)
-                        }
-                    } catch (ex: Exception) {
-                        onDismiss()
+                    if (currentReportType == "CUSTOM") {
+                        val finalStart = if (selectedStart.isAfter(selectedEnd)) selectedEnd else selectedStart
+                        val finalEnd = if (selectedEnd.isBefore(selectedStart)) selectedStart else selectedEnd
+                        onConfirmRange(finalStart, finalEnd)
+                    } else {
+                        onConfirmDate(selectedDate)
                     }
                 },
                 shape = RoundedCornerShape(16.dp)
@@ -868,4 +1005,37 @@ fun ReportDatePickerDialog(
         },
         shape = RoundedCornerShape(28.dp)
     )
+
+    if (showTargetPicker) {
+        AppDatePickerDialog(
+            initialDateIso = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try { selectedDate = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
+                showTargetPicker = false
+            },
+            onDismiss = { showTargetPicker = false }
+        )
+    }
+
+    if (showStartPicker) {
+        AppDatePickerDialog(
+            initialDateIso = selectedStart.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try { selectedStart = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
+                showStartPicker = false
+            },
+            onDismiss = { showStartPicker = false }
+        )
+    }
+
+    if (showEndPicker) {
+        AppDatePickerDialog(
+            initialDateIso = selectedEnd.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try { selectedEnd = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
+                showEndPicker = false
+            },
+            onDismiss = { showEndPicker = false }
+        )
+    }
 }

@@ -7,20 +7,20 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProclamationTopicDao {
 
-    @Query("SELECT * FROM proclamation_topics WHERE userId = :userId ORDER BY updatedAtMs DESC")
-    fun getTopicsForUserFlow(userId: String): Flow<List<ProclamationTopicEntity>>
+    @Query("SELECT * FROM proclamation_topics WHERE (:userId IS NULL OR :userId = '' OR userId = :userId OR userId = 'guest_user') ORDER BY updatedAtMs DESC")
+    fun getTopicsForUserFlow(userId: String?): Flow<List<ProclamationTopicEntity>>
 
     @Query("SELECT * FROM proclamation_topics ORDER BY updatedAtMs DESC")
     fun getAllTopicsFlow(): Flow<List<ProclamationTopicEntity>>
 
-    @Query("SELECT * FROM proclamation_topics WHERE userId = :userId ORDER BY updatedAtMs DESC")
-    suspend fun getTopicsForUser(userId: String): List<ProclamationTopicEntity>
+    @Query("SELECT * FROM proclamation_topics WHERE (:userId IS NULL OR :userId = '' OR userId = :userId OR userId = 'guest_user') ORDER BY updatedAtMs DESC")
+    suspend fun getTopicsForUser(userId: String?): List<ProclamationTopicEntity>
 
     @Query("SELECT * FROM proclamation_topics WHERE id = :id")
     suspend fun getTopicById(id: String): ProclamationTopicEntity?
 
-    @Query("SELECT * FROM proclamation_topics WHERE userId = :userId AND LOWER(topic) = LOWER(:topic) LIMIT 1")
-    suspend fun findTopicByName(userId: String, topic: String): ProclamationTopicEntity?
+    @Query("SELECT * FROM proclamation_topics WHERE (:userId IS NULL OR :userId = '' OR userId = :userId OR userId = 'guest_user') AND LOWER(topic) = LOWER(:topic) ORDER BY updatedAtMs DESC LIMIT 1")
+    suspend fun findTopicByName(userId: String?, topic: String): ProclamationTopicEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateTopic(topic: ProclamationTopicEntity)
