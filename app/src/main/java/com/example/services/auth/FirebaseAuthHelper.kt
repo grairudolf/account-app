@@ -137,17 +137,30 @@ object FirebaseAuthHelper {
         } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
             Log.w(TAG, "Invalid credentials for sign in: ${e.message}")
             Result.failure(
-                IllegalStateException("Incorrect password or email. If you haven't created an account yet, tap 'Create Account' below.")
+                IllegalStateException("Incorrect password or email. If you have not created an account yet, switch to 'Create Account' tab above.")
             )
         } catch (e: com.google.firebase.auth.FirebaseAuthInvalidUserException) {
             Log.w(TAG, "No account found: ${e.message}")
             Result.failure(
-                IllegalStateException("No account found with this email. Tap 'Create Account' to sign up first.")
+                IllegalStateException("No account found with this email. Tap 'Create Account' above to sign up first.")
             )
         } catch (e: Exception) {
             Log.e(TAG, "Sign in error: ${e.message}")
-            val msg = e.localizedMessage ?: "Sign in failed. Please check your credentials and internet connection."
-            Result.failure(IllegalStateException(msg))
+            val rawMsg = e.message ?: ""
+            val userFriendlyMsg = when {
+                rawMsg.contains("supplied auth credential is incorrect", ignoreCase = true) ||
+                rawMsg.contains("invalid credential", ignoreCase = true) ->
+                    "Incorrect email or password. If you haven't created an account yet, switch to the 'Create Account' tab above."
+                rawMsg.contains("network error", ignoreCase = true) ||
+                rawMsg.contains("timeout", ignoreCase = true) ->
+                    "Network error. Please check your internet connection or continue as Guest."
+                rawMsg.contains("too many requests", ignoreCase = true) ||
+                rawMsg.contains("blocked", ignoreCase = true) ->
+                    "Access temporarily blocked due to multiple failed attempts. Please reset your password or try again later."
+                else ->
+                    e.localizedMessage ?: "Sign in failed. Please check your credentials and internet connection."
+            }
+            Result.failure(IllegalStateException(userFriendlyMsg))
         }
     }
 

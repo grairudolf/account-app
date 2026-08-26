@@ -38,6 +38,7 @@ class TimerViewModel(
                 TimerNotificationReceiver.updateOngoingTimerNotification(context, session)
                 if (session != null && session.isRunning && !session.isPaused) {
                     while (coroutineContext.isActive) {
+                        checkAndHandleDayCrossing(session)
                         val durationMs = timerServiceManager.calculateCurrentDurationMs(session)
                         _elapsedSeconds.value = durationMs / 1000L
                         delay(1000)
@@ -49,6 +50,48 @@ class TimerViewModel(
                     _elapsedSeconds.value = 0L
                 }
             }
+        }
+    }
+
+    private suspend fun checkAndHandleDayCrossing(session: TimerSessionEntity) {
+        val nowMs = System.currentTimeMillis()
+        val zone = java.time.ZoneId.systemDefault()
+        val sessionStartDate = java.time.Instant.ofEpochMilli(session.startTimestampMs).atZone(zone).toLocalDate()
+        val currentDate = java.time.Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
+
+        if (currentDate.isAfter(sessionStartDate)) {
+            // Timer crossed midnight! Auto-save entry for previous day up to 23:59:59
+            val endOfPrevDay = sessionStartDate.atTime(23, 59, 59).atZone(zone).toInstant().toEpochMilli()
+            val prevDayDurationMs = (endOfPrevDay - session.startTimestampMs).coerceAtLeast(1000L)
+            val prevDayDurationSecs = prevDayDurationMs / 1000L
+
+            val timeFormatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val startFormatted = timeFormatter.format(java.util.Date(session.startTimestampMs))
+
+            val prevDayEntry = AccountabilityEntryEntity(
+                id = UUID.randomUUID().toString(),
+                userId = session.userId,
+                domainId = session.domainId,
+                dateIso = sessionStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                timestampMs = endOfPrevDay,
+                timezoneId = session.timezoneId,
+                durationSeconds = prevDayDurationSecs,
+                startTimeIso = startFormatted,
+                endTimeIso = "23:59",
+                notes = "Automated Day-Crossing Split (Part 1)",
+                reflection = "Activity continued into the new day"
+            )
+            accountabilityRepository.saveEntry(prevDayEntry)
+
+            // Reset active session for the new day starting at 00:00:00
+            val startOfNewDayMs = currentDate.atStartOfDay(zone).toInstant().toEpochMilli()
+            val nowRealtimeMs = android.os.SystemClock.elapsedRealtime()
+            val updatedSession = session.copy(
+                startTimestampMs = startOfNewDayMs,
+                elapsedStartRealtimeMs = nowRealtimeMs,
+                accumulatedDurationMs = 0L
+            )
+            timerServiceManager.updateTimerSession(updatedSession)
         }
     }
 

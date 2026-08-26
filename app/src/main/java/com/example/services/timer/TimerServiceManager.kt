@@ -15,6 +15,10 @@ class TimerServiceManager(private val timerSessionDao: TimerSessionDao) {
         return timerSessionDao.getActiveTimerSession()
     }
 
+    suspend fun updateTimerSession(session: TimerSessionEntity) {
+        timerSessionDao.insertOrUpdateSession(session)
+    }
+
     suspend fun startTimer(userId: String, domainId: String): TimerSessionEntity {
         // Discard any previous active timer if exists
         val currentActive = timerSessionDao.getActiveTimerSession()

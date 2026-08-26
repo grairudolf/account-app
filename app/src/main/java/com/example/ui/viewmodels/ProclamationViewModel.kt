@@ -221,7 +221,7 @@ class ProclamationViewModel(
             val sel = _selectedTopic.value
             if (sel != null) {
                 val updatedTopic = sel.copy(
-                    cumulativeCount = currentTotal,
+                    cumulativeCount = if (isResumed) currentTotal else (sel.cumulativeCount + addedCount),
                     lastPracticedIso = todayIso,
                     updatedAtMs = System.currentTimeMillis()
                 )
@@ -230,7 +230,7 @@ class ProclamationViewModel(
                 val existingTopic = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
                 if (existingTopic != null) {
                     val updatedTopic = existingTopic.copy(
-                        cumulativeCount = currentTotal,
+                        cumulativeCount = if (isResumed) currentTotal else (existingTopic.cumulativeCount + addedCount),
                         lastPracticedIso = todayIso,
                         updatedAtMs = System.currentTimeMillis()
                     )
@@ -241,7 +241,7 @@ class ProclamationViewModel(
                         userId = user.id,
                         topic = finalTopic,
                         targetCount = _targetCount.value,
-                        cumulativeCount = currentTotal,
+                        cumulativeCount = addedCount,
                         lastPracticedIso = todayIso,
                         createdAtMs = System.currentTimeMillis(),
                         updatedAtMs = System.currentTimeMillis()
@@ -325,12 +325,60 @@ class ProclamationViewModel(
                 reflection = ""
             )
 
+            val safeCount = count.coerceAtLeast(1)
             accountabilityRepository.recordProclamationSession(entry)
+
+            val existingTopic = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
+            if (existingTopic != null) {
+                val updatedTopic = existingTopic.copy(
+                    cumulativeCount = existingTopic.cumulativeCount + safeCount,
+                    lastPracticedIso = dateIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                accountabilityRepository.saveProclamationTopic(updatedTopic)
+            } else {
+                val newTopic = ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    topic = finalTopic,
+                    targetCount = 100,
+                    cumulativeCount = safeCount,
+                    lastPracticedIso = dateIso,
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                accountabilityRepository.saveProclamationTopic(newTopic)
+            }
+
             accountabilityRepository.logNotification(
                 context = context,
                 title = "Manual Proclamation Session Logged",
                 message = "Logged $count proclamations for '$finalTopic' on $dateIso ($durationMins min)."
             )
+            onSuccess()
+        }
+    }
+
+    fun savePrayerTopic(topicText: String, targetCount: Int = 100, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            val finalTopic = topicText.trim()
+            if (finalTopic.isNotBlank()) {
+                val existing = topicsFlow.value.find { it.topic.equals(finalTopic, ignoreCase = true) }
+                if (existing == null) {
+                    val newTopic = ProclamationTopicEntity(
+                        id = UUID.randomUUID().toString(),
+                        userId = user.id,
+                        topic = finalTopic,
+                        targetCount = targetCount.coerceAtLeast(1),
+                        cumulativeCount = 0,
+                        lastPracticedIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        createdAtMs = System.currentTimeMillis(),
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                    accountabilityRepository.saveProclamationTopic(newTopic)
+                }
+            }
             onSuccess()
         }
     }

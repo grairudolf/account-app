@@ -74,6 +74,7 @@ fun ProclamationScreen(
     var showTargetDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var showSaveConfirmDialog by remember { mutableStateOf(false) }
+    var showAddTopicDialog by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
 
@@ -176,12 +177,32 @@ fun ProclamationScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = strings.topicLabel,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = strings.topicLabel,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            TextButton(
+                                onClick = {
+                                    if (topicText.isNotBlank()) {
+                                        viewModel.savePrayerTopic(topicText)
+                                    } else {
+                                        showAddTopicDialog = true
+                                    }
+                                },
+                                modifier = Modifier.testTag("save_prayer_topic_button")
+                            ) {
+                                Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Save Topic", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
 
                         OutlinedTextField(
                             value = topicText,
@@ -951,6 +972,56 @@ fun ProclamationScreen(
             dismissButton = {
                 TextButton(onClick = { showSaveConfirmDialog = false }) {
                     Text(strings.cancelTimer)
+                }
+            }
+        )
+    }
+
+    if (showAddTopicDialog) {
+        var newTopicInput by remember { mutableStateOf("") }
+        var targetInput by remember { mutableStateOf("100") }
+
+        AlertDialog(
+            onDismissRequest = { showAddTopicDialog = false },
+            title = { Text("Save New Prayer Topic") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = newTopicInput,
+                        onValueChange = { newTopicInput = it },
+                        label = { Text("Prayer Topic / Proclamation") },
+                        placeholder = { Text("e.g. Divine Wisdom & Breakthrough") },
+                        singleLine = false,
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = targetInput,
+                        onValueChange = { targetInput = it.filter { c -> c.isDigit() } },
+                        label = { Text("Target Proclamations Count") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val target = targetInput.toIntOrNull() ?: 100
+                        viewModel.savePrayerTopic(newTopicInput, target)
+                        showAddTopicDialog = false
+                    },
+                    enabled = newTopicInput.isNotBlank()
+                ) {
+                    Text("Save Topic")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddTopicDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )

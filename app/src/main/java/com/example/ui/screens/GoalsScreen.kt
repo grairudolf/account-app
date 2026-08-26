@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,7 +74,9 @@ fun GoalsScreen(
 
             // Frequency Selector Filter Chips
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf("ALL" to strings.allPeriod, "DAILY" to strings.daily, "WEEKLY" to strings.weekly, "MONTHLY" to strings.monthly).forEach { (freqKey, freqLabel) ->
@@ -144,6 +147,9 @@ fun GoalsScreen(
                 }
             } else {
                 LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {

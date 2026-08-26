@@ -619,15 +619,17 @@ object PdfReportGenerator {
                 paint.textSize = 9f
                 paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
-                val hDate = if (isFrench) "Date" else "Date"
-                val hDomain = if (isFrench) "Discipline" else "Discipline"
-                val hDetails = if (isFrench) "Mesures & Détails Spécifiques" else "Measurements & Specific Details"
-                val hNotes = if (isFrench) "Notes / Réflexions" else "Notes / Reflections"
+                val hDate = if (isFrench) "Date (Jour)" else "Date (Day)"
+                val hActivity = if (isFrench) "Activité" else "Activity"
+                val hTimeSpan = if (isFrench) "Plage Horaire" else "Time span"
+                val hDuration = if (isFrench) "Durée" else "Duration"
+                val hNotes = if (isFrench) "Notes & Réflexions" else "Notes & reflection"
 
-                c.drawText(hDate, 35f, startY + 14f, paint)
-                c.drawText(hDomain, 115f, startY + 14f, paint)
-                c.drawText(hDetails, 230f, startY + 14f, paint)
-                c.drawText(hNotes, 425f, startY + 14f, paint)
+                c.drawText(hDate, 32f, startY + 14f, paint)
+                c.drawText(hActivity, 125f, startY + 14f, paint)
+                c.drawText(hTimeSpan, 280f, startY + 14f, paint)
+                c.drawText(hDuration, 355f, startY + 14f, paint)
+                c.drawText(hNotes, 415f, startY + 14f, paint)
             }
 
             if (y > 700f) {
@@ -660,6 +662,34 @@ object PdfReportGenerator {
         return pdfFile
     }
 
+    private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
+        if (text.isBlank()) return listOf("-")
+        val words = text.split(" ")
+        val lines = mutableListOf<String>()
+        var currentLine = ""
+        for (word in words) {
+            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+            if (paint.measureText(testLine) <= maxWidth) {
+                currentLine = testLine
+            } else {
+                if (currentLine.isNotEmpty()) lines.add(currentLine)
+                currentLine = word
+            }
+        }
+        if (currentLine.isNotEmpty()) lines.add(currentLine)
+        return if (lines.isEmpty()) listOf(text) else lines
+    }
+
+    private fun formatDateWithDay(dateIso: String, isFrench: Boolean): String {
+        return try {
+            val date = LocalDate.parse(dateIso)
+            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, if (isFrench) Locale.FRENCH else Locale.ENGLISH)
+            "$dayOfWeek $dateIso"
+        } catch (e: Exception) {
+            dateIso
+        }
+    }
+
     private fun renderEntriesLoop(
         document: PdfDocument,
         initialPage: PdfDocument.Page,
@@ -686,15 +716,17 @@ object PdfReportGenerator {
             paint.textSize = 9f
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
-            val hDate = if (isFrench) "Date" else "Date"
-            val hDomain = if (isFrench) "Discipline" else "Discipline"
-            val hDetails = if (isFrench) "Mesures & Détails Spécifiques" else "Measurements & Specific Details"
-            val hNotes = if (isFrench) "Notes / Réflexions" else "Notes / Reflections"
+            val hDate = if (isFrench) "Date (Jour)" else "Date (Day)"
+            val hActivity = if (isFrench) "Activité" else "Activity"
+            val hTimeSpan = if (isFrench) "Plage Horaire" else "Time span"
+            val hDuration = if (isFrench) "Durée" else "Duration"
+            val hNotes = if (isFrench) "Notes & Réflexions" else "Notes & reflection"
 
-            c.drawText(hDate, 35f, sY + 14f, paint)
-            c.drawText(hDomain, 115f, sY + 14f, paint)
-            c.drawText(hDetails, 230f, sY + 14f, paint)
-            c.drawText(hNotes, 425f, sY + 14f, paint)
+            c.drawText(hDate, 32f, sY + 14f, paint)
+            c.drawText(hActivity, 125f, sY + 14f, paint)
+            c.drawText(hTimeSpan, 280f, sY + 14f, paint)
+            c.drawText(hDuration, 355f, sY + 14f, paint)
+            c.drawText(hNotes, 415f, sY + 14f, paint)
         }
 
         if (entries.isEmpty()) {
@@ -707,7 +739,35 @@ object PdfReportGenerator {
             y += 28f
         } else {
             for (entry in entries) {
-                if (y > 745f) {
+                paint.style = Paint.Style.FILL
+                paint.typeface = Typeface.DEFAULT
+                paint.textSize = 8f
+                paint.color = Color.parseColor("#1E293B")
+
+                val dateStr = formatDateWithDay(entry.dateIso, isFrench)
+                val domainTitle = getDomainDisplayName(entry.domainId, isFrench)
+                val activitySummary = "$domainTitle: ${getEntrySummaryDetails(entry, isFrench)}"
+                val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) "${entry.startTimeIso} - ${entry.endTimeIso}" else "-"
+                val durationStr = if (entry.durationSeconds > 0) formatDurationShort(entry.durationSeconds, isFrench) else "-"
+                val notesText = buildString {
+                    if (entry.notes.isNotBlank()) append(entry.notes)
+                    if (entry.reflection.isNotBlank()) {
+                        if (isNotEmpty()) append(" | Refl: ")
+                        append(entry.reflection)
+                    }
+                    if (isEmpty()) append("-")
+                }
+
+                val dateLines = wrapText(dateStr, paint, 88f)
+                val activityLines = wrapText(activitySummary, paint, 148f)
+                val timeSpanLines = wrapText(timeSpan, paint, 70f)
+                val durationLines = wrapText(durationStr, paint, 52f)
+                val notesLines = wrapText(notesText, paint, 148f)
+
+                val maxLineCount = maxOf(dateLines.size, activityLines.size, timeSpanLines.size, durationLines.size, notesLines.size)
+                val rowHeight = (maxLineCount * 11f + 8f).coerceAtLeast(22f)
+
+                if (y + rowHeight > 765f) {
                     drawFooter(activeCanvas, currentPageNum, user, isFrench)
                     document.finishPage(activePage)
 
@@ -721,8 +781,6 @@ object PdfReportGenerator {
                     y += 20f
                 }
 
-                val rowHeight = 22f
-
                 // Alternating Row Background
                 paint.style = Paint.Style.FILL
                 paint.color = if (rowIndex % 2 == 0) Color.parseColor("#F8FAFC") else Color.WHITE
@@ -734,26 +792,39 @@ object PdfReportGenerator {
                 paint.strokeWidth = 0.6f
                 activeCanvas.drawRect(28f, y, 567f, y + rowHeight, paint)
 
-                // Vertical Column Dividers
-                activeCanvas.drawLine(110f, y, 110f, y + rowHeight, paint)
-                activeCanvas.drawLine(225f, y, 225f, y + rowHeight, paint)
-                activeCanvas.drawLine(420f, y, 420f, y + rowHeight, paint)
+                // Vertical Column Dividers: Date (120f), Activity (275f), TimeSpan (350f), Duration (410f)
+                activeCanvas.drawLine(120f, y, 120f, y + rowHeight, paint)
+                activeCanvas.drawLine(275f, y, 275f, y + rowHeight, paint)
+                activeCanvas.drawLine(350f, y, 350f, y + rowHeight, paint)
+                activeCanvas.drawLine(410f, y, 410f, y + rowHeight, paint)
 
-                // Text Content
+                // Text Content Drawing
                 paint.style = Paint.Style.FILL
-                paint.typeface = Typeface.DEFAULT
-                paint.textSize = 8.5f
-                paint.color = Color.parseColor("#1E293B")
 
-                activeCanvas.drawText(entry.dateIso, 33f, y + 14f, paint)
-                val domainTitle = getDomainDisplayName(entry.domainId, isFrench)
-                activeCanvas.drawText(domainTitle.take(19), 115f, y + 14f, paint)
+                // Column 1: Date (Day)
+                dateLines.forEachIndexed { i, line ->
+                    activeCanvas.drawText(line, 32f, y + 12f + (i * 11f), paint)
+                }
 
-                val details = getEntrySummaryDetails(entry, isFrench)
-                activeCanvas.drawText(details.take(38), 230f, y + 14f, paint)
+                // Column 2: Activity
+                activityLines.forEachIndexed { i, line ->
+                    activeCanvas.drawText(line, 125f, y + 12f + (i * 11f), paint)
+                }
 
-                val notesText = entry.notes.ifBlank { "-" }
-                activeCanvas.drawText(notesText.take(28), 425f, y + 14f, paint)
+                // Column 3: Time span
+                timeSpanLines.forEachIndexed { i, line ->
+                    activeCanvas.drawText(line, 280f, y + 12f + (i * 11f), paint)
+                }
+
+                // Column 4: Duration
+                durationLines.forEachIndexed { i, line ->
+                    activeCanvas.drawText(line, 355f, y + 12f + (i * 11f), paint)
+                }
+
+                // Column 5: Notes & Reflection
+                notesLines.forEachIndexed { i, line ->
+                    activeCanvas.drawText(line, 415f, y + 12f + (i * 11f), paint)
+                }
 
                 y += rowHeight
                 rowIndex++
