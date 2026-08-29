@@ -130,7 +130,7 @@ class ReportsViewModel(
         }
     }
 
-    fun generatePdfReport(context: Context, onPdfGenerated: (File) -> Unit) {
+    fun generatePdfReport(context: Context, onPdfGenerated: (File?) -> Unit) {
         viewModelScope.launch {
             try {
                 val user = userRepository.currentUserFlow.first() ?: userRepository.getOrCreateGuestUser()
@@ -247,6 +247,7 @@ class ReportsViewModel(
                 onPdfGenerated(pdfFile)
             } catch (e: Exception) {
                 e.printStackTrace()
+                onPdfGenerated(null)
             }
         }
     }

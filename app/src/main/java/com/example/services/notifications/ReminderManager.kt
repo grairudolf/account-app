@@ -14,8 +14,12 @@ object ReminderManager {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         val intent = Intent(context, ReminderNotificationReceiver::class.java).apply {
+            action = "com.example.action.SPIRITUAL_REMINDER"
+            putExtra("EXTRA_REMINDER_ID", reminder.id)
             putExtra("EXTRA_TITLE", reminder.title)
             putExtra("EXTRA_MESSAGE", reminder.message)
+            putExtra("EXTRA_HOUR", reminder.hour)
+            putExtra("EXTRA_MINUTE", reminder.minute)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -25,25 +29,56 @@ object ReminderManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val now = Calendar.getInstance()
         val calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, reminder.hour)
             set(Calendar.MINUTE, reminder.minute)
             set(Calendar.SECOND, 0)
-            if (before(Calendar.getInstance())) {
-                add(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= now.timeInMillis) {
+                add(Calendar.DAY_OF_YEAR, 1)
             }
         }
 
         try {
-            alarmManager.setInexactRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
-                pendingIntent
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.timeInMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.timeInMillis,
+                        pendingIntent
+                    )
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
+            try {
+                alarmManager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
         }
 
         // Show immediate confirmation notification so the user knows notifications are working!
@@ -56,7 +91,9 @@ object ReminderManager {
 
     fun cancelReminder(context: Context, reminderId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, ReminderNotificationReceiver::class.java)
+        val intent = Intent(context, ReminderNotificationReceiver::class.java).apply {
+            action = "com.example.action.SPIRITUAL_REMINDER"
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             reminderId.hashCode(),
@@ -65,6 +102,7 @@ object ReminderManager {
         )
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
         }
     }
 }

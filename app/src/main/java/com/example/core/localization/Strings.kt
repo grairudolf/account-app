@@ -125,6 +125,10 @@ interface AppStrings {
     val duration: String
     val activeSessionFound: String
     val activeSessionPrompt: String
+    val activeSessionRunningTitle: String
+    val activeSessionRunningPrompt: String
+    val goToActiveSession: String
+    val saveActiveSession: String
     val resumeSession: String
     val endSession: String
     val discardSession: String
@@ -855,6 +859,10 @@ object EnglishStrings : AppStrings {
     override val duration = "Duration"
     override val activeSessionFound = "Active Session Detected"
     override val activeSessionPrompt = "An interrupted timer session was found from earlier."
+    override val activeSessionRunningTitle = "Active Session in Progress"
+    override val activeSessionRunningPrompt = "A live session is currently running for %s. Please finish and save your active session before starting a new one."
+    override val goToActiveSession = "Go to Active Session"
+    override val saveActiveSession = "Save Active Session"
     override val resumeSession = "Resume"
     override val endSession = "Finish & Save"
     override val discardSession = "Discard"
@@ -1108,7 +1116,7 @@ object EnglishStrings : AppStrings {
     override val domainNamePrompt = "Domain Name"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Measurement Unit (e.g., Pages, Minutes)"
-    override val haveYouSpentTimeWithGod = "Reflect on your walk with God and record your time spent with God"
+    override val haveYouSpentTimeWithGod = "Have you spent time with God today?"
     override val timeWithGodSubtitle = "Reflect on your walk with God and record your time spent with God"
     override val exploreDisciplines = "Record Disciplines"
     override val editReminderTitle = "Edit Daily Reminder"
@@ -1411,6 +1419,10 @@ object FrenchStrings : AppStrings {
     override val duration = "Durée"
     override val activeSessionFound = "Session Active Détectée"
     override val activeSessionPrompt = "Une session de minuteur interrompue a été trouvée."
+    override val activeSessionRunningTitle = "Session en cours"
+    override val activeSessionRunningPrompt = "Une session en direct est actuellement en cours pour %s. Veuillez terminer et enregistrer votre session en cours avant d'en démarrer une nouvelle."
+    override val goToActiveSession = "Aller à la session active"
+    override val saveActiveSession = "Enregistrer la session active"
     override val resumeSession = "Reprendre"
     override val endSession = "Terminer et Enregistrer"
     override val discardSession = "Ignorer"
@@ -1664,8 +1676,8 @@ object FrenchStrings : AppStrings {
     override val domainNamePrompt = "Nom du Domaine"
     override val descriptionPrompt = "Description"
     override val measurementUnitPrompt = "Unité de Mesure (ex. Pages, Minutes)"
-    override val haveYouSpentTimeWithGod = "Réfléchissez sur votre marche avec Dieu et enregistrez votre temps passé avec Dieu"
-    override val timeWithGodSubtitle = "Méditez sur votre marche avec Dieu et enregistrez votre temps passé avec Dieu"
+    override val haveYouSpentTimeWithGod = "Avez-vous passé du temps avec Dieu aujourd'hui ?"
+    override val timeWithGodSubtitle = "Réfléchissez sur votre marche avec Dieu et enregistrez votre temps passé avec Dieu"
     override val exploreDisciplines = "Enregistrer les disciplines"
     override val editReminderTitle = "Modifier le rappel quotidien"
 

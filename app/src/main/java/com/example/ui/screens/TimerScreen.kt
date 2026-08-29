@@ -32,7 +32,7 @@ import com.example.core.localization.AppStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.TimerSessionEntity
-import com.example.domain.models.BibleMetadata
+import com.example.data.local.BibleMetadata
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -55,6 +55,10 @@ fun TimerScreen(
     onBack: () -> Unit
 ) {
     var showSaveDialog by remember { mutableStateOf(false) }
+
+    val effectiveDomainId = activeSession?.domainId ?: domainId
+    val isDomainMismatch = activeSession != null && activeSession.domainId != domainId
+    var showDomainMismatchDialog by remember(isDomainMismatch) { mutableStateOf(isDomainMismatch) }
 
     val context = LocalContext.current
     var hasNotificationPermission by remember {
@@ -95,22 +99,7 @@ fun TimerScreen(
             if (relevant != null) {
                 when (domainId) {
                     "bible_reading" -> {
-                        val rawBook = relevant.bibleBook.ifBlank { "Genesis" }
-                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
-                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
-                        }?.name ?: "Genesis"
-                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
-                        val lastEnd = if (relevant.endChapter > 0) relevant.endChapter else if (relevant.startChapter > 0) relevant.startChapter else 1
-                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
-                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
-                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
-                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
-                            } else {
-                                matchedBook to maxCh
-                            }
-                        } else {
-                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
-                        }
+                        val (targetBook, targetCh) = BibleMetadata.getNextReadPosition(relevant)
                         "📖 Continuing: $targetBook Ch. $targetCh"
                     }
                     "christian_lit", "christian_lit_reading" -> {
@@ -127,8 +116,8 @@ fun TimerScreen(
                     }
                     "prayer_alone", "prayer_with_others" -> {
                         val prevEnd = if (relevant.endPrayerTopicNumber > 0) relevant.endPrayerTopicNumber else relevant.prayerTopicsCount
-                        if (prevEnd > 0) {
-                            "🙏 ${strings.continueFromTopic.format(prevEnd + 1)}"
+                        if (prevEnd > 0 && (relevant.prayerType.equals("Thanksgiving", ignoreCase = true) || relevant.prayerType.equals("Request", ignoreCase = true) || relevant.prayerType.equals("Requests", ignoreCase = true))) {
+                            "🙏 ${strings.continueFromTopic.format(prevEnd + 1)} (${relevant.prayerType})"
                         } else null
                     }
                     else -> null
@@ -142,7 +131,7 @@ fun TimerScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = strings.getDomainTitleById(domainId).uppercase(),
+                        text = strings.getDomainTitleById(effectiveDomainId).uppercase(),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
@@ -451,9 +440,47 @@ fun TimerScreen(
         }
     }
 
+    if (showDomainMismatchDialog && activeSession != null) {
+        AlertDialog(
+            onDismissRequest = { showDomainMismatchDialog = false },
+            icon = { Icon(Icons.Default.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text(strings.activeSessionRunningTitle, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    strings.activeSessionRunningPrompt.format(strings.getDomainTitleById(activeSession.domainId))
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onPauseTimer()
+                        showDomainMismatchDialog = false
+                        showSaveDialog = true
+                    }
+                ) {
+                    Text(strings.saveActiveSession)
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            showDomainMismatchDialog = false
+                        }
+                    ) {
+                        Text(strings.goToActiveSession)
+                    }
+                    TextButton(onClick = onBack) {
+                        Text(strings.cancel)
+                    }
+                }
+            }
+        )
+    }
+
     if (showSaveDialog) {
         SaveTimerDialog(
-            domainId = domainId,
+            domainId = effectiveDomainId,
             formattedTime = formattedTime,
             elapsedSeconds = elapsedSeconds,
             strings = strings,
@@ -518,6 +545,7 @@ fun SaveTimerDialog(
     var givingIncomeText by remember { mutableStateOf("") }
     var givingAmountText by remember { mutableStateOf("") }
     var givingType by remember { mutableStateOf("Tithe") }
+    var retreatPeriodOfDay by remember { mutableStateOf("Morning") }
 
     // Spiritual Retreats
     var retreatFocus by remember { mutableStateOf("") }
@@ -552,22 +580,7 @@ fun SaveTimerDialog(
             if (last != null) {
                 when (domainId) {
                     "bible_reading" -> {
-                        val rawBook = last.bibleBook.ifBlank { "Genesis" }
-                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
-                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
-                        }?.name ?: "Genesis"
-                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
-                        val lastEnd = if (last.endChapter > 0) last.endChapter else if (last.startChapter > 0) last.startChapter else 1
-                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
-                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
-                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
-                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
-                            } else {
-                                matchedBook to maxCh
-                            }
-                        } else {
-                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
-                        }
+                        val (targetBook, targetCh) = BibleMetadata.getNextReadPosition(last)
                         if (bibleSegments.isNotEmpty()) {
                             bibleSegments[0] = BibleReadingSegment(book = targetBook, startChapter = targetCh, endChapter = targetCh)
                         }
@@ -595,18 +608,77 @@ fun SaveTimerDialog(
                         }
                     }
                     "prayer_alone", "prayer_with_others" -> {
-                        val prevEnd = if (last.endPrayerTopicNumber > 0) last.endPrayerTopicNumber else last.prayerTopicsCount
-                        if (prevEnd > 0) {
-                            previousEndTopicNumber = prevEnd
-                            startPrayerTopicNumberText = (prevEnd + 1).toString()
-                            endPrayerTopicNumberText = (prevEnd + 5).toString()
-                            continuationBanner = strings.continueFromTopic.format(prevEnd + 1)
-                        }
                         if (last.prayerType.isNotBlank()) {
                             prayerFocusType = last.prayerType
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Dynamic prayer topic continuation segregation for Thanksgiving vs Requests
+    LaunchedEffect(prayerFocusType, allEntries) {
+        if (domainId == "prayer_alone" || domainId == "prayer_with_others") {
+            if (prayerFocusType == "Thanksgiving") {
+                val lastThanks = allEntries.filter { 
+                    (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
+                    it.prayerType.equals("Thanksgiving", ignoreCase = true)
+                }.maxByOrNull { it.timestampMs }
+                val prevEnd = if (lastThanks != null) {
+                    if (lastThanks.endPrayerTopicNumber > 0) lastThanks.endPrayerTopicNumber else lastThanks.prayerTopicsCount
+                } else 0
+                previousEndTopicNumber = prevEnd
+                if (prevEnd > 0) {
+                    startPrayerTopicNumberText = (prevEnd + 1).toString()
+                    endPrayerTopicNumberText = (prevEnd + 5).toString()
+                    prayerTopicsCountText = "5"
+                    continuationBanner = "${strings.continueFromTopic.format(prevEnd + 1)} (Thanksgiving)"
+                } else {
+                    startPrayerTopicNumberText = "1"
+                    endPrayerTopicNumberText = "5"
+                    prayerTopicsCountText = "5"
+                    continuationBanner = null
+                }
+            } else if (prayerFocusType == "Request" || prayerFocusType == "Requests") {
+                val lastReq = allEntries.filter { 
+                    (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
+                    (it.prayerType.equals("Request", ignoreCase = true) || it.prayerType.equals("Requests", ignoreCase = true))
+                }.maxByOrNull { it.timestampMs }
+                val prevEnd = if (lastReq != null) {
+                    if (lastReq.endPrayerTopicNumber > 0) lastReq.endPrayerTopicNumber else lastReq.prayerTopicsCount
+                } else 0
+                previousEndTopicNumber = prevEnd
+                if (prevEnd > 0) {
+                    startPrayerTopicNumberText = (prevEnd + 1).toString()
+                    endPrayerTopicNumberText = (prevEnd + 5).toString()
+                    prayerTopicsCountText = "5"
+                    continuationBanner = "${strings.continueFromTopic.format(prevEnd + 1)} (Requests)"
+                } else {
+                    startPrayerTopicNumberText = "1"
+                    endPrayerTopicNumberText = "5"
+                    prayerTopicsCountText = "5"
+                    continuationBanner = null
+                }
+            } else if (prayerFocusType == "15-Minute Retreat") {
+                previousEndTopicNumber = 0
+                startPrayerTopicNumberText = ""
+                endPrayerTopicNumberText = ""
+                prayerTopicsCountText = "0"
+                continuationBanner = null
+                val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                retreatPeriodOfDay = when (currentHour) {
+                    in 5..11 -> "Morning"
+                    in 12..16 -> "Noon"
+                    in 17..20 -> "Evening"
+                    else -> "Night"
+                }
+            } else {
+                previousEndTopicNumber = 0
+                startPrayerTopicNumberText = ""
+                endPrayerTopicNumberText = ""
+                prayerTopicsCountText = "0"
+                continuationBanner = null
             }
         }
     }
@@ -863,91 +935,127 @@ fun SaveTimerDialog(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Prayer Topics Section with continuation
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            if (prayerFocusType == "15-Minute Retreat") {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        text = strings.prayerTopics,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = strings.periodOfDay,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
-
-                                    if (previousEndTopicNumber > 0) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                startPrayerTopicNumberText = (previousEndTopicNumber + 1).toString()
-                                            },
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = strings.continueFromTopicPrompt.format(previousEndTopicNumber + 1),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        OutlinedTextField(
-                                            value = startPrayerTopicNumberText,
-                                            onValueChange = { startPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
-                                            label = { Text(strings.startTopicNumber) },
-                                            placeholder = { Text("e.g. 20") },
-                                            modifier = Modifier.weight(1f),
-                                            singleLine = true
+                                        val periods: List<Pair<String, String>> = listOf(
+                                            "Morning" to strings.retreatMorning,
+                                            "Noon" to strings.retreatNoon,
+                                            "Evening" to strings.retreatEvening,
+                                            "Night" to strings.retreatNight
                                         )
-                                        OutlinedTextField(
-                                            value = endPrayerTopicNumberText,
-                                            onValueChange = { endPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
-                                            label = { Text(strings.endTopicNumber) },
-                                            placeholder = { Text("e.g. 30") },
-                                            modifier = Modifier.weight(1f),
-                                            singleLine = true
-                                        )
-                                    }
-
-                                    val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
-                                    val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
-                                    if (startNum > 0 && endNum >= startNum) {
-                                        val autoCalculated = endNum - startNum + 1
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = StatusSuccess.copy(alpha = 0.15f),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text(
-                                                text = strings.totalTopicsAutoCalculated.format(autoCalculated),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = StatusSuccess,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        periods.forEach { (periodKey, periodLabel) ->
+                                            val isSelected = retreatPeriodOfDay.equals(periodKey, ignoreCase = true)
+                                            FilterChip(
+                                                selected = isSelected,
+                                                onClick = { retreatPeriodOfDay = periodKey },
+                                                label = { Text(periodLabel, fontSize = 12.sp) },
+                                                modifier = Modifier.weight(1f)
                                             )
                                         }
-                                    } else {
-                                        OutlinedTextField(
-                                            value = prayerTopicsCountText,
-                                            onValueChange = { prayerTopicsCountText = it.filter { ch -> ch.isDigit() } },
-                                            label = { Text(strings.numTopicsRecorded) },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true
+                                    }
+                                }
+                            }
+
+                            if (prayerFocusType == "Thanksgiving" || prayerFocusType == "Request" || prayerFocusType == "Requests") {
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Prayer Topics Section with continuation
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text(
+                                            text = strings.prayerTopics,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
+
+                                        if (previousEndTopicNumber > 0) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    startPrayerTopicNumberText = (previousEndTopicNumber + 1).toString()
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = strings.continueFromTopicPrompt.format(previousEndTopicNumber + 1),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            OutlinedTextField(
+                                                value = startPrayerTopicNumberText,
+                                                onValueChange = { startPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                                label = { Text(strings.startTopicNumber) },
+                                                placeholder = { Text("e.g. 20") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true
+                                            )
+                                            OutlinedTextField(
+                                                value = endPrayerTopicNumberText,
+                                                onValueChange = { endPrayerTopicNumberText = it.filter { ch -> ch.isDigit() } },
+                                                label = { Text(strings.endTopicNumber) },
+                                                placeholder = { Text("e.g. 30") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true
+                                            )
+                                        }
+
+                                        val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
+                                        val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
+                                        if (startNum > 0 && endNum >= startNum) {
+                                            val autoCalculated = endNum - startNum + 1
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = StatusSuccess.copy(alpha = 0.15f),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    text = strings.totalTopicsAutoCalculated.format(autoCalculated),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = StatusSuccess,
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                                )
+                                            }
+                                        } else {
+                                            OutlinedTextField(
+                                                value = prayerTopicsCountText,
+                                                onValueChange = { prayerTopicsCountText = it.filter { ch -> ch.isDigit() } },
+                                                label = { Text(strings.numTopicsRecorded) },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                singleLine = true
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1231,13 +1339,16 @@ fun SaveTimerDialog(
                                     }
                                     "prayer_alone" -> {
                                         val effectiveFocus = if (prayerFocusType == "Custom") customPrayerFocus else prayerFocusType
-                                        val startNum = startPrayerTopicNumberText.toIntOrNull() ?: 0
-                                        val endNum = endPrayerTopicNumberText.toIntOrNull() ?: 0
-                                        val calcTopics = if (startNum > 0 && endNum >= startNum) {
-                                            endNum - startNum + 1
-                                        } else {
-                                            prayerTopicsCountText.toIntOrNull() ?: 0
-                                        }
+                                        val isTopicFocus = prayerFocusType == "Thanksgiving" || prayerFocusType == "Request" || prayerFocusType == "Requests"
+                                        val startNum = if (isTopicFocus) startPrayerTopicNumberText.toIntOrNull() ?: 0 else 0
+                                        val endNum = if (isTopicFocus) endPrayerTopicNumberText.toIntOrNull() ?: 0 else 0
+                                        val calcTopics = if (isTopicFocus) {
+                                            if (startNum > 0 && endNum >= startNum) {
+                                                endNum - startNum + 1
+                                            } else {
+                                                prayerTopicsCountText.toIntOrNull() ?: 0
+                                            }
+                                        } else 0
                                         AccountabilityEntryEntity(
                                             id = UUID.randomUUID().toString(),
                                             userId = userId,
@@ -1252,6 +1363,7 @@ fun SaveTimerDialog(
                                             prayerTopicsCount = calcTopics,
                                             startPrayerTopicNumber = startNum,
                                             endPrayerTopicNumber = endNum,
+                                            retreatPeriodOfDay = if (prayerFocusType == "15-Minute Retreat") retreatPeriodOfDay else "",
                                             notes = notes
                                         )
                                     }

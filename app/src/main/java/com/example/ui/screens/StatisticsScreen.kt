@@ -392,6 +392,96 @@ fun StatisticsScreen(
                                         }
                                     }
                                 }
+
+                                if (uiState.total15MinRetreats > 0) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.SpaceEvenly,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("🌅 M: ${uiState.total15MinMorning}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                                            Text("☀️ N: ${uiState.total15MinNoon}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                                            Text("🌆 E: ${uiState.total15MinEvening}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                                            Text("🌙 Nt: ${uiState.total15MinNight}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Proclamations Statistics Card
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth().testTag("stat_card_proclamations")
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = strings.proclamationTitle,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Icon(
+                                        Icons.Default.Campaign,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            strings.proclamationsMade,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "${uiState.totalProclamationRepetitions}",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            strings.topicsCovered,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "${uiState.totalProclamationTopicsCount}",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            strings.duration,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "${uiState.totalProclamationMinutes} ${strings.minutesUnit}",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -1037,6 +1127,11 @@ fun EditEntryDialog(
     var givingIncomeRef by remember { mutableStateOf(if (entry.givingIncomeReference > 0) entry.givingIncomeReference.toString() else "0") }
     var givingType by remember { mutableStateOf(entry.givingType.ifBlank { "Tithe" }) }
 
+    // Proclamation
+    var proclamationTopic by remember { mutableStateOf(entry.proclamationTopic) }
+    var proclamationCount by remember { mutableStateOf(if (entry.proclamationCount > 0) entry.proclamationCount.toString() else "10") }
+    var proclamationTarget by remember { mutableStateOf(if (entry.proclamationTarget > 0) entry.proclamationTarget.toString() else "50") }
+
     // Discipleship
     var discipleName by remember { mutableStateOf(entry.prayerParticipantNames) }
     var discipleshipTopicsCovered by remember { mutableStateOf(entry.areasDiscussed) }
@@ -1371,6 +1466,29 @@ fun EditEntryDialog(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+
+                    "proclamation_importunity" -> {
+                        OutlinedTextField(
+                            value = proclamationTopic,
+                            onValueChange = { proclamationTopic = it },
+                            label = { Text(strings.topicLabel) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = proclamationCount,
+                                onValueChange = { proclamationCount = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.proclamationsMade) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = proclamationTarget,
+                                onValueChange = { proclamationTarget = it.filter { ch -> ch.isDigit() } },
+                                label = { Text(strings.targetProclamations) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
 
                 OutlinedTextField(
@@ -1440,6 +1558,9 @@ fun EditEntryDialog(
                     givingAmount = givingAmt.toDoubleOrNull() ?: entry.givingAmount,
                     givingIncomeReference = givingIncomeRef.toDoubleOrNull() ?: entry.givingIncomeReference,
                     givingType = givingType,
+                    proclamationTopic = proclamationTopic,
+                    proclamationCount = proclamationCount.toIntOrNull() ?: entry.proclamationCount,
+                    proclamationTarget = proclamationTarget.toIntOrNull() ?: entry.proclamationTarget,
                     prayerParticipantNames = discipleName,
                     areasDiscussed = discipleshipTopicsCovered,
                     updatedAtMs = System.currentTimeMillis()

@@ -71,7 +71,7 @@ class ProclamationViewModel(
         "The harvest is plentiful, send forth laborers into Your harvest"
     )
 
-    fun selectTopic(topic: ProclamationTopicEntity, resumeCount: Boolean = true) {
+    fun selectTopic(topic: ProclamationTopicEntity, resumeCount: Boolean = false) {
         _selectedTopic.value = topic
         _topicText.value = topic.topic
         _targetCount.value = if (topic.targetCount > 0) topic.targetCount else 100
@@ -95,13 +95,21 @@ class ProclamationViewModel(
     }
 
     fun setTopicText(newTopic: String) {
+        val trimmed = newTopic.trim()
+        val oldTrimmed = _topicText.value.trim()
         _topicText.value = newTopic
-        val existing = topicsFlow.value.find { it.topic.equals(newTopic.trim(), ignoreCase = true) }
-        if (existing != null) {
-            _selectedTopic.value = existing
-            _targetCount.value = existing.targetCount
-        } else {
-            _selectedTopic.value = null
+        if (!trimmed.equals(oldTrimmed, ignoreCase = true)) {
+            val existing = topicsFlow.value.find { it.topic.equals(trimmed, ignoreCase = true) }
+            if (existing != null) {
+                _selectedTopic.value = existing
+                _targetCount.value = existing.targetCount
+            } else {
+                _selectedTopic.value = null
+                _counter.value = 0
+                _startingCount.value = 0
+                _isResumedSession.value = false
+                _elapsedSeconds.value = 0L
+            }
         }
     }
 
@@ -119,11 +127,13 @@ class ProclamationViewModel(
         if (!_isTimerRunning.value && _counter.value > _startingCount.value) {
             startTimer()
         }
+        autoSyncProclamationState()
     }
 
     fun decrementCounter() {
         if (_counter.value > 0) {
             _counter.value = _counter.value - 1
+            autoSyncProclamationState()
         }
     }
 
@@ -134,6 +144,7 @@ class ProclamationViewModel(
             _startingCount.value = safeVal
             _isResumedSession.value = safeVal > 0
         }
+        autoSyncProclamationState()
     }
 
     fun setStartingCount(value: Int) {
@@ -141,20 +152,115 @@ class ProclamationViewModel(
         _startingCount.value = safeVal
         _counter.value = safeVal
         _isResumedSession.value = safeVal > 0
+        autoSyncProclamationState()
     }
 
     fun setTargetCount(target: Int) {
         _targetCount.value = target.coerceAtLeast(1)
+        autoSyncProclamationState()
     }
 
     fun resetCounter() {
         _counter.value = _startingCount.value
+        autoSyncProclamationState()
     }
 
     fun clearResumedSession() {
         _isResumedSession.value = false
         _startingCount.value = 0
         _counter.value = 0
+    }
+
+    private var syncJob: Job? = null
+
+    private fun autoSyncProclamationState() {
+        syncJob?.cancel()
+        syncJob = viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            val finalTopic = _topicText.value.trim().ifBlank { "Jesus Christ is Lord" }
+            val currentTotal = _counter.value
+            val starting = _startingCount.value
+            val isResumed = _isResumedSession.value
+
+            val addedCount = if (isResumed && currentTotal >= starting) {
+                currentTotal - starting
+            } else {
+                currentTotal
+            }
+
+            val duration = _elapsedSeconds.value
+            val todayIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+            val existing = _selectedTopic.value ?: accountabilityRepository.getProclamationTopics(user.id).find {
+                it.topic.equals(finalTopic, ignoreCase = true)
+            }
+
+            val finalCumulative = if (existing != null) {
+                if (isResumed) existing.cumulativeCount + addedCount else maxOf(existing.cumulativeCount, currentTotal)
+            } else {
+                currentTotal
+            }
+
+            val updatedTopic = if (existing != null) {
+                existing.copy(
+                    cumulativeCount = finalCumulative,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else existing.targetCount,
+                    totalDurationSeconds = existing.totalDurationSeconds + duration,
+                    lastPracticedIso = todayIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            } else {
+                ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    topic = finalTopic,
+                    cumulativeCount = finalCumulative,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else 100,
+                    totalDurationSeconds = duration,
+                    lastPracticedIso = todayIso,
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            }
+            accountabilityRepository.saveProclamationTopic(updatedTopic)
+            _selectedTopic.value = updatedTopic
+
+            if (addedCount > 0 || currentTotal > 0) {
+                val allEntries = accountabilityRepository.getAllEntriesList()
+                val existingEntry = allEntries.find {
+                    it.userId == user.id &&
+                    it.dateIso == todayIso &&
+                    it.domainId == "proclamation_importunity" &&
+                    (it.proclamationTopic.equals(finalTopic, ignoreCase = true) || it.proclamationTopic.isBlank())
+                }
+
+                val entryToSave = if (existingEntry != null) {
+                    existingEntry.copy(
+                        proclamationCount = maxOf(existingEntry.proclamationCount, if (isResumed) existingEntry.proclamationCount + addedCount else currentTotal),
+                        proclamationTopic = finalTopic,
+                        proclamationTarget = _targetCount.value,
+                        durationSeconds = maxOf(existingEntry.durationSeconds, duration),
+                        timestampMs = System.currentTimeMillis()
+                    )
+                } else {
+                    AccountabilityEntryEntity(
+                        id = UUID.randomUUID().toString(),
+                        userId = user.id,
+                        domainId = "proclamation_importunity",
+                        dateIso = todayIso,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        durationSeconds = duration,
+                        proclamationTopic = finalTopic,
+                        proclamationCount = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1),
+                        proclamationTarget = _targetCount.value,
+                        notes = _notes.value,
+                        reflection = _reflection.value
+                    )
+                }
+                accountabilityRepository.saveEntry(entryToSave)
+            }
+        }
     }
 
     fun startTimer() {

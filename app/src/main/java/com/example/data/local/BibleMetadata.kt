@@ -3,8 +3,10 @@ package com.example.data.local
 data class BibleBook(
     val name: String,
     val totalChapters: Int,
-    val isOldTestament: Boolean
-)
+    val isOldTestament: Boolean = true
+) {
+    val chapters: Int get() = totalChapters
+}
 
 object BibleMetadata {
     val BOOKS = listOf(
@@ -85,6 +87,10 @@ object BibleMetadata {
         return BOOKS.find { it.name.equals(name, ignoreCase = true) }
     }
 
+    fun getChaptersForBook(bookName: String): Int {
+        return getBook(bookName)?.totalChapters ?: 50
+    }
+
     fun isValidChapterRange(bookName: String, startChapter: Int, endChapter: Int): Boolean {
         val book = getBook(bookName) ?: return false
         if (startChapter < 1 || endChapter < startChapter) return false
@@ -94,5 +100,63 @@ object BibleMetadata {
     fun calculateChaptersRead(bookName: String, startChapter: Int, endChapter: Int): Int {
         if (!isValidChapterRange(bookName, startChapter, endChapter)) return 0
         return (endChapter - startChapter) + 1
+    }
+
+    /**
+     * Accurately parses the last read position from an entry's bibleBook string
+     * which may contain single segment ("Genesis 1-3") or multiple segments ("Genesis 1-50, Exodus 1-5").
+     * Returns Pair(BookName, LastEndChapter).
+     */
+    fun getLastReadPosition(entry: com.example.data.local.entities.AccountabilityEntryEntity): Pair<String, Int> {
+        val raw = entry.bibleBook.trim()
+        if (raw.isBlank()) {
+            return "Genesis" to (if (entry.endChapter > 0) entry.endChapter else if (entry.startChapter > 0) entry.startChapter else 1)
+        }
+
+        // If comma-separated, take the last segment
+        val lastSegment = raw.split(",").map { it.trim() }.lastOrNull { it.isNotBlank() } ?: raw
+
+        // Find which book matches in this last segment
+        val matchedBook = BOOKS.filter { b ->
+            lastSegment.contains(b.name, ignoreCase = true)
+        }.maxByOrNull { it.name.length }?.name
+
+        if (matchedBook != null) {
+            val afterBook = lastSegment.substringAfter(matchedBook, "").trim()
+            // Try to extract chapter range like "1-5" or "5"
+            val chapterRegex = Regex("""(\d+)(?:\s*-\s*(\d+))?""")
+            val match = chapterRegex.find(afterBook)
+            val endCh = if (match != null) {
+                match.groupValues[2].toIntOrNull() ?: match.groupValues[1].toIntOrNull() ?: (if (entry.endChapter > 0) entry.endChapter else 1)
+            } else {
+                if (entry.endChapter > 0) entry.endChapter else 1
+            }
+            return matchedBook to endCh
+        }
+
+        // Fallback: match anywhere in raw
+        val fallbackBook = BOOKS.filter { b ->
+            raw.contains(b.name, ignoreCase = true)
+        }.maxByOrNull { it.name.length }?.name ?: "Genesis"
+        val endCh = if (entry.endChapter > 0) entry.endChapter else if (entry.startChapter > 0) entry.startChapter else 1
+        return fallbackBook to endCh
+    }
+
+    /**
+     * Computes the next suggested book and chapter to continue reading.
+     */
+    fun getNextReadPosition(entry: com.example.data.local.entities.AccountabilityEntryEntity): Pair<String, Int> {
+        val (lastBook, lastEndCh) = getLastReadPosition(entry)
+        val maxCh = getChaptersForBook(lastBook)
+        return if (lastEndCh >= maxCh) {
+            val bookIndex = BOOKS.indexOfFirst { it.name.equals(lastBook, ignoreCase = true) }
+            if (bookIndex in 0 until BOOKS.lastIndex) {
+                BOOKS[bookIndex + 1].name to 1
+            } else {
+                "Genesis" to 1
+            }
+        } else {
+            lastBook to (lastEndCh + 1).coerceAtMost(maxCh)
+        }
     }
 }

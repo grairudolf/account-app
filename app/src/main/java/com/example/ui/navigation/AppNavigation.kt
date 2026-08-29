@@ -393,9 +393,12 @@ fun MainApp() {
                                     selectedFrequency = selectedGoalFreq,
                                     onFrequencySelected = { goalsViewModel.onFrequencySelected(it) },
                                     onAddGoal = { uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime ->
-                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime)
+                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime, context)
                                     },
-                                    onDeleteGoal = { goalsViewModel.deleteGoal(it) }
+                                    onDeleteGoal = { goalsViewModel.deleteGoal(it, context) },
+                                    onToggleReminder = { goal, enabled ->
+                                        goalsViewModel.toggleGoalReminder(goal, enabled, goal.reminderTimeIso, context)
+                                    }
                                 )
                             }
                             3 -> {
@@ -493,6 +496,7 @@ fun MainApp() {
                                 entryViewModel.saveEntry(context, entry)
                                 navController.popBackStack()
                             },
+                            activeSession = globalActiveTimer,
                             onBack = { navController.popBackStack() }
                         )
                     }

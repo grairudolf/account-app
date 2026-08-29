@@ -151,7 +151,6 @@ object FirestoreSyncManager {
                                 createdAtMs = (data["createdAtMs"] as? Number)?.toLong() ?: existing?.createdAtMs ?: System.currentTimeMillis(),
                                 updatedAtMs = (data["updatedAtMs"] as? Number)?.toLong() ?: System.currentTimeMillis()
                             )
-                            database.userDao().clearUserTable()
                             database.userDao().insertOrUpdateUser(restoredUser)
                             Log.i(TAG, "Restored profile for: ${restoredUser.fullName} (${restoredUser.email})")
                         }
@@ -787,14 +786,15 @@ object FirestoreSyncManager {
                 details = if (totalEntries == 0) "All entries up to date" else "Uploading $totalEntries entries..."
             )
 
+            // Migrate guest records in bulk once to avoid repetitive database writes & flow emissions
+            database.entryDao().migrateUserEntries(userId)
+            database.goalDao().migrateUserGoals(userId)
+
             for ((index, entry) in userEntries.withIndex()) {
                 val entryToSync = if (entry.userId != userId) entry.copy(userId = userId) else entry
-                if (entry.userId != userId) {
-                    database.entryDao().insertOrUpdateEntry(entryToSync)
-                }
                 syncEntry(context, entryToSync)
 
-                if (index % 3 == 0 || index == totalEntries - 1) {
+                if (index % 5 == 0 || index == totalEntries - 1) {
                     val p = scaleProgress(0.20f + 0.30f * ((index + 1).toFloat() / totalEntries.coerceAtLeast(1)))
                     updateProgress(
                         isSyncing = true,
@@ -821,12 +821,9 @@ object FirestoreSyncManager {
 
             for ((index, goal) in userGoals.withIndex()) {
                 val goalToSync = if (goal.userId != userId) goal.copy(userId = userId) else goal
-                if (goal.userId != userId) {
-                    database.goalDao().insertOrUpdateGoal(goalToSync)
-                }
                 syncGoal(context, goalToSync)
 
-                if (index % 2 == 0 || index == totalGoals - 1) {
+                if (index % 4 == 0 || index == totalGoals - 1) {
                     val p = scaleProgress(0.55f + 0.15f * ((index + 1).toFloat() / totalGoals.coerceAtLeast(1)))
                     updateProgress(
                         isSyncing = true,

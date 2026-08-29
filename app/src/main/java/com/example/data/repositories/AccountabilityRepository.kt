@@ -209,15 +209,74 @@ class AccountabilityRepository(
         if (context != null && entry.userId.isNotBlank() && entry.userId != "guest_user") {
             FirestoreSyncManager.syncEntry(context, entry)
         }
+        if (entry.domainId == "proclamation_importunity") {
+            recalculateProclamationTopics(entry.userId)
+        }
     }
 
     suspend fun deleteEntry(id: String, userId: String = "") {
-        val resolvedUserId = if (userId.isNotBlank()) userId else {
-            entryDao.getEntryById(id)?.userId ?: ""
-        }
+        val existing = entryDao.getEntryById(id)
+        val resolvedUserId = if (userId.isNotBlank()) userId else (existing?.userId ?: "")
+        val wasProclamation = existing?.domainId == "proclamation_importunity"
         entryDao.deleteEntryById(id)
         if (context != null && resolvedUserId.isNotBlank() && resolvedUserId != "guest_user") {
             FirestoreSyncManager.deleteEntry(context, resolvedUserId, id)
+        }
+        if (wasProclamation) {
+            recalculateProclamationTopics(resolvedUserId)
+        }
+    }
+
+    suspend fun recalculateProclamationTopics(userId: String) {
+        try {
+            val allUserEntries = entryDao.getAllEntriesList().filter { 
+                it.domainId == "proclamation_importunity" && (userId.isBlank() || it.userId == userId || it.userId == "guest_user")
+            }
+            val existingTopics = proclamationTopicDao.getTopicsForUser(if (userId.isNotBlank()) userId else "guest_user")
+            val existingTopicsMap = existingTopics.associateBy { it.topic.trim().lowercase() }.toMutableMap()
+
+            val groupedEntries = allUserEntries.groupBy { it.proclamationTopic.trim().lowercase() }
+
+            groupedEntries.forEach { (topicLower, entries) ->
+                if (topicLower.isNotBlank()) {
+                    val canonicalTopic = entries.firstOrNull { it.proclamationTopic.isNotBlank() }?.proclamationTopic ?: topicLower
+                    val totalCount = entries.sumOf { it.proclamationCount }
+                    val totalDuration = entries.sumOf { it.durationSeconds }
+                    val latestIso = entries.maxOfOrNull { it.dateIso } ?: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val maxTarget = entries.map { it.proclamationTarget }.filter { it > 0 }.maxOrNull() ?: 100
+
+                    val existing = existingTopicsMap[topicLower]
+                    val updated = if (existing != null) {
+                        existing.copy(
+                            topic = canonicalTopic,
+                            cumulativeCount = totalCount,
+                            targetCount = if (existing.targetCount > 0) existing.targetCount else maxTarget,
+                            totalDurationSeconds = totalDuration,
+                            lastPracticedIso = latestIso,
+                            updatedAtMs = System.currentTimeMillis()
+                        )
+                    } else {
+                        ProclamationTopicEntity(
+                            id = UUID.randomUUID().toString(),
+                            userId = if (userId.isNotBlank()) userId else "guest_user",
+                            topic = canonicalTopic,
+                            cumulativeCount = totalCount,
+                            targetCount = maxTarget,
+                            totalDurationSeconds = totalDuration,
+                            lastPracticedIso = latestIso,
+                            createdAtMs = System.currentTimeMillis(),
+                            updatedAtMs = System.currentTimeMillis()
+                        )
+                    }
+                    proclamationTopicDao.insertOrUpdateTopic(updated)
+                    if (context != null && updated.userId.isNotBlank() && updated.userId != "guest_user") {
+                        FirestoreSyncManager.syncProclamationTopic(context, updated)
+                    }
+                    existingTopicsMap.remove(topicLower)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

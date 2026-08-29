@@ -9,14 +9,94 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.MainActivity
+import kotlinx.coroutines.launch
 
 class ReminderNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        if (action == Intent.ACTION_BOOT_COMPLETED || 
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED") {
+            // Restore alarms on reboot
+            val pendingResult = goAsync()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    val db = com.example.data.local.AppDatabase.getInstance(context)
+                    val reminders = db.reminderDao().getAllRemindersList()
+                    for (reminder in reminders) {
+                        if (reminder.isEnabled) {
+                            ReminderManager.scheduleReminder(context, reminder)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
+                }
+            }
+            return
+        }
+
         val title = intent.getStringExtra("EXTRA_TITLE") ?: "CMFI Accap Reminder"
         val message = intent.getStringExtra("EXTRA_MESSAGE") ?: "Time for your daily spiritual discipline!"
+        val reminderId = intent.getStringExtra("EXTRA_REMINDER_ID")
+        val hour = intent.getIntExtra("EXTRA_HOUR", -1)
+        val minute = intent.getIntExtra("EXTRA_MINUTE", -1)
 
         showNotification(context, title, message)
+
+        // Reschedule for next day if this is a recurring reminder
+        if (!reminderId.isNullOrBlank() && hour >= 0 && minute >= 0) {
+            val pendingResult = goAsync()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    val db = com.example.data.local.AppDatabase.getInstance(context)
+                    val reminder = db.reminderDao().getReminderById(reminderId)
+                    if (reminder != null && reminder.isEnabled) {
+                        // Reschedule without showing confirmation notification
+                        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                        val nextIntent = Intent(context, ReminderNotificationReceiver::class.java).apply {
+                            this.action = "com.example.action.SPIRITUAL_REMINDER"
+                            putExtra("EXTRA_REMINDER_ID", reminder.id)
+                            putExtra("EXTRA_TITLE", reminder.title)
+                            putExtra("EXTRA_MESSAGE", reminder.message)
+                            putExtra("EXTRA_HOUR", reminder.hour)
+                            putExtra("EXTRA_MINUTE", reminder.minute)
+                        }
+                        val pi = PendingIntent.getBroadcast(
+                            context,
+                            reminder.id.hashCode(),
+                            nextIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        val nextCal = java.util.Calendar.getInstance().apply {
+                            timeInMillis = System.currentTimeMillis()
+                            set(java.util.Calendar.HOUR_OF_DAY, reminder.hour)
+                            set(java.util.Calendar.MINUTE, reminder.minute)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                            add(java.util.Calendar.DAY_OF_YEAR, 1)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if (alarmManager.canScheduleExactAlarms()) {
+                                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, nextCal.timeInMillis, pi)
+                            } else {
+                                alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, nextCal.timeInMillis, pi)
+                            }
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, nextCal.timeInMillis, pi)
+                        } else {
+                            alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, nextCal.timeInMillis, pi)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
+                }
+            }
+        }
     }
 
     companion object {

@@ -34,8 +34,11 @@ import com.example.ui.viewmodels.GoalWithProgress
 import com.example.ui.components.AppTimePickerDialog
 import com.example.ui.components.AppDatePickerDialog
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
+import com.example.data.local.entities.GoalEntity
 
 @Composable
 fun GoalsScreen(
@@ -44,7 +47,8 @@ fun GoalsScreen(
     selectedFrequency: String,
     onFrequencySelected: (String) -> Unit,
     onAddGoal: (userId: String, domainId: String, title: String, target: Double, unit: String, freq: String, startDate: String, fastingType: String, periodDays: Int, isDailyReminderEnabled: Boolean, reminderTimeIso: String) -> Unit,
-    onDeleteGoal: (String) -> Unit
+    onDeleteGoal: (String) -> Unit,
+    onToggleReminder: (GoalEntity, Boolean) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     var showAddGoalDialog by remember { mutableStateOf(false) }
@@ -160,6 +164,9 @@ fun GoalsScreen(
                             onDelete = {
                                 HapticHelper.vibrateWarning(context)
                                 onDeleteGoal(goalItem.goal.id)
+                            },
+                            onToggleReminder = { goal, enabled ->
+                                onToggleReminder(goal, enabled)
                             }
                         )
                     }
@@ -184,8 +191,12 @@ fun GoalsScreen(
 fun GoalCard(
     goalItem: GoalWithProgress,
     strings: AppStrings,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleReminder: (GoalEntity, Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -238,7 +249,7 @@ fun GoalCard(
                 }
 
                 IconButton(
-                    onClick = onDelete,
+                    onClick = { showDeleteConfirmDialog = true },
                     modifier = Modifier.testTag("delete_goal_${goalItem.goal.id}")
                 ) {
                     Icon(
@@ -254,7 +265,7 @@ fun GoalCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${goalItem.currentProgress.toInt()} / ${goalItem.goal.targetValue.toInt()} ${goalItem.goal.unit}",
                         style = MaterialTheme.typography.bodyLarge,
@@ -269,14 +280,49 @@ fun GoalCard(
                         )
                     }
                     if (goalItem.goal.isDailyReminderEnabled) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Daily Reminder: ${goalItem.goal.reminderTimeIso}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(start = 10.dp, top = 2.dp, bottom = 2.dp, end = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.NotificationsActive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Reminder: ${goalItem.goal.reminderTimeIso}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(
+                                    onClick = {
+                                        HapticHelper.vibrateClick(context)
+                                        onToggleReminder(goalItem.goal, false)
+                                    },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .testTag("delete_reminder_goal_${goalItem.goal.id}")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Turn off reminder",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -323,6 +369,31 @@ fun GoalCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(strings.delete, fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete this goal and its associated reminders?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.delete)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
     }
 }
 
@@ -587,7 +658,12 @@ fun AddGoalDialog(
                 // Target Period / Frequency Dropdown
                 Column {
                     Text(strings.targetPeriod, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         listOf("DAILY" to strings.daily, "WEEKLY" to strings.weekly, "MONTHLY" to strings.monthly).forEach { (freqKey, freqLabel) ->
                             FilterChip(
                                 selected = frequency == freqKey,
@@ -610,7 +686,7 @@ fun AddGoalDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
@@ -627,7 +703,12 @@ fun AddGoalDialog(
                 if (isReminderEnabled) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Reminder Cadence", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             listOf(
                                 "DAILY" to "Daily",
                                 "SPECIFIC_DATE" to "Specific Date",

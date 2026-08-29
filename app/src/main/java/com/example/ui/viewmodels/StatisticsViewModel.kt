@@ -34,7 +34,14 @@ data class OverallStatisticsUiState(
     val totalThanksgivingTopics: Int = 0,
     val totalRequestTopics: Int = 0,
     val total15MinRetreats: Int = 0,
-    val totalBertouaPrayers: Int = 0
+    val total15MinMorning: Int = 0,
+    val total15MinNoon: Int = 0,
+    val total15MinEvening: Int = 0,
+    val total15MinNight: Int = 0,
+    val totalBertouaPrayers: Int = 0,
+    val totalProclamationRepetitions: Int = 0,
+    val totalProclamationTopicsCount: Int = 0,
+    val totalProclamationMinutes: Long = 0L
 )
 
 class StatisticsViewModel(
@@ -135,9 +142,22 @@ class StatisticsViewModel(
         val total15Min = prayerAloneEntries.count {
             it.prayerType.contains("15", true) || it.notes.contains("15", true)
         }
+        val retreat15Entries = prayerAloneEntries.filter {
+            it.prayerType.contains("15", true) || it.notes.contains("15", true)
+        }
+        val total15MinMorning = retreat15Entries.count { it.retreatPeriodOfDay.equals("Morning", ignoreCase = true) }
+        val total15MinNoon = retreat15Entries.count { it.retreatPeriodOfDay.equals("Noon", ignoreCase = true) }
+        val total15MinEvening = retreat15Entries.count { it.retreatPeriodOfDay.equals("Evening", ignoreCase = true) }
+        val total15MinNight = retreat15Entries.count { it.retreatPeriodOfDay.equals("Night", ignoreCase = true) }
+
         val totalBertoua = prayerAloneEntries.count {
             it.prayerType.contains("Bertoua", true) || it.notes.contains("Bertoua", true)
         }
+
+        val proclamationEntries = entries.filter { it.domainId == "proclamation_importunity" }
+        val totalProclamations = proclamationEntries.sumOf { it.proclamationCount }
+        val totalProclamationTopics = proclamationEntries.map { it.proclamationTopic.trim().lowercase() }.filter { it.isNotBlank() }.distinct().size
+        val totalProclamationSecs = proclamationEntries.sumOf { it.durationSeconds }
 
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val weekDays = (0..6).map { monday.plusDays(it.toLong()) }
@@ -168,7 +188,14 @@ class StatisticsViewModel(
             totalThanksgivingTopics = totalThanksgiving,
             totalRequestTopics = totalRequests,
             total15MinRetreats = total15Min,
-            totalBertouaPrayers = totalBertoua
+            total15MinMorning = total15MinMorning,
+            total15MinNoon = total15MinNoon,
+            total15MinEvening = total15MinEvening,
+            total15MinNight = total15MinNight,
+            totalBertouaPrayers = totalBertoua,
+            totalProclamationRepetitions = totalProclamations,
+            totalProclamationTopicsCount = totalProclamationTopics,
+            totalProclamationMinutes = totalProclamationSecs / 60
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OverallStatisticsUiState())
 

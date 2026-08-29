@@ -29,7 +29,8 @@ import com.example.core.localization.AppStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.DiscipleEntity
-import com.example.domain.models.BibleMetadata
+import com.example.data.local.entities.TimerSessionEntity
+import com.example.data.local.BibleMetadata
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -56,10 +57,12 @@ fun DomainDetailScreen(
     onDeleteDisciple: (DiscipleEntity) -> Unit = {},
     onNavigateToTimer: (String) -> Unit,
     onSaveEntry: (AccountabilityEntryEntity) -> Unit,
+    activeSession: TimerSessionEntity? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     var isSubmitting by remember { mutableStateOf(false) }
+    var showActiveSessionConflictDialog by remember { mutableStateOf(false) }
     var selectedDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var notes by remember { mutableStateOf("") }
 
@@ -122,22 +125,7 @@ fun DomainDetailScreen(
             if (last != null) {
                 when (domainId) {
                     "bible_reading" -> {
-                        val rawBook = last.bibleBook.ifBlank { "Genesis" }
-                        val matchedBook = BibleMetadata.BOOKS.maxByOrNull { b ->
-                            if (rawBook.contains(b.name, ignoreCase = true)) b.name.length else 0
-                        }?.name ?: "Genesis"
-                        val maxCh = BibleMetadata.getChaptersForBook(matchedBook)
-                        val lastEnd = if (last.endChapter > 0) last.endChapter else if (last.startChapter > 0) last.startChapter else 1
-                        val (targetBook, targetCh) = if (lastEnd >= maxCh) {
-                            val bookIndex = BibleMetadata.BOOKS.indexOfFirst { it.name.equals(matchedBook, ignoreCase = true) }
-                            if (bookIndex in 0 until BibleMetadata.BOOKS.lastIndex) {
-                                BibleMetadata.BOOKS[bookIndex + 1].name to 1
-                            } else {
-                                matchedBook to maxCh
-                            }
-                        } else {
-                            matchedBook to (lastEnd + 1).coerceAtMost(maxCh)
-                        }
+                        val (targetBook, targetCh) = BibleMetadata.getNextReadPosition(last)
                         if (bibleSegments.isNotEmpty()) {
                             bibleSegments[0] = BibleReadingSegment(book = targetBook, startChapter = targetCh, endChapter = targetCh)
                         }
@@ -168,17 +156,71 @@ fun DomainDetailScreen(
                         }
                     }
                     "prayer_alone", "prayer_with_others" -> {
-                        val prevEnd = if (last.endPrayerTopicNumber > 0) last.endPrayerTopicNumber else last.prayerTopicsCount
-                        if (prevEnd > 0) {
-                            previousEndTopicNumber = prevEnd
-                            startPrayerTopicNumberText = (prevEnd + 1).toString()
-                            endPrayerTopicNumberText = (prevEnd + 5).toString()
-                        }
                         if (last.prayerType.isNotBlank()) {
                             prayerFocusType = last.prayerType
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Dynamic prayer topic continuation segregation for Thanksgiving vs Requests in DomainDetailScreen
+    LaunchedEffect(prayerFocusType, allEntries) {
+        if (domainId == "prayer_alone" || domainId == "prayer_with_others") {
+            if (prayerFocusType == "Thanksgiving") {
+                val lastThanks = allEntries.filter { 
+                    (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
+                    it.prayerType.equals("Thanksgiving", ignoreCase = true)
+                }.maxByOrNull { it.timestampMs }
+                val prevEnd = if (lastThanks != null) {
+                    if (lastThanks.endPrayerTopicNumber > 0) lastThanks.endPrayerTopicNumber else lastThanks.prayerTopicsCount
+                } else 0
+                previousEndTopicNumber = prevEnd
+                if (prevEnd > 0) {
+                    startPrayerTopicNumberText = (prevEnd + 1).toString()
+                    endPrayerTopicNumberText = (prevEnd + 5).toString()
+                    prayerTopicsCountText = "5"
+                } else {
+                    startPrayerTopicNumberText = "1"
+                    endPrayerTopicNumberText = "5"
+                    prayerTopicsCountText = "5"
+                }
+            } else if (prayerFocusType == "Request" || prayerFocusType == "Requests") {
+                val lastReq = allEntries.filter { 
+                    (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
+                    (it.prayerType.equals("Request", ignoreCase = true) || it.prayerType.equals("Requests", ignoreCase = true))
+                }.maxByOrNull { it.timestampMs }
+                val prevEnd = if (lastReq != null) {
+                    if (lastReq.endPrayerTopicNumber > 0) lastReq.endPrayerTopicNumber else lastReq.prayerTopicsCount
+                } else 0
+                previousEndTopicNumber = prevEnd
+                if (prevEnd > 0) {
+                    startPrayerTopicNumberText = (prevEnd + 1).toString()
+                    endPrayerTopicNumberText = (prevEnd + 5).toString()
+                    prayerTopicsCountText = "5"
+                } else {
+                    startPrayerTopicNumberText = "1"
+                    endPrayerTopicNumberText = "5"
+                    prayerTopicsCountText = "5"
+                }
+            } else if (prayerFocusType == "15-Minute Retreat") {
+                previousEndTopicNumber = 0
+                startPrayerTopicNumberText = ""
+                endPrayerTopicNumberText = ""
+                prayerTopicsCountText = "0"
+                val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                retreatPeriodOfDay = when (currentHour) {
+                    in 5..11 -> "Morning"
+                    in 12..16 -> "Noon"
+                    in 17..20 -> "Evening"
+                    else -> "Night"
+                }
+            } else {
+                previousEndTopicNumber = 0
+                startPrayerTopicNumberText = ""
+                endPrayerTopicNumberText = ""
+                prayerTopicsCountText = "0"
             }
         }
     }
@@ -380,7 +422,13 @@ fun DomainDetailScreen(
 
                             if (domainId != "giving" && domainId != "fasting" && domainId != "making_disciples") {
                                 Button(
-                                    onClick = { onNavigateToTimer(domainId) },
+                                    onClick = {
+                                        if (activeSession != null && activeSession.domainId != domainId) {
+                                            showActiveSessionConflictDialog = true
+                                        } else {
+                                            onNavigateToTimer(domainId)
+                                        }
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("start_live_timer_cta"),
@@ -394,6 +442,34 @@ fun DomainDetailScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(strings.startTimer, fontWeight = FontWeight.Bold)
                                 }
+                            }
+
+                            if (showActiveSessionConflictDialog && activeSession != null) {
+                                AlertDialog(
+                                    onDismissRequest = { showActiveSessionConflictDialog = false },
+                                    icon = { Icon(Icons.Default.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                    title = { Text(strings.activeSessionRunningTitle, fontWeight = FontWeight.Bold) },
+                                    text = {
+                                        Text(
+                                            strings.activeSessionRunningPrompt.format(strings.getDomainTitleById(activeSession.domainId))
+                                        )
+                                    },
+                                    confirmButton = {
+                                        Button(
+                                            onClick = {
+                                                showActiveSessionConflictDialog = false
+                                                onNavigateToTimer(activeSession.domainId)
+                                            }
+                                        ) {
+                                            Text(strings.goToActiveSession)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        OutlinedButton(onClick = { showActiveSessionConflictDialog = false }) {
+                                            Text(strings.cancel)
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -803,7 +879,7 @@ fun DomainDetailScreen(
                                         }
                                     }
 
-                                    if (prayerFocusType == "Personal Supplication" || prayerFocusType == "Request" || prayerFocusType == "Requests" || prayerFocusType == "Thanksgiving" || prayerFocusType == "Custom") {
+                                    if (prayerFocusType == "Thanksgiving" || prayerFocusType == "Request" || prayerFocusType == "Requests") {
                                         Surface(
                                             shape = RoundedCornerShape(16.dp),
                                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),

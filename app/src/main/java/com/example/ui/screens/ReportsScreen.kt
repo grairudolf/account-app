@@ -76,7 +76,7 @@ fun ReportsScreen(
     onSelectAllDomains: () -> Unit = {},
     onSetTargetDate: (java.time.LocalDate) -> Unit = {},
     onSetDateRange: (java.time.LocalDate, java.time.LocalDate) -> Unit = { _, _ -> },
-    onGeneratePdfReport: (Context, (File) -> Unit) -> Unit,
+    onGeneratePdfReport: (Context, (File?) -> Unit) -> Unit,
     onDeleteReport: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -436,6 +436,11 @@ fun ReportsScreen(
                             onGeneratePdfReport(context) { file ->
                                 lastGeneratedFile = file
                                 isGenerating = false
+                                if (file != null) {
+                                    Toast.makeText(context, if (isFrench) "Rapport PDF généré avec succès !" else "PDF Report generated successfully!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, if (isFrench) "Impossible de générer le rapport. Veuillez réessayer." else "Unable to generate report. Please try again.", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         },
                         modifier = Modifier

@@ -1,6 +1,4 @@
 # Built application files
-*.apk
-*.aab
 *.ap_
 *.dex
 .build-outputs/

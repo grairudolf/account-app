@@ -14,7 +14,7 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.cmfiaccountability.app"
+    applicationId = "cmfi.accapp.org"
     minSdk = 26
     targetSdk = 36
     versionCode = 1
@@ -25,17 +25,25 @@ android {
 
   signingConfigs {
     create("release") {
-      val uploadKeyFile = file("${rootDir}/my-upload-key.jks")
-      if (uploadKeyFile.exists()) {
-        storeFile = uploadKeyFile
-        storePassword = System.getenv("STORE_PASSWORD") ?: "uploadpass"
-        keyAlias = "upload"
-        keyPassword = System.getenv("KEY_PASSWORD") ?: "uploadpass"
+      val releaseKeyFile = file("${rootDir}/release-key.jks")
+      if (releaseKeyFile.exists()) {
+        storeFile = releaseKeyFile
+        storePassword = "cmfipassword"
+        keyAlias = "releaseKey"
+        keyPassword = "cmfipassword"
       } else {
-        storeFile = file("${rootDir}/debug.keystore")
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
+        val uploadKeyFile = file("${rootDir}/my-upload-key.jks")
+        if (uploadKeyFile.exists()) {
+          storeFile = uploadKeyFile
+          storePassword = System.getenv("STORE_PASSWORD") ?: "uploadpass"
+          keyAlias = "upload"
+          keyPassword = System.getenv("KEY_PASSWORD") ?: "uploadpass"
+        } else {
+          storeFile = file("${rootDir}/debug.keystore")
+          storePassword = "android"
+          keyAlias = "androiddebugkey"
+          keyPassword = "android"
+        }
       }
     }
     create("debugConfig") {
