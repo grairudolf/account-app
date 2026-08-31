@@ -98,22 +98,28 @@ fun SettingsScreen(
         user?.accountabilityDays?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: daysOfWeek
     }
 
-    // Spiritual age calculation
-    val spiritualAgeText = remember(user?.conversionDate) {
+    // Spiritual age calculation (expressed in years)
+    val spiritualAgeText = remember(user?.conversionDate, strings) {
         val dateStr = user?.conversionDate
         if (!dateStr.isNullOrBlank()) {
             try {
-                val convDate = LocalDate.parse(dateStr)
-                val days = ChronoUnit.DAYS.between(convDate, LocalDate.now())
-                if (days >= 0) {
-                    val years = days / 365
-                    val remDays = days % 365
-                    if (years > 0) "$years years, $remDays days ($days days total)" else "$days days in Christ"
-                } else "Date in future"
+                val convDate = LocalDate.parse(dateStr.trim())
+                val now = LocalDate.now()
+                val years = ChronoUnit.YEARS.between(convDate, now)
+                val days = ChronoUnit.DAYS.between(convDate, now)
+                if (days < 0) {
+                    strings.notSet
+                } else if (years <= 0L) {
+                    if (strings is com.example.core.localization.FrenchStrings) "< 1 an" else "< 1 year"
+                } else if (years == 1L) {
+                    if (strings is com.example.core.localization.FrenchStrings) "1 an" else "1 year"
+                } else {
+                    if (strings is com.example.core.localization.FrenchStrings) "$years ans" else "$years years"
+                }
             } catch (e: Exception) {
-                "Converted: $dateStr"
+                dateStr
             }
-        } else "Not specified"
+        } else strings.notSet
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {

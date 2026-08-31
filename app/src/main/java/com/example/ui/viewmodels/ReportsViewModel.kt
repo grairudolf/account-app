@@ -161,16 +161,21 @@ class ReportsViewModel(
                 val isFrench = currentAppLang == com.example.core.localization.AppLanguage.FRENCH
 
                 val dateRangeLabel = when (reportType) {
-                    "DAILY" -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    "WEEKLY" -> if (isFrench) "Semaine du ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} au ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-                                else "Week of ${refDate.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+                    "DAILY" -> PdfReportGenerator.formatOrdinalDate(refDate, isFrench)
+                    "WEEKLY" -> {
+                        val startOfWeek = refDate.minusDays(6)
+                        "${PdfReportGenerator.formatOrdinalDate(startOfWeek, isFrench)} - ${PdfReportGenerator.formatOrdinalDate(refDate, isFrench)}"
+                    }
                     "MONTHLY" -> {
                         val mName = refDate.format(DateTimeFormatter.ofPattern("MMMM", if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH))
                         "$mName ${refDate.year}"
                     }
-                    "CUSTOM" -> if (isFrench) "Du ${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} au ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-                                else "${startD.format(DateTimeFormatter.ISO_LOCAL_DATE)} to ${endD.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-                    else -> refDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    "CUSTOM" -> {
+                        val actualStart = if (startD.isAfter(endD)) endD else startD
+                        val actualEnd = if (endD.isBefore(startD)) startD else endD
+                        "${PdfReportGenerator.formatOrdinalDate(actualStart, isFrench)} - ${PdfReportGenerator.formatOrdinalDate(actualEnd, isFrench)}"
+                    }
+                    else -> PdfReportGenerator.formatOrdinalDate(refDate, isFrench)
                 }
 
                 val filteredByPeriod = when (reportType) {

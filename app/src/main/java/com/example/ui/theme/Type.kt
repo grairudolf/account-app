@@ -4,40 +4,38 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// Plus Jakarta Sans for Headings & Titles (Bundled Font Family)
+// Plus Jakarta Sans: Clean, geometric, high-impact typeface for Headings, Titles & Hero metrics
 val HeadingFontFamily = FontFamily(
-    Font(R.font.plusjakartasans_extralight, weight = FontWeight.ExtraLight),
-    Font(R.font.plusjakartasans_extralightitalic, weight = FontWeight.ExtraLight, style = FontStyle.Italic),
-    Font(R.font.plusjakartasans_light, weight = FontWeight.Light),
-    Font(R.font.plusjakartasans_lightitalic, weight = FontWeight.Light, style = FontStyle.Italic),
     Font(R.font.plusjakartasans_regular, weight = FontWeight.Normal),
-    Font(R.font.plusjakartasans_italic, weight = FontWeight.Normal, style = FontStyle.Italic),
     Font(R.font.plusjakartasans_medium, weight = FontWeight.Medium),
-    Font(R.font.plusjakartasans_mediumitalic, weight = FontWeight.Medium, style = FontStyle.Italic),
     Font(R.font.plusjakartasans_semibold, weight = FontWeight.SemiBold),
-    Font(R.font.plusjakartasans_semibolditalic, weight = FontWeight.SemiBold, style = FontStyle.Italic),
     Font(R.font.plusjakartasans_bold, weight = FontWeight.Bold),
-    Font(R.font.plusjakartasans_bolditalic, weight = FontWeight.Bold, style = FontStyle.Italic),
-    Font(R.font.plusjakartasans_extrabold, weight = FontWeight.ExtraBold),
-    Font(R.font.plusjakartasans_extrabolditalic, weight = FontWeight.ExtraBold, style = FontStyle.Italic)
+    Font(R.font.plusjakartasans_extrabold, weight = FontWeight.ExtraBold)
 )
 
-// Outfit for Body text & Labels (Bundled Font Family)
+// Poppins: Warm, highly-legible geometric typeface for Body text, Badges, Labels & Controls
 val BodyFontFamily = FontFamily(
-    Font(R.font.outfit_thin, weight = FontWeight.Thin),
-    Font(R.font.outfit_extralight, weight = FontWeight.ExtraLight),
-    Font(R.font.outfit_light, weight = FontWeight.Light),
-    Font(R.font.outfit_regular, weight = FontWeight.Normal),
-    Font(R.font.outfit_medium, weight = FontWeight.Medium),
-    Font(R.font.outfit_semibold, weight = FontWeight.SemiBold),
-    Font(R.font.outfit_bold, weight = FontWeight.Bold),
-    Font(R.font.outfit_extrabold, weight = FontWeight.ExtraBold),
-    Font(R.font.outfit_black, weight = FontWeight.Black)
+    Font(R.font.poppins_regular, weight = FontWeight.Normal),
+    Font(R.font.poppins_medium, weight = FontWeight.Medium),
+    Font(R.font.poppins_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.poppins_bold, weight = FontWeight.Bold)
+)
+
+// Montserrat: Clean, expressive, modern geometric sans-serif for inspirational quotes & citations
+val QuoteFontFamily = FontFamily(
+    Font(R.font.montserrat_regular, weight = FontWeight.Normal),
+    Font(R.font.montserrat_italic, weight = FontWeight.Normal, style = androidx.compose.ui.text.font.FontStyle.Italic),
+    Font(R.font.montserrat_medium, weight = FontWeight.Medium),
+    Font(R.font.montserrat_mediumitalic, weight = FontWeight.Medium, style = androidx.compose.ui.text.font.FontStyle.Italic),
+    Font(R.font.montserrat_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.montserrat_semibolditalic, weight = FontWeight.SemiBold, style = androidx.compose.ui.text.font.FontStyle.Italic),
+    Font(R.font.montserrat_bold, weight = FontWeight.Bold),
+    Font(R.font.montserrat_bolditalic, weight = FontWeight.Bold, style = androidx.compose.ui.text.font.FontStyle.Italic),
+    Font(R.font.montserrat_extrabold, weight = FontWeight.ExtraBold)
 )
 
 val Typography = Typography(

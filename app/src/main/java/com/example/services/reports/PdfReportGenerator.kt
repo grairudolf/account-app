@@ -20,6 +20,27 @@ import java.util.Locale
 
 object PdfReportGenerator {
 
+    fun formatOrdinalDate(date: LocalDate, isFrench: Boolean = false): String {
+        val day = date.dayOfMonth
+        return if (isFrench) {
+            val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.FRENCH).lowercase().replaceFirstChar { it.uppercase() }
+            val monthName = date.month.getDisplayName(TextStyle.SHORT, Locale.FRENCH).lowercase().replaceFirstChar { it.uppercase() }
+            val dayStr = if (day == 1) "1er" else "$day"
+            "$dayName $dayStr $monthName ${date.year}"
+        } else {
+            val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+            val monthName = date.month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+            val suffix = when {
+                day in 11..13 -> "th"
+                day % 10 == 1 -> "st"
+                day % 10 == 2 -> "nd"
+                day % 10 == 3 -> "rd"
+                else -> "th"
+            }
+            "$dayName ${day}$suffix $monthName ${date.year}"
+        }
+    }
+
     fun formatDuration(totalSeconds: Long, isFrench: Boolean = false): String {
         val totalMinutes = totalSeconds / 60
         if (totalMinutes < 60) {
@@ -98,9 +119,9 @@ object PdfReportGenerator {
 
         // Header Title
         paint.color = Color.WHITE
-        paint.textSize = 18f
+        paint.textSize = 17.5f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        val headerTitle = if (isFrench) "RAPPORT DE REDEVABILITÉ SPIRITUELLE" else "CMFI SPIRITUAL ACCOUNTABILITY REPORT"
+        val headerTitle = if (isFrench) "FICHE DE COMPTE CMFI ACCAP" else "CMFI ACCAP ACCOUNT SHEET"
         canvas.drawText(headerTitle, 26f, 38f, paint)
 
         paint.textSize = 9.5f
@@ -109,8 +130,11 @@ object PdfReportGenerator {
         val subTitle = if (isFrench) "Communauté Missionnaire Chrétienne Internationale (CMFI)" else "Christian Missionary Fellowship International (CMFI)"
         canvas.drawText(subTitle, 26f, 56f, paint)
 
-        val mottoText = if (isFrench) "« Veillez et priez, afin que vous ne tombiez pas en tentation »" else "\"Watch and pray, that ye enter not into temptation\""
-        paint.textSize = 8.5f
+        val mottoText = if (isFrench) 
+            "« Ainsi chacun de nous rendra compte à Dieu pour lui-même. » — Romains 14:12" 
+        else 
+            "“So then, each of us will give an account of ourselves to God.” — Romans 14:12 (NIV)"
+        paint.textSize = 8.2f
         paint.color = Color.parseColor("#FDE047") // Vibrant Gold
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
         canvas.drawText(mottoText, 26f, 74f, paint)
@@ -565,8 +589,7 @@ object PdfReportGenerator {
         return try {
             val cleanIso = dateIso.trim().take(10)
             val date = LocalDate.parse(cleanIso)
-            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, if (isFrench) Locale.FRENCH else Locale.ENGLISH)
-            "$dayOfWeek $cleanIso"
+            formatOrdinalDate(date, isFrench)
         } catch (e: Exception) {
             dateIso
         }

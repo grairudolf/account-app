@@ -577,15 +577,22 @@ fun DashboardScreen(
             val currentQuote = remember(quotes, activeIndex) {
                 quotes.getOrElse(activeIndex) { quotes.firstOrNull() ?: "" }
             }
+            val cleanQuote = remember(currentQuote) {
+                currentQuote.trim().trim('“', '”', '"', '\'').trim()
+            }
             val devotionalBgList = remember {
                 listOf(
-                    com.example.R.drawable.quote_bg_sunrise_1787220672419,
-                    com.example.R.drawable.quote_bg_waters_1787220685176,
-                    com.example.R.drawable.quote_bg_path_1787220696837,
-                    com.example.R.drawable.quote_bg_heavens_1787220708792,
-                    com.example.R.drawable.devotional_quote_bg_1787144263336,
+                    com.example.R.drawable.quote_bg_open_bible_1788139223471,
+                    com.example.R.drawable.quote_bg_global_harvest_1788139235063,
+                    com.example.R.drawable.quote_bg_prayer_altar_1788139251276,
+                    com.example.R.drawable.quote_bg_radiant_cross_1788139262304,
+                    com.example.R.drawable.quote_bg_cross_1787235555876,
                     com.example.R.drawable.quote_bg_mountains_1787235541853,
-                    com.example.R.drawable.quote_bg_cross_1787235555876
+                    com.example.R.drawable.quote_bg_sunrise_1787220672419,
+                    com.example.R.drawable.quote_bg_heavens_1787220708792,
+                    com.example.R.drawable.quote_bg_path_1787220696837,
+                    com.example.R.drawable.quote_bg_waters_1787220685176,
+                    com.example.R.drawable.devotional_quote_bg_1787144263336
                 )
             }
             val currentBgRes = remember(activeIndex) {
@@ -704,7 +711,7 @@ fun DashboardScreen(
                                         onClick = {
                                             QuoteImageSharer.shareQuoteImage(
                                                 context = context,
-                                                quoteText = currentQuote,
+                                                quoteText = cleanQuote,
                                                 title = strings.dailyWordTitle,
                                                 bgResId = currentBgRes
                                             )
@@ -725,11 +732,14 @@ fun DashboardScreen(
                         }
 
                         Text(
-                            text = "“$currentQuote”",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            lineHeight = 24.sp
+                            text = cleanQuote,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = QuoteFontFamily,
+                                fontSize = 17.sp,
+                                lineHeight = 26.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = Color.White
                         )
                     }
                 }

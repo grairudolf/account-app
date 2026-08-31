@@ -29,12 +29,12 @@ object FirebaseAuthHelper {
             if (FirebaseApp.getApps(context).isEmpty()) {
                 try {
                     FirebaseApp.initializeApp(context)
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     Log.w(TAG, "FirebaseApp initialization attempt: ${e.message}")
                 }
             }
             FirebaseApp.getApps(context).isNotEmpty()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             false
         }
     }
@@ -253,7 +253,7 @@ object FirebaseAuthHelper {
     fun getCurrentUser(): FirebaseUser? {
         return try {
             FirebaseAuth.getInstance().currentUser
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             null
         }
     }
@@ -264,7 +264,7 @@ object FirebaseAuthHelper {
     fun signOut() {
         try {
             FirebaseAuth.getInstance().signOut()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Sign out error", e)
         }
     }

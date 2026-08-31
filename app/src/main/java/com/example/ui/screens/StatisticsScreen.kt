@@ -293,10 +293,10 @@ fun StatisticsScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
 
-                                // Key Domain Badges (DDEWG, Thanksgiving, Requests, 15-min retreats, Bertoua)
+                                // Key Domain Badges (DDEWG, Thanksgiving, Requests, 15-min retreats, Proclamations)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
@@ -304,7 +304,7 @@ fun StatisticsScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(8.dp),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
@@ -316,7 +316,8 @@ fun StatisticsScreen(
                                             Text(
                                                 text = strings.unitDdewg,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
                                             )
                                         }
                                     }
@@ -327,7 +328,7 @@ fun StatisticsScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(8.dp),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
@@ -351,7 +352,7 @@ fun StatisticsScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(8.dp),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
@@ -375,7 +376,7 @@ fun StatisticsScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(8.dp),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Text(
@@ -387,7 +388,32 @@ fun StatisticsScreen(
                                             Text(
                                                 text = "15-Min",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "${uiState.totalProclamationRepetitions}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "Procl.",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
                                             )
                                         }
                                     }

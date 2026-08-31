@@ -918,7 +918,7 @@ object EnglishStrings : AppStrings {
 
     override val noActivitiesForDate = "No activities recorded for this date."
 
-    override val spiritualAnalytics = "Spiritual Analytics"
+    override val spiritualAnalytics = "Analytics"
     override val bibleReading = "Bible Reading"
     override val soulWinning = "Soul Winning"
     override val totalBibleChapters = "Total Bible Chapters Read"
@@ -1034,13 +1034,28 @@ object EnglishStrings : AppStrings {
     override val dailyWordTitle = "Daily Word of Encouragement (3B Messages)"
     override val nextQuote = "Next Quote"
     override val dailyQuotes = listOf(
-        "“Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness.” — The Bertoua Message (Z.T. Fomum)",
-        "“Faithfulness in becoming and being a disciple includes praying alone, daily dynamic encounters with God (DDEWG), Bible reading, reading Christian literature, retreats, fasting, and soul-winning.” — The Pathway to Revival (Z.T. Fomum)",
-        "“Son, write on your heart that what a person IS before God is of far greater importance than what he DOES. Seek to be filled with the Holy Spirit in all fullness.” — The Beijing Prophecy (Z.T. Fomum)",
-        "“The power released in prayer and fasting depends primarily on WHO is praying and fasting, and secondarily on the duration.” — The Beijing Prophecy (Z.T. Fomum)",
-        "“Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call upon your life.” — The Congo Brazzaville Message (Z.T. Fomum)",
-        "“During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through.” — Pr. Zacharias Tanee Fomum",
-        "“When a Spirit-filled believer prays and fasts in total surrender, heaven moves and hell is brought to naught for the glory of Christ!” — 3B Prophetic Messages (Z.T. Fomum)"
+        "Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness. — The Bertoua Message (Z.T. Fomum)",
+        "Son, write on your heart that what a person is before God is of far greater importance than what he does. Seek to be filled with the Holy Spirit in all fullness. — The Beijing Prophecy (Z.T. Fomum)",
+        "The power released in prayer and fasting depends primarily on who is praying and fasting, and only secondarily on the type and duration of the fast. — The Beijing Prophecy (Z.T. Fomum)",
+        "I withdraw the youth’s guide and replace it with the guide for mature pilgrims: The Bible, The Cross, and The Holy Spirit. — The Beijing Prophecy (Z.T. Fomum)",
+        "In the New Order that begins now, you shall depend exclusively on Me and on My power for the advance of Our Work. — The Beijing Prophecy (Z.T. Fomum)",
+        "It is first of all My Work. It is secondarily Our Work. Because its success depends primarily on Me, it shall succeed. — The Beijing Prophecy (Z.T. Fomum)",
+        "Heaven and earth shall pass away but My word shall stand and My word shall fill the earth. The Logos of God is the Logos of God. — The Beijing Prophecy (Z.T. Fomum)",
+        "Daniel lived in the presence of God. He knew the burden of God and bore the burden of God. Daniel and God were one. — The Beijing Prophecy (Z.T. Fomum)",
+        "God has only one thing on His heart and that thing is that all His children should abandon all carnality and be clothed with His spirituality. — The Beijing Prophecy (Z.T. Fomum)",
+        "The eternal impact of each act is dependent on who is carrying out the act. Write on your heart that what you are is determinant. — The Beijing Prophecy (Z.T. Fomum)",
+        "You chose to obey Me at the cost of the work. You chose to obey Me at the cost of your life. You chose My will above everything else. — The Beijing Prophecy (Z.T. Fomum)",
+        "Faithfulness in becoming and being a disciple includes praying alone, daily dynamic encounters with God (DDEWG), Bible reading, Christian literature, retreats, fasting, and soul-winning. — The Bertoua Message (Z.T. Fomum)",
+        "Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call on your life and living in the centre of His will. — The Bertoua Message (Z.T. Fomum)",
+        "Uproot all falsehood, divided heart, self-centeredness, debts, greed, laziness, and goal-lessness from your life. This is the pathway to revival. — The Bertoua Message (Z.T. Fomum)",
+        "There will be revival! There will be revival!! There will be revival!!! When God answers, the community will be radically committed to soul-winning. — The Bertoua Message (Z.T. Fomum)",
+        "My children will be back to Me. They will ardently seek Me, love Me, and serve Me. Multitudes will beg to serve Me and give to Me. — The Congo Brazzaville Message (Z.T. Fomum)",
+        "My children will love My Word, read it with great appetite, believe it, and put it into practice with joy. — The Congo Brazzaville Message (Z.T. Fomum)",
+        "My children will come back to prayer. They will come to the place of prayer hours before the official time and continue to pray long after. — The Congo Brazzaville Message (Z.T. Fomum)",
+        "There will be prayer in pairs, in small groups, in big groups, in great masses: prayers of confession and prayers of proclamation. — The Congo Brazzaville Message (Z.T. Fomum)",
+        "Spend maximum time in My presence so that I can appear to you, minister to you, receive ministry from you, and reveal to you the blueprint of heaven. — The Congo Brazzaville Message (Z.T. Fomum)",
+        "During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through. Oh, that I would have more of God! — Pr. Zacharias Tanee Fomum",
+        "Prayer is the most important work that can be done for God and for man. When a Spirit-filled believer prays in total surrender, heaven moves! — Pr. Zacharias Tanee Fomum"
     )
 
     override val searchResultsFor = "Search Results for “%s”"
@@ -1478,7 +1493,7 @@ object FrenchStrings : AppStrings {
 
     override val noActivitiesForDate = "Aucune activité enregistrée pour cette date."
 
-    override val spiritualAnalytics = "Analytique Spirituelle"
+    override val spiritualAnalytics = "Analytiques"
     override val bibleReading = "Lecture Biblique"
     override val soulWinning = "Gagnagisme d'Âmes"
     override val totalBibleChapters = "Total Chapitres Bibliques Lus"
@@ -1594,13 +1609,28 @@ object FrenchStrings : AppStrings {
     override val dailyWordTitle = "Parole d'Encouragement Quotidienne (Messages 3B)"
     override val nextQuote = "Citation Suivante"
     override val dailyQuotes = listOf(
-        "« Retourne à ton premier amour pour le Seigneur Jésus-Christ. Ce retour inclut la libération de tout péché, de l'amour de soi, de l'amour du monde, de la cupidité, de la paresse et du manque de buts. » — Le Message de Bertoua (Z.T. Fomum)",
-        "« La fidélité à devenir et rester un disciple inclut la prière seul, la rencontre dynamique quotidienne avec Dieu (RDQD), la lecture biblique, la littérature chrétienne, les retraites, le jeûne et le gagnagisme d'âmes. » — Le Chemin de la Revivification (Z.T. Fomum)",
-        "« Mon fils, écris sur ton cœur que ce qu'une personne EST devant Dieu est de bien plus grande importance que ce qu'elle FAIT. Cherche à être rempli du Saint-Esprit en toute plénitude. » — La Prophétie de Pékin (Z.T. Fomum)",
-        "« La puissance libérée dans la prière et le jeûne dépend principalement de QUI prie et jeûne, et secondairement de la durée. » — La Prophétie de Pékin (Z.T. Fomum)",
-        "« Vis ta vie pour la gloire exclusive du Seigneur Jésus-Christ en toutes choses, en Le servant dans le domaine de Son appel sur ta vie. » — Le Message de Congo Brazzaville (Z.T. Fomum)",
-        "« Pendant la Rencontre Dynamique Quotidienne avec Dieu (RDQD), lis la Parole de Dieu, médite-la, écoute Sa voix, note ce Qu'Il dit, et prie en conséquence. » — Pr. Zacharias Tanee Fomum",
-        "« Quand un croyant rempli de l'Esprit prie et jeûne dans un abandon total, le ciel se meut et l'enfer est réduit à néant pour la gloire du Christ ! » — Messages Prophétiques 3B (Z.T. Fomum)"
+        "Retourne à ton premier amour pour le Seigneur Jésus-Christ. Ce retour inclut la libération de tout péché, de l'amour de soi, de l'amour du monde, de la cupidité, de la paresse et du manque de buts. — Le Message de Bertoua (Z.T. Fomum)",
+        "Mon fils, écris sur ton cœur que ce qu'une personne est devant Dieu est de bien plus grande importance que ce qu'elle fait. Cherche à être rempli du Saint-Esprit en toute plénitude. — La Prophétie de Pékin (Z.T. Fomum)",
+        "La puissance libérée dans le jeûne et la prière dépend principalement de qui prie et jeûne, et secondairement du type et de la durée du jeûne. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Je retire le guide de la jeunesse et le remplace par le guide des pèlerins mûrs : la Bible, la Croix et le Saint-Esprit. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Dans le Nouvel Ordre qui commence maintenant, tu dépendras exclusivement de Moi et de Ma puissance pour l'avancement de Notre Œuvre. — La Prophétie de Pékin (Z.T. Fomum)",
+        "C'est d'abord Mon Œuvre. C'est secondairement Notre Œuvre. Parce que son succès dépend d'abord de Moi, elle réussira. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Le ciel et la terre passeront, mais Ma parole subsistera et remplira la terre. Le Logos de Dieu est le Logos de Dieu. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Daniel vivait dans la présence de Dieu. Il connaissait le fardeau de Dieu et portait le fardeau de Dieu. Daniel et Dieu ne faisaient qu'un. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Dieu n'a qu'une seule chose sur Son cœur : que tous Ses enfants abandonnent toute carnalité et soient revêtus de Sa spiritualité. — La Prophétie de Pékin (Z.T. Fomum)",
+        "L'impact éternel de chaque acte dépend de celui qui l'accomplit. Écris sur ton cœur que ce que tu es est déterminant. — La Prophétie de Pékin (Z.T. Fomum)",
+        "Tu as choisi de M'obéir au prix de l'œuvre et de ta propre vie. Tu as choisi Ma volonté au-dessus de tout le reste. — La Prophétie de Pékin (Z.T. Fomum)",
+        "La fidélité à devenir et rester un disciple inclut la prière seul, la rencontre dynamique quotidienne avec Dieu (RDQD), la lecture biblique, la littérature chrétienne, les retraites, le jeûne et le gagnagisme d'âmes. — Le Message de Bertoua (Z.T. Fomum)",
+        "Vis ta vie pour la gloire exclusive du Seigneur Jésus-Christ en toutes choses, en Le servant dans le domaine de Son appel sur ta vie et au centre de Sa volonté. — Le Message de Bertoua (Z.T. Fomum)",
+        "Déracine de ta vie tout mensonge, cœur partagé, égocentrisme, dettes, cupidité, paresse et absence de buts. C'est le chemin du réveil. — Le Message de Bertoua (Z.T. Fomum)",
+        "Il y aura un réveil ! Il y aura un réveil !! Il y aura un réveil !!! Lorsque Dieu répondra, la communauté sera radicalement engagée dans le gagnagisme d'âmes. — Le Message de Bertoua (Z.T. Fomum)",
+        "Mes enfants reviendront à Moi. Ils Me chercheront ardemment, M'aimeront et Me serviront. Des multitudes supplieront de Me servir et de Me donner. — Le Message de Brazzaville (Z.T. Fomum)",
+        "Mes enfants aimeront Ma Parole, la liront avec un grand appétit, la croiront et la mettront en pratique avec joie. — Le Message de Brazzaville (Z.T. Fomum)",
+        "Mes enfants reviendront à la prière. Ils viendront sur les lieux de prière des heures avant l'heure officielle et continueront à prier longtemps après. — Le Message de Brazzaville (Z.T. Fomum)",
+        "Il y aura de la prière par deux, en petits groupes, en grands groupes, en grandes masses : des prières de confession et de proclamation. — Le Message de Brazzaville (Z.T. Fomum)",
+        "Passe un temps maximal dans Ma présence afin que Je puisse t'apparaître, te secourir, recevoir ton ministère et te révéler le plan du ciel. — Le Message de Brazzaville (Z.T. Fomum)",
+        "Pendant la Rencontre Dynamique Quotidienne avec Dieu (RDQD), lis la Parole, médite-la, écoute Sa voix, note ce Qu'Il dit, et prie. Oh, que j'aie plus de Dieu ! — Pr. Zacharias Tanee Fomum",
+        "La prière est le travail le plus important qui puisse être fait pour Dieu et pour l'homme. Quand un croyant rempli de l'Esprit prie dans un abandon total, le ciel se meut ! — Pr. Zacharias Tanee Fomum"
     )
 
     override val searchResultsFor = "Résultats de recherche pour « %s »"

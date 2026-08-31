@@ -9,6 +9,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.core.content.res.ResourcesCompat
 import com.example.R
 import java.io.File
 import java.io.FileOutputStream
@@ -16,16 +17,22 @@ import java.io.FileOutputStream
 object QuoteImageSharer {
 
     private val devotionalBgImages = listOf(
+        R.drawable.quote_bg_open_bible_1788139223471,
+        R.drawable.quote_bg_global_harvest_1788139235063,
+        R.drawable.quote_bg_prayer_altar_1788139251276,
+        R.drawable.quote_bg_radiant_cross_1788139262304,
+        R.drawable.quote_bg_cross_1787235555876,
+        R.drawable.quote_bg_mountains_1787235541853,
         R.drawable.quote_bg_sunrise_1787220672419,
-        R.drawable.quote_bg_waters_1787220685176,
-        R.drawable.quote_bg_path_1787220696837,
         R.drawable.quote_bg_heavens_1787220708792,
+        R.drawable.quote_bg_path_1787220696837,
+        R.drawable.quote_bg_waters_1787220685176,
         R.drawable.devotional_quote_bg_1787144263336
     )
 
     /**
      * Programmatically renders the devotional quote onto an inspirational canvas graphic,
-     * adds CMFI app branding at the bottom, and launches the native OS share sheet.
+     * adds CMFI Accap branding at the bottom, and launches the native OS share sheet.
      */
     fun shareQuoteImage(
         context: Context,
@@ -36,10 +43,30 @@ object QuoteImageSharer {
         var bitmap: Bitmap? = null
         var bgBitmap: Bitmap? = null
         try {
+            val cleanQuote = quoteText.trim().trim('“', '”', '"', '\'').trim()
             val width = 1080
             val height = 1080
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
+
+            // Load Custom Font Typefaces safely
+            val montserratTypeface = try {
+                ResourcesCompat.getFont(context, R.font.montserrat_medium) ?: Typeface.DEFAULT
+            } catch (e: Throwable) {
+                Typeface.DEFAULT
+            }
+
+            val headingTypeface = try {
+                ResourcesCompat.getFont(context, R.font.montserrat_bold) ?: Typeface.DEFAULT_BOLD
+            } catch (e: Throwable) {
+                Typeface.DEFAULT_BOLD
+            }
+
+            val bodyTypeface = try {
+                ResourcesCompat.getFont(context, R.font.poppins_regular) ?: Typeface.DEFAULT
+            } catch (e: Throwable) {
+                Typeface.DEFAULT
+            }
 
             // 1. Draw Background Image (rotating daily or provided)
             val selectedRes = bgResId ?: run {
@@ -97,38 +124,38 @@ object QuoteImageSharer {
             val tagTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.parseColor("#FAE611")
                 textSize = 26f
-                isFakeBoldText = true
-                letterSpacing = 0.08f
+                typeface = headingTypeface
+                letterSpacing = 0.06f
             }
             canvas.drawText("✦  $title", 125f, 130f, tagTextPaint)
 
             // 5. Decorative Large Quotation Mark
             val quoteMarkPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.parseColor("#FDBC0A")
-                alpha = 120
+                alpha = 140
                 textSize = 140f
-                isFakeBoldText = true
-                typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                typeface = headingTypeface
             }
             canvas.drawText("“", 100f, 260f, quoteMarkPaint)
 
-            // 6. Main Quote Body Text (Centered & Balanced)
+            // 6. Main Quote Body Text (Centered & Balanced using Montserrat font)
             val quoteBodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
-                textSize = if (quoteText.length > 220) 40f else if (quoteText.length > 140) 46f else 52f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                textSize = if (cleanQuote.length > 220) 38f else if (cleanQuote.length > 140) 44f else 50f
+                typeface = montserratTypeface
+                letterSpacing = 0.01f
             }
 
             val textWidth = width - 200
             val staticLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, quoteBodyPaint, textWidth)
+                StaticLayout.Builder.obtain(cleanQuote, 0, cleanQuote.length, quoteBodyPaint, textWidth)
                     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                    .setLineSpacing(14f, 1.15f)
+                    .setLineSpacing(14f, 1.18f)
                     .setIncludePad(true)
                     .build()
             } else {
                 @Suppress("DEPRECATION")
-                StaticLayout(quoteText, quoteBodyPaint, textWidth, Layout.Alignment.ALIGN_NORMAL, 1.15f, 14f, true)
+                StaticLayout(cleanQuote, quoteBodyPaint, textWidth, Layout.Alignment.ALIGN_NORMAL, 1.18f, 14f, true)
             }
 
             canvas.save()
@@ -171,21 +198,22 @@ object QuoteImageSharer {
                 canvas.drawRoundRect(RectF(crossCenterX - 18f, crossCenterY - 12f, crossCenterX + 18f, crossCenterY - 4f), 4f, 4f, brandAccentPaint)
             }
 
-            // App Name & Tagline Text
+            // App Name & Tagline Text updated to "CMFI Accap" and "Digital Account Book"
             val brandTitlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
-                textSize = 30f
-                isFakeBoldText = true
+                textSize = 32f
+                typeface = headingTypeface
                 letterSpacing = 0.04f
             }
             val textLeft = if (drawnLogo) 180f else 160f
-            canvas.drawText("CMFI Spiritual Accountability", textLeft, height - 115f, brandTitlePaint)
+            canvas.drawText("CMFI Accap", textLeft, height - 115f, brandTitlePaint)
 
             val brandSubPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.parseColor("#CACED7")
                 textSize = 22f
+                typeface = bodyTypeface
             }
-            canvas.drawText("Daily Discipleship & Personal Holiness", textLeft, height - 85f, brandSubPaint)
+            canvas.drawText("Digital Account Book", textLeft, height - 85f, brandSubPaint)
 
             // 9. Save Bitmap to File and Share
             val shareDir = File(context.cacheDir, "shared_quotes").apply { mkdirs() }
@@ -204,7 +232,7 @@ object QuoteImageSharer {
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_TEXT, "✝️ \"$quoteText\"\n\n— CMFI Spiritual Accountability")
+                putExtra(Intent.EXTRA_TEXT, "✝️ $cleanQuote\n\n— CMFI Accap • Digital Account Book")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 

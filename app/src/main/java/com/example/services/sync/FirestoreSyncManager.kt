@@ -66,12 +66,12 @@ object FirestoreSyncManager {
             if (FirebaseApp.getApps(context).isEmpty()) {
                 try {
                     FirebaseApp.initializeApp(context)
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     Log.w(TAG, "FirebaseApp init attempt: ${e.message}")
                 }
             }
             FirebaseApp.getApps(context).isNotEmpty()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             false
         }
     }
@@ -83,7 +83,7 @@ object FirestoreSyncManager {
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Firestore not available: ${e.message}")
             null
         }

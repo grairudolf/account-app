@@ -267,10 +267,13 @@ fun ReportsScreen(
                                 val monthNameRaw = targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMMM", locale))
                                 val monthName = monthNameRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                                 val dateText = when (selectedReportType) {
-                                    "DAILY" -> "${strings.targetDayLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
-                                    "WEEKLY" -> "${strings.weekEndingLabel}: ${targetDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
+                                    "DAILY" -> "${strings.targetDayLabel}: ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(targetDate, isFrench)}"
+                                    "WEEKLY" -> {
+                                        val start = targetDate.minusDays(6)
+                                        "${strings.dateRangeLabel}: ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(start, isFrench)} — ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(targetDate, isFrench)}"
+                                    }
                                     "MONTHLY" -> "${strings.monthLabel}: $monthName ${targetDate.year}"
-                                    else -> "${strings.dateRangeLabel}: ${startDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", locale))} — ${endDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", locale))}"
+                                    else -> "${strings.dateRangeLabel}: ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(startDate, isFrench)} — ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(endDate, isFrench)}"
                                 }
                                 Text(
                                     text = dateText,
