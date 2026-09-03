@@ -352,6 +352,8 @@ class ProclamationViewModel(
 
     fun saveManualSession(
         dateIso: String,
+        startTime: String = "",
+        stopTime: String = "",
         topic: String,
         count: Int,
         durationMins: Long,
@@ -372,6 +374,8 @@ class ProclamationViewModel(
                 timestampMs = System.currentTimeMillis(),
                 timezoneId = java.util.TimeZone.getDefault().id,
                 durationSeconds = durationSecs,
+                startTimeIso = startTime,
+                endTimeIso = stopTime,
                 proclamationTopic = finalTopic,
                 proclamationCount = safeCount,
                 proclamationTarget = 100,
@@ -381,10 +385,11 @@ class ProclamationViewModel(
             // saveEntry saves to entries and updates topic cumulativeCount automatically
             accountabilityRepository.saveEntry(entry)
 
+            val timeRangeNotice = if (startTime.isNotBlank() && stopTime.isNotBlank()) " ($startTime - $stopTime, $durationMins min)" else " ($durationMins min)"
             accountabilityRepository.logNotification(
                 context = context,
                 title = "Manual Proclamation Session Logged",
-                message = "Logged $count proclamations for '$finalTopic' on $dateIso ($durationMins min)."
+                message = "Logged $count proclamations for '$finalTopic' on $dateIso$timeRangeNotice."
             )
             onSuccess()
         }

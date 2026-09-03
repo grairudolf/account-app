@@ -44,6 +44,7 @@ import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.ProclamationTopicEntity
 import com.example.ui.components.AppDatePickerDialog
+import com.example.ui.components.AppTimePickerDialog
 import androidx.compose.material3.ripple
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -886,8 +887,8 @@ fun ProclamationScreen(
             item {
                 ManualProclamationCard(
                     initialTopic = topicText,
-                    onSaveManual = { date, topic, count, dur, notes, onSuccess ->
-                        viewModel.saveManualSession(date, topic, count, dur, notes, onSuccess)
+                    onSaveManual = { date, startTime, stopTime, topic, count, dur, notes, onSuccess ->
+                        viewModel.saveManualSession(date, startTime, stopTime, topic, count, dur, notes, onSuccess)
                     }
                 )
             }
@@ -1535,17 +1536,42 @@ private fun TopicHistoryCard(
 @Composable
 private fun ManualProclamationCard(
     initialTopic: String,
-    onSaveManual: (dateIso: String, topic: String, count: Int, durationMins: Long, notes: String, onSuccess: () -> Unit) -> Unit
+    onSaveManual: (dateIso: String, startTime: String, stopTime: String, topic: String, count: Int, durationMins: Long, notes: String, onSuccess: () -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     var manualDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var showManualDatePicker by remember { mutableStateOf(false) }
-    var showTimeSpanPicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showStopTimePicker by remember { mutableStateOf(false) }
+    var startTimeText by remember {
+        val now = java.time.LocalTime.now()
+        val start = now.minusMinutes(15)
+        mutableStateOf(String.format("%02d:%02d", start.hour, start.minute))
+    }
+    var stopTimeText by remember {
+        val now = java.time.LocalTime.now()
+        mutableStateOf(String.format("%02d:%02d", now.hour, now.minute))
+    }
     var manualTopic by remember { mutableStateOf(initialTopic) }
     var manualCountStr by remember { mutableStateOf("100") }
-    var manualDurationStr by remember { mutableStateOf("15") }
     var manualNotes by remember { mutableStateOf("") }
     var isSavingManual by remember { mutableStateOf(false) }
+
+    // Automatic Duration Calculation from start and stop time
+    val calculatedDurationMinutes = remember(startTimeText, stopTimeText) {
+        try {
+            val startParts = startTimeText.split(":").map { it.trim().toInt() }
+            val stopParts = stopTimeText.split(":").map { it.trim().toInt() }
+            if (startParts.size == 2 && stopParts.size == 2) {
+                val startTotalMin = startParts[0] * 60 + startParts[1]
+                val stopTotalMin = stopParts[0] * 60 + stopParts[1]
+                val diff = if (stopTotalMin >= startTotalMin) stopTotalMin - startTotalMin else (stopTotalMin + 1440) - startTotalMin
+                diff.coerceAtLeast(1).toLong()
+            } else 15L
+        } catch (_: Exception) {
+            15L
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -1612,44 +1638,89 @@ private fun ManualProclamationCard(
                 singleLine = true
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // Start & Stop Time with Auto-calculated Duration
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
-                    value = manualCountStr,
-                    onValueChange = { manualCountStr = it.filter { c -> c.isDigit() } },
-                    label = { Text("Proclamations") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Time Span",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                val durMinutes = manualDurationStr.toLongOrNull() ?: 15L
-                val durHours = durMinutes / 60
-                val durMins = durMinutes % 60
-                val timeSpanLabel = if (durHours > 0) "${durHours}h ${durMins}m" else "${durMins}m"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = startTimeText,
+                            onValueChange = { startTimeText = it },
+                            label = { Text("Start Time", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            leadingIcon = {
+                                Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { showStartTimePicker = true }) {
+                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time")
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("manual_start_time_field"),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true
+                        )
 
-                OutlinedTextField(
-                    value = timeSpanLabel,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Time Span") },
-                    leadingIcon = { Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingIcon = {
-                        IconButton(onClick = { showTimeSpanPicker = true }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Time Span")
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { showTimeSpanPicker = true }
-                        .testTag("manual_time_span_field"),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
+                        OutlinedTextField(
+                            value = stopTimeText,
+                            onValueChange = { stopTimeText = it },
+                            label = { Text("Stop Time", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            leadingIcon = {
+                                Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { showStopTimePicker = true }) {
+                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Stop Time")
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("manual_stop_time_field"),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true
+                        )
+                    }
+
+                    val durHours = calculatedDurationMinutes / 60
+                    val durMins = calculatedDurationMinutes % 60
+                    val durDisplay = if (durHours > 0) "${durHours}h ${durMins}m" else "${durMins}m"
+                    Text(
+                        text = "Calculated Duration: $durDisplay (${calculatedDurationMinutes} min)",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
+
+            // Proclamations Count
+            OutlinedTextField(
+                value = manualCountStr,
+                onValueChange = { manualCountStr = it.filter { c -> c.isDigit() } },
+                label = { Text("Proclamations Count") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
 
             OutlinedTextField(
                 value = manualNotes,
@@ -1664,12 +1735,13 @@ private fun ManualProclamationCard(
                 onClick = {
                     isSavingManual = true
                     val count = manualCountStr.toIntOrNull() ?: 100
-                    val dur = manualDurationStr.toLongOrNull() ?: 15L
                     onSaveManual(
                         manualDateIso,
+                        startTimeText,
+                        stopTimeText,
                         manualTopic,
                         count,
-                        dur,
+                        calculatedDurationMinutes,
                         manualNotes
                     ) {
                         isSavingManual = false
@@ -1701,194 +1773,29 @@ private fun ManualProclamationCard(
                 )
             }
 
-            if (showTimeSpanPicker) {
-                val durMinutes = manualDurationStr.toLongOrNull() ?: 15L
-                TimeSpanPickerDialog(
-                    initialMinutes = durMinutes,
-                    onDismiss = { showTimeSpanPicker = false },
-                    onConfirm = { chosenMinutes ->
-                        manualDurationStr = chosenMinutes.toString()
-                        showTimeSpanPicker = false
-                    }
+            if (showStartTimePicker) {
+                AppTimePickerDialog(
+                    initialTime = startTimeText,
+                    onTimeSelected = {
+                        startTimeText = it
+                        showStartTimePicker = false
+                    },
+                    onDismiss = { showStartTimePicker = false }
+                )
+            }
+
+            if (showStopTimePicker) {
+                AppTimePickerDialog(
+                    initialTime = stopTimeText,
+                    onTimeSelected = {
+                        stopTimeText = it
+                        showStopTimePicker = false
+                    },
+                    onDismiss = { showStopTimePicker = false }
                 )
             }
         }
     }
-}
-
-@Composable
-private fun TimeSpanPickerDialog(
-    initialMinutes: Long,
-    onDismiss: () -> Unit,
-    onConfirm: (Long) -> Unit
-) {
-    var selectedHours by remember { mutableIntStateOf((initialMinutes / 60).toInt()) }
-    var selectedMinutes by remember { mutableIntStateOf((initialMinutes % 60).toInt()) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.AccessTime,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-        },
-        title = {
-            Text("Select Time Span", fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Text(
-                    text = "Quick Presets",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf(15L to "15m", 30L to "30m", 45L to "45m", 60L to "1h", 90L to "1.5h").forEach { (presetMins, label) ->
-                        val isPresetActive = (selectedHours * 60 + selectedMinutes) == presetMins.toInt()
-                        FilterChip(
-                            selected = isPresetActive,
-                            onClick = {
-                                selectedHours = (presetMins / 60).toInt()
-                                selectedMinutes = (presetMins % 60).toInt()
-                            },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                HorizontalDivider()
-
-                // Hours and Minutes Adjusters
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Hours column
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Hours",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilledTonalIconButton(
-                                onClick = { if (selectedHours > 0) selectedHours-- },
-                                enabled = selectedHours > 0,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.Remove, contentDescription = "Decrease hours", modifier = Modifier.size(18.dp))
-                            }
-                            Text(
-                                text = "$selectedHours h",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                            FilledTonalIconButton(
-                                onClick = { if (selectedHours < 24) selectedHours++ },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "Increase hours", modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    }
-
-                    // Minutes column
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Minutes",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilledTonalIconButton(
-                                onClick = {
-                                    if (selectedMinutes >= 5) {
-                                        selectedMinutes -= 5
-                                    } else if (selectedHours > 0) {
-                                        selectedHours--
-                                        selectedMinutes = 55
-                                    }
-                                },
-                                enabled = selectedHours > 0 || selectedMinutes > 0,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.Remove, contentDescription = "Decrease minutes", modifier = Modifier.size(18.dp))
-                            }
-                            Text(
-                                text = "$selectedMinutes m",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                            FilledTonalIconButton(
-                                onClick = {
-                                    if (selectedMinutes < 55) {
-                                        selectedMinutes += 5
-                                    } else {
-                                        selectedHours++
-                                        selectedMinutes = 0
-                                    }
-                                },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "Increase minutes", modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    }
-                }
-
-                // Summary
-                val totalMins = (selectedHours * 60 + selectedMinutes).toLong()
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Total Duration: $totalMins min" + if (selectedHours > 0) " (${selectedHours}h ${selectedMinutes}m)" else "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val total = (selectedHours * 60 + selectedMinutes).toLong().coerceAtLeast(1L)
-                    onConfirm(total)
-                }
-            ) {
-                Text("Set Time Span")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
 
 @Composable
