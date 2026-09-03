@@ -29,7 +29,8 @@ val SurfaceVariantDark = Color(0xFF1B2530)  // Elevated midnight container (#1B2
 val SurfaceBorderDark = Color(0xFF283444)   // Clean contrast dark border (#283444)
 
 // Navigation & Pill Tokens
-val DarkNavBarBackground = Color(0xFF101720)
+val DarkNavBarBackground = Color(0xFF101720)   // Charcoal obsidian for dark theme bottom navbar
+val LightNavBarBackground = Color(0xFF14214C)  // Rich brand dark navy blue for light theme bottom navbar
 val DarkPillBackground = Color(0xFF1B2530)
 val DarkPillText = Color(0xFFE1E4EB)
 

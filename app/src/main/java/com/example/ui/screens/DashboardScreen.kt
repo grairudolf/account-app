@@ -105,6 +105,8 @@ fun DashboardScreen(
         label = "hero_progress"
     )
 
+    val isDark = isAppInDarkTheme()
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -421,11 +423,50 @@ fun DashboardScreen(
 
         // Claymorphic 3D "Today's Progress" Section
         item {
+            val heroBgGradient = if (isDark) {
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF1C2738),
+                        Color(0xFF121B27)
+                    )
+                )
+            } else {
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF1F3168),
+                        Color(0xFF14214C)
+                    )
+                )
+            }
+
+            val heroBorder = if (isDark) {
+                BorderStroke(
+                    1.dp,
+                    Brush.linearGradient(
+                        listOf(
+                            BrandChampagneGold.copy(alpha = 0.45f),
+                            SurfaceBorderDark,
+                            Color(0xFF283548)
+                        )
+                    )
+                )
+            } else {
+                BorderStroke(
+                    1.5.dp,
+                    Brush.linearGradient(
+                        listOf(
+                            BrandSlateBlue.copy(alpha = 0.7f),
+                            Color(0xFF2A3E7E)
+                        )
+                    )
+                )
+            }
+
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = SurfaceDarkCard,
-                border = BorderStroke(1.5.dp, Brush.linearGradient(listOf(BrandSlateBlue.copy(alpha = 0.7f), Color(0xFF2A3E7E)))),
-                shadowElevation = 12.dp,
+                border = heroBorder,
+                shadowElevation = if (isDark) 6.dp else 12.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("dashboard_hero_card")
@@ -433,14 +474,7 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0xFF1F3168),
-                                    Color(0xFF14214C)
-                                )
-                            )
-                        )
+                        .background(heroBgGradient)
                         .padding(20.dp)
                 ) {
                     Column(
@@ -455,8 +489,11 @@ fun DashboardScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = BrandDarkNavy,
-                                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.5f))
+                                color = if (isDark) Color(0xFF202C3D) else BrandDarkNavy,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isDark) BrandChampagneGold.copy(alpha = 0.35f) else BrandSlateBlue.copy(alpha = 0.5f)
+                                )
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -466,13 +503,13 @@ fun DashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
-                                        tint = BrandVibrantYellow,
+                                        tint = if (isDark) BrandChampagneGold else BrandVibrantYellow,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = strings.todaysProgress.uppercase(),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = BrandVibrantYellow,
+                                        color = if (isDark) BrandChampagneGold else BrandVibrantYellow,
                                         fontWeight = FontWeight.ExtraBold,
                                         letterSpacing = 0.5.sp
                                     )
@@ -481,13 +518,13 @@ fun DashboardScreen(
 
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = BrandVibrantYellow
+                                color = if (isDark) BrandChampagneGold else BrandVibrantYellow
                             ) {
                                 Text(
                                     text = "${uiState.dailyProgress.progressPercentage}%",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = BrandDarkNavy,
+                                    color = if (isDark) Color(0xFF1B1504) else BrandDarkNavy,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
@@ -515,7 +552,7 @@ fun DashboardScreen(
                                     else
                                         strings.pressingTowardMark,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = BrandLightText
+                                    color = if (isDark) Color(0xFFBAC5D6) else BrandLightText
                                 )
                             }
 
@@ -528,7 +565,10 @@ fun DashboardScreen(
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(
                                         Brush.radialGradient(
-                                            listOf(BrandSlateBlue.copy(alpha = 0.3f), Color.Transparent)
+                                            listOf(
+                                                if (isDark) BrandChampagneGold.copy(alpha = 0.16f) else BrandSlateBlue.copy(alpha = 0.3f),
+                                                Color.Transparent
+                                            )
                                         )
                                     ),
                                 contentAlignment = Alignment.Center
@@ -536,7 +576,7 @@ fun DashboardScreen(
                                 Icon(
                                     imageVector = Icons.Default.Flag,
                                     contentDescription = "Daily Goal Target",
-                                    tint = BrandWarmGold,
+                                    tint = if (isDark) BrandChampagneGold else BrandWarmGold,
                                     modifier = Modifier.size(52.dp)
                                 )
                             }
@@ -548,8 +588,12 @@ fun DashboardScreen(
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF0D1636))
-                                .border(1.dp, BrandSlateBlue.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .background(if (isDark) Color(0xFF0B1119) else Color(0xFF0D1636))
+                                .border(
+                                    1.dp,
+                                    if (isDark) SurfaceBorderDark else BrandSlateBlue.copy(alpha = 0.4f),
+                                    RoundedCornerShape(6.dp)
+                                )
                         ) {
                             Box(
                                 modifier = Modifier
@@ -558,7 +602,8 @@ fun DashboardScreen(
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(
                                         Brush.horizontalGradient(
-                                            listOf(BrandWarmGold, BrandVibrantYellow, BrandBrightYellow)
+                                            if (isDark) listOf(BrandWarmGold, BrandChampagneGold, BrandBrightYellow)
+                                            else listOf(BrandWarmGold, BrandVibrantYellow, BrandBrightYellow)
                                         )
                                     )
                             )
@@ -752,8 +797,8 @@ fun DashboardScreen(
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.3f)),
-                shadowElevation = 2.dp,
+                border = BorderStroke(1.dp, if (isDark) SurfaceBorderDark else BrandSlateBlue.copy(alpha = 0.3f)),
+                shadowElevation = if (isDark) 0.dp else 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("dashboard_checkin_card")
@@ -771,7 +816,7 @@ fun DashboardScreen(
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
-                                    colors = listOf(BrandDarkNavy, BrandSlateBlue)
+                                    colors = if (isDark) listOf(Color(0xFF222F42), Color(0xFF182330)) else listOf(BrandDarkNavy, BrandSlateBlue)
                                 )
                             ),
                         contentAlignment = Alignment.Center
@@ -779,7 +824,7 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            tint = BrandBrightYellow,
+                            tint = if (isDark) BrandChampagneGold else BrandBrightYellow,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -797,14 +842,14 @@ fun DashboardScreen(
                         Text(
                             text = strings.timeWithGodSubtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isDark) Color(0xFFBAC5D6) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Button(
                             onClick = onNavigateToDomains,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = BrandDarkNavy,
-                                contentColor = BrandBrightYellow
+                                containerColor = if (isDark) BrandChampagneGold else BrandDarkNavy,
+                                contentColor = if (isDark) Color(0xFF2B1F05) else BrandBrightYellow
                             ),
                             shape = RoundedCornerShape(16.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -814,7 +859,7 @@ fun DashboardScreen(
                                 Icons.Default.AddCircleOutline,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = BrandBrightYellow
+                                tint = if (isDark) Color(0xFF2B1F05) else BrandBrightYellow
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -838,7 +883,7 @@ fun DashboardScreen(
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, DividerColor),
+                border = BorderStroke(1.dp, if (isDark) SurfaceBorderDark else DividerColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToGoals() }
@@ -855,13 +900,18 @@ fun DashboardScreen(
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
-                            .background(BrandDarkNavy),
+                            .background(if (isDark) Color(0xFF222F42) else BrandDarkNavy)
+                            .border(
+                                if (isDark) 1.dp else 0.dp,
+                                if (isDark) BrandChampagneGold.copy(alpha = 0.35f) else Color.Transparent,
+                                CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = BrandVibrantYellow,
+                            tint = if (isDark) BrandChampagneGold else BrandVibrantYellow,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -884,13 +934,14 @@ fun DashboardScreen(
                             if (hasGoals) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = BrandMutedGold.copy(alpha = 0.2f)
+                                    color = if (isDark) BrandChampagneGold.copy(alpha = 0.18f) else BrandMutedGold.copy(alpha = 0.2f),
+                                    border = if (isDark) BorderStroke(1.dp, BrandChampagneGold.copy(alpha = 0.35f)) else null
                                 ) {
                                     Text(
                                         text = "$avgGoalProgress%",
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = BrandDarkNavy,
+                                        color = if (isDark) BrandChampagneGold else BrandDarkNavy,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                     )
                                 }
@@ -904,24 +955,24 @@ fun DashboardScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
-                                color = BrandDarkNavy,
-                                trackColor = DividerColor
+                                color = if (isDark) BrandChampagneGold else BrandDarkNavy,
+                                trackColor = if (isDark) Color(0xFF222D3B) else DividerColor
                             )
                             Text(
                                 text = "${uiState.goalsWithProgress.count { it.progressPercentage >= 100 }}/${uiState.goalsWithProgress.size} goals completed",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isDark) Color(0xFFBAC5D6) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             Text(
                                 text = strings.noGoalsSet,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isDark) Color(0xFFBAC5D6) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = strings.tapToSetGoals,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = BrandDarkNavy,
+                                color = if (isDark) BrandChampagneGold else BrandDarkNavy,
                                 fontWeight = FontWeight.Bold
                             )
                         }

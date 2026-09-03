@@ -52,6 +52,12 @@ fun CmfiBottomBar(
         if (idx >= 0) idx else 0
     }
 
+    val isDark = isAppInDarkTheme()
+    val navBarColor = if (isDark) DarkNavBarBackground else LightNavBarBackground
+    val shadowAmbient = if (isDark) Color(0x66000000) else BrandDarkNavy.copy(alpha = 0.40f)
+    val shadowSpot = if (isDark) Color(0x99000000) else BrandDarkNavy.copy(alpha = 0.30f)
+    val inactiveIconColor = if (isDark) BrandLightText else Color(0xFFD6DCED)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,9 +70,9 @@ fun CmfiBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(68.dp)
-                .shadow(16.dp, RoundedCornerShape(34.dp), ambientColor = BrandDarkNavy, spotColor = Color(0x99000000))
+                .shadow(16.dp, RoundedCornerShape(34.dp), ambientColor = shadowAmbient, spotColor = shadowSpot)
                 .clip(RoundedCornerShape(34.dp)),
-            color = DarkNavBarBackground
+            color = navBarColor
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -122,7 +128,7 @@ fun CmfiBottomBar(
                         )
 
                         val iconColor by animateColorAsState(
-                            targetValue = if (isSelected) BrandDarkNavy else BrandLightText,
+                            targetValue = if (isSelected) BrandDarkNavy else inactiveIconColor,
                             animationSpec = tween(200),
                             label = "icon_color_${tab.route}"
                         )
