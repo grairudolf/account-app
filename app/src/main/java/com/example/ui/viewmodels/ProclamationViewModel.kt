@@ -60,6 +60,13 @@ class ProclamationViewModel(
 
     private var timerJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            val user = userRepository.getOrCreateGuestUser()
+            accountabilityRepository.reconcileProclamationTopics(user.id)
+        }
+    }
+
     val sampleSuggestions = listOf(
         "Jesus Christ is Lord over all nations",
         "All authority in heaven and on earth belongs to Jesus",
@@ -248,40 +255,13 @@ class ProclamationViewModel(
                 notes = sessionNote,
                 reflection = _reflection.value
             )
+            // saveEntry atomically saves the session and updates the topic's cumulative count
             accountabilityRepository.saveEntry(entry)
 
-            // 2. Update or insert the ProclamationTopicEntity with the updated cumulative count
-            val existing = _selectedTopic.value ?: accountabilityRepository.getProclamationTopics(user.id).find {
-                it.topic.equals(finalTopic, ignoreCase = true)
+            val freshTopic = accountabilityRepository.getProclamationTopics(user.id).find {
+                it.topic.trim().equals(finalTopic, ignoreCase = true)
             }
-            val finalCumulative = if (existing != null) {
-                if (isResumed) existing.cumulativeCount + sessionProclamations else maxOf(existing.cumulativeCount, currentTotal)
-            } else {
-                currentTotal
-            }
-
-            val updatedTopic = if (existing != null) {
-                existing.copy(
-                    cumulativeCount = finalCumulative,
-                    targetCount = if (_targetCount.value > 0) _targetCount.value else existing.targetCount,
-                    totalDurationSeconds = existing.totalDurationSeconds + duration,
-                    lastPracticedIso = todayIso,
-                    updatedAtMs = System.currentTimeMillis()
-                )
-            } else {
-                ProclamationTopicEntity(
-                    id = UUID.randomUUID().toString(),
-                    userId = user.id,
-                    topic = finalTopic,
-                    cumulativeCount = finalCumulative,
-                    targetCount = if (_targetCount.value > 0) _targetCount.value else 100,
-                    totalDurationSeconds = duration,
-                    lastPracticedIso = todayIso,
-                    createdAtMs = System.currentTimeMillis(),
-                    updatedAtMs = System.currentTimeMillis()
-                )
-            }
-            accountabilityRepository.saveProclamationTopic(updatedTopic)
+            val finalCumulative = freshTopic?.cumulativeCount ?: (starting + proclamationsToLog)
 
             val notifMessage = if (isResumed && starting > 0) {
                 "Proclaimed '$finalTopic': reached $finalCumulative total (+$sessionProclamations today, ${duration / 60}m). Victory in Jesus!"
@@ -398,31 +378,8 @@ class ProclamationViewModel(
                 notes = if (notes.isNotBlank()) "[Manual Log] $notes" else "[Manual Offline Session]",
                 reflection = ""
             )
+            // saveEntry saves to entries and updates topic cumulativeCount automatically
             accountabilityRepository.saveEntry(entry)
-
-            val existingTopic = accountabilityRepository.getProclamationTopics(user.id).find { it.topic.equals(finalTopic, ignoreCase = true) }
-            if (existingTopic != null) {
-                val updatedTopic = existingTopic.copy(
-                    cumulativeCount = existingTopic.cumulativeCount + safeCount,
-                    totalDurationSeconds = existingTopic.totalDurationSeconds + durationSecs,
-                    lastPracticedIso = dateIso,
-                    updatedAtMs = System.currentTimeMillis()
-                )
-                accountabilityRepository.saveProclamationTopic(updatedTopic)
-            } else {
-                val newTopic = ProclamationTopicEntity(
-                    id = UUID.randomUUID().toString(),
-                    userId = user.id,
-                    topic = finalTopic,
-                    targetCount = 100,
-                    cumulativeCount = safeCount,
-                    totalDurationSeconds = durationSecs,
-                    lastPracticedIso = dateIso,
-                    createdAtMs = System.currentTimeMillis(),
-                    updatedAtMs = System.currentTimeMillis()
-                )
-                accountabilityRepository.saveProclamationTopic(newTopic)
-            }
 
             accountabilityRepository.logNotification(
                 context = context,

@@ -19,7 +19,7 @@ interface ProclamationTopicDao {
     @Query("SELECT * FROM proclamation_topics WHERE id = :id")
     suspend fun getTopicById(id: String): ProclamationTopicEntity?
 
-    @Query("SELECT * FROM proclamation_topics WHERE (:userId IS NULL OR :userId = '' OR userId = :userId OR userId = 'guest_user') AND LOWER(topic) = LOWER(:topic) ORDER BY updatedAtMs DESC LIMIT 1")
+    @Query("SELECT * FROM proclamation_topics WHERE (:userId IS NULL OR :userId = '' OR userId = :userId OR userId = 'guest_user') AND TRIM(LOWER(topic)) = TRIM(LOWER(:topic)) ORDER BY updatedAtMs DESC LIMIT 1")
     suspend fun findTopicByName(userId: String?, topic: String): ProclamationTopicEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

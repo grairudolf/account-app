@@ -118,38 +118,7 @@ class AccountabilityRepository(
     }
 
     suspend fun recordProclamationSession(entry: AccountabilityEntryEntity) {
-        entryDao.insertOrUpdateEntry(entry)
-        if (context != null && entry.userId.isNotBlank() && entry.userId != "guest_user") {
-            FirestoreSyncManager.syncEntry(context, entry)
-        }
-        // Also update topic cumulative stats
-        if (entry.proclamationTopic.isNotBlank()) {
-            val existing = proclamationTopicDao.findTopicByName(entry.userId, entry.proclamationTopic)
-            val updatedTopic = if (existing != null) {
-                existing.copy(
-                    cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
-                    targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else existing.targetCount,
-                    totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
-                    lastPracticedIso = entry.dateIso,
-                    updatedAtMs = System.currentTimeMillis()
-                )
-            } else {
-                ProclamationTopicEntity(
-                    id = UUID.randomUUID().toString(),
-                    userId = entry.userId,
-                    topic = entry.proclamationTopic,
-                    cumulativeCount = entry.proclamationCount,
-                    targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else 100,
-                    totalDurationSeconds = entry.durationSeconds,
-                    lastPracticedIso = entry.dateIso,
-                    updatedAtMs = System.currentTimeMillis()
-                )
-            }
-            proclamationTopicDao.insertOrUpdateTopic(updatedTopic)
-            if (context != null && updatedTopic.userId.isNotBlank() && updatedTopic.userId != "guest_user") {
-                FirestoreSyncManager.syncProclamationTopic(context, updatedTopic)
-            }
-        }
+        saveEntry(entry)
     }
 
     suspend fun logNotification(context: android.content.Context, title: String, message: String, type: String = "TRANSACTION") {
@@ -210,7 +179,36 @@ class AccountabilityRepository(
             FirestoreSyncManager.syncEntry(context, entry)
         }
         if (entry.domainId == "proclamation_importunity") {
-            recalculateProclamationTopics(entry.userId)
+            // Directly and additively update the topic's cumulative count and duration
+            if (entry.proclamationTopic.isNotBlank()) {
+                val cleanTopic = entry.proclamationTopic.trim()
+                val existing = proclamationTopicDao.findTopicByName(entry.userId, cleanTopic)
+                val updatedTopic = if (existing != null) {
+                    existing.copy(
+                        cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
+                        targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else existing.targetCount,
+                        totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
+                        lastPracticedIso = entry.dateIso,
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                } else {
+                    ProclamationTopicEntity(
+                        id = UUID.randomUUID().toString(),
+                        userId = entry.userId,
+                        topic = cleanTopic,
+                        cumulativeCount = entry.proclamationCount,
+                        targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else 100,
+                        totalDurationSeconds = entry.durationSeconds,
+                        lastPracticedIso = entry.dateIso,
+                        createdAtMs = System.currentTimeMillis(),
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                }
+                proclamationTopicDao.insertOrUpdateTopic(updatedTopic)
+                if (context != null && updatedTopic.userId.isNotBlank() && updatedTopic.userId != "guest_user") {
+                    FirestoreSyncManager.syncProclamationTopic(context, updatedTopic)
+                }
+            }
         }
     }
 
@@ -218,16 +216,31 @@ class AccountabilityRepository(
         val existing = entryDao.getEntryById(id)
         val resolvedUserId = if (userId.isNotBlank()) userId else (existing?.userId ?: "")
         val wasProclamation = existing?.domainId == "proclamation_importunity"
+        val deletedTopic = existing?.proclamationTopic?.trim() ?: ""
+        val deletedCount = existing?.proclamationCount ?: 0
+        val deletedDuration = existing?.durationSeconds ?: 0L
+
         entryDao.deleteEntryById(id)
         if (context != null && resolvedUserId.isNotBlank() && resolvedUserId != "guest_user") {
             FirestoreSyncManager.deleteEntry(context, resolvedUserId, id)
         }
-        if (wasProclamation) {
-            recalculateProclamationTopics(resolvedUserId)
+        if (wasProclamation && deletedTopic.isNotBlank()) {
+            val topicEntity = proclamationTopicDao.findTopicByName(resolvedUserId, deletedTopic)
+            if (topicEntity != null) {
+                val updatedTopic = topicEntity.copy(
+                    cumulativeCount = (topicEntity.cumulativeCount - deletedCount).coerceAtLeast(0),
+                    totalDurationSeconds = (topicEntity.totalDurationSeconds - deletedDuration).coerceAtLeast(0),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                proclamationTopicDao.insertOrUpdateTopic(updatedTopic)
+                if (context != null && updatedTopic.userId.isNotBlank() && updatedTopic.userId != "guest_user") {
+                    FirestoreSyncManager.syncProclamationTopic(context, updatedTopic)
+                }
+            }
         }
     }
 
-    suspend fun recalculateProclamationTopics(userId: String) {
+    suspend fun reconcileProclamationTopics(userId: String = "") {
         try {
             val allUserEntries = entryDao.getAllEntriesList().filter { 
                 it.domainId == "proclamation_importunity" && (userId.isBlank() || it.userId == userId || it.userId == "guest_user")
@@ -239,24 +252,30 @@ class AccountabilityRepository(
 
             groupedEntries.forEach { (topicLower, entries) ->
                 if (topicLower.isNotBlank()) {
-                    val canonicalTopic = entries.firstOrNull { it.proclamationTopic.isNotBlank() }?.proclamationTopic ?: topicLower
+                    val canonicalTopic = entries.firstOrNull { it.proclamationTopic.isNotBlank() }?.proclamationTopic?.trim() ?: topicLower
                     val totalCount = entries.sumOf { it.proclamationCount }
                     val totalDuration = entries.sumOf { it.durationSeconds }
                     val latestIso = entries.maxOfOrNull { it.dateIso } ?: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                     val maxTarget = entries.map { it.proclamationTarget }.filter { it > 0 }.maxOrNull() ?: 100
 
                     val existing = existingTopicsMap[topicLower]
-                    val updated = if (existing != null) {
-                        existing.copy(
-                            topic = canonicalTopic,
-                            cumulativeCount = maxOf(existing.cumulativeCount, totalCount),
-                            targetCount = if (existing.targetCount > 0) existing.targetCount else maxTarget,
-                            totalDurationSeconds = maxOf(existing.totalDurationSeconds, totalDuration),
-                            lastPracticedIso = latestIso,
-                            updatedAtMs = System.currentTimeMillis()
-                        )
-                    } else {
-                        ProclamationTopicEntity(
+                    if (existing != null) {
+                        if (totalCount > existing.cumulativeCount || totalDuration > existing.totalDurationSeconds) {
+                            val updated = existing.copy(
+                                topic = canonicalTopic,
+                                cumulativeCount = maxOf(existing.cumulativeCount, totalCount),
+                                targetCount = if (existing.targetCount > 0) existing.targetCount else maxTarget,
+                                totalDurationSeconds = maxOf(existing.totalDurationSeconds, totalDuration),
+                                lastPracticedIso = if (existing.lastPracticedIso.isBlank()) latestIso else maxOf(existing.lastPracticedIso, latestIso),
+                                updatedAtMs = System.currentTimeMillis()
+                            )
+                            proclamationTopicDao.insertOrUpdateTopic(updated)
+                            if (context != null && updated.userId.isNotBlank() && updated.userId != "guest_user") {
+                                FirestoreSyncManager.syncProclamationTopic(context, updated)
+                            }
+                        }
+                    } else if (totalCount > 0) {
+                        val newTopic = ProclamationTopicEntity(
                             id = UUID.randomUUID().toString(),
                             userId = if (userId.isNotBlank()) userId else "guest_user",
                             topic = canonicalTopic,
@@ -267,12 +286,11 @@ class AccountabilityRepository(
                             createdAtMs = System.currentTimeMillis(),
                             updatedAtMs = System.currentTimeMillis()
                         )
+                        proclamationTopicDao.insertOrUpdateTopic(newTopic)
+                        if (context != null && newTopic.userId.isNotBlank() && newTopic.userId != "guest_user") {
+                            FirestoreSyncManager.syncProclamationTopic(context, newTopic)
+                        }
                     }
-                    proclamationTopicDao.insertOrUpdateTopic(updated)
-                    if (context != null && updated.userId.isNotBlank() && updated.userId != "guest_user") {
-                        FirestoreSyncManager.syncProclamationTopic(context, updated)
-                    }
-                    existingTopicsMap.remove(topicLower)
                 }
             }
         } catch (e: Exception) {
