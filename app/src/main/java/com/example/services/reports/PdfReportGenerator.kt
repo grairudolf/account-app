@@ -614,6 +614,22 @@ object PdfReportGenerator {
         }
     }
 
+    private data class EntryRenderData(
+        val entry: AccountabilityEntryEntity,
+        val activityLines: List<String>,
+        val timeSpanLines: List<String>,
+        val durationLines: List<String>,
+        val notesLines: List<String>,
+        val rowHeight: Float
+    )
+
+    private data class DayRenderGroup(
+        val dateIso: String,
+        val dateDisplay: String,
+        val dateLines: List<String>,
+        val entries: List<EntryRenderData>
+    )
+
     private fun renderUnifiedEntriesLoop(
         document: PdfDocument,
         initialPage: PdfDocument.Page,
@@ -633,7 +649,6 @@ object PdfReportGenerator {
         var currentPageNum = startPageNum
         var activePage = initialPage
         var activeCanvas = initialCanvas
-        var rowIndex = 0
 
         if (entries.isEmpty()) {
             paint.style = Paint.Style.FILL
@@ -647,97 +662,186 @@ object PdfReportGenerator {
             activeCanvas.drawText(noEntriesText, 32f, y + 16f, paint)
             y += 28f
         } else {
-            for (entry in entries) {
-                paint.style = Paint.Style.FILL
-                paint.typeface = bodyRegularFont ?: Typeface.DEFAULT
-                paint.textSize = 8.5f
-                paint.color = Color.parseColor("#0F172A")
+            val measurePaint = Paint().apply {
+                isAntiAlias = true
+                typeface = bodyRegularFont ?: Typeface.DEFAULT
+                textSize = 8.5f
+            }
 
-                val dateStr = formatDateWithDay(entry.dateIso, isFrench)
-                val domainTitle = getDomainDisplayName(entry.domainId, isFrench)
-                val activitySummary = "$domainTitle: ${getEntrySummaryDetails(entry, isFrench)}"
-                val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) "${entry.startTimeIso} - ${entry.endTimeIso}" else "-"
-                val durationStr = if (entry.durationSeconds > 0) formatDurationShort(entry.durationSeconds, isFrench) else "-"
-                val notesText = buildString {
-                    if (entry.notes.isNotBlank()) append(entry.notes)
-                    if (entry.reflection.isNotBlank()) {
-                        if (isNotEmpty()) append(" | Refl: ")
-                        append(entry.reflection)
+            // Group entries chronologically by day
+            val dayGroups = entries.groupBy { it.dateIso.trim().take(10) }.map { (dateIso, groupEntries) ->
+                val dateStr = formatDateWithDay(dateIso, isFrench)
+                val dateLines = wrapText(dateStr, measurePaint, 84f)
+                val renderedEntries = groupEntries.map { entry ->
+                    val domainTitle = getDomainDisplayName(entry.domainId, isFrench)
+                    val activitySummary = "$domainTitle: ${getEntrySummaryDetails(entry, isFrench)}"
+                    val timeSpan = if (entry.startTimeIso.isNotBlank() && entry.endTimeIso.isNotBlank()) "${entry.startTimeIso} - ${entry.endTimeIso}" else "-"
+                    val durationStr = if (entry.durationSeconds > 0) formatDurationShort(entry.durationSeconds, isFrench) else "-"
+                    val notesText = buildString {
+                        if (entry.notes.isNotBlank()) append(entry.notes)
+                        if (entry.reflection.isNotBlank()) {
+                            if (isNotEmpty()) append(" | Refl: ")
+                            append(entry.reflection)
+                        }
+                        if (isEmpty()) append("-")
                     }
-                    if (isEmpty()) append("-")
+
+                    val activityLines = wrapText(activitySummary, measurePaint, 150f)
+                    val timeSpanLines = wrapText(timeSpan, measurePaint, 68f)
+                    val durationLines = wrapText(durationStr, measurePaint, 52f)
+                    val notesLines = wrapText(notesText, measurePaint, 148f)
+
+                    val maxLineCount = maxOf(2, activityLines.size, timeSpanLines.size, durationLines.size, notesLines.size)
+                    val rowHeight = (maxLineCount * 11.5f + 8f).coerceAtLeast(22f)
+
+                    EntryRenderData(
+                        entry = entry,
+                        activityLines = activityLines,
+                        timeSpanLines = timeSpanLines,
+                        durationLines = durationLines,
+                        notesLines = notesLines,
+                        rowHeight = rowHeight
+                    )
                 }
 
-                val dateLines = wrapText(dateStr, paint, 85f)
-                val activityLines = wrapText(activitySummary, paint, 150f)
-                val timeSpanLines = wrapText(timeSpan, paint, 68f)
-                val durationLines = wrapText(durationStr, paint, 52f)
-                val notesLines = wrapText(notesText, paint, 148f)
+                DayRenderGroup(
+                    dateIso = dateIso,
+                    dateDisplay = dateStr,
+                    dateLines = dateLines,
+                    entries = renderedEntries
+                )
+            }
 
-                val maxLineCount = maxOf(dateLines.size, activityLines.size, timeSpanLines.size, durationLines.size, notesLines.size)
-                val rowHeight = (maxLineCount * 11.5f + 8f).coerceAtLeast(22f)
+            dayGroups.forEachIndexed { dayIndex, dayGroup ->
+                var entryIdx = 0
+                while (entryIdx < dayGroup.entries.size) {
+                    if (y + dayGroup.entries[entryIdx].rowHeight > 765f) {
+                        drawFooter(activeCanvas, currentPageNum, user, isFrench, bodyBoldFont, bodyRegularFont)
+                        document.finishPage(activePage)
 
-                if (y + rowHeight > 765f) {
-                    drawFooter(activeCanvas, currentPageNum, user, isFrench, bodyBoldFont, bodyRegularFont)
-                    document.finishPage(activePage)
+                        currentPageNum++
+                        val newPageInfo = PdfDocument.PageInfo.Builder(595, 842, currentPageNum).create()
+                        activePage = document.startPage(newPageInfo)
+                        activeCanvas = activePage.canvas
 
-                    currentPageNum++
-                    val newPageInfo = PdfDocument.PageInfo.Builder(595, 842, currentPageNum).create()
-                    activePage = document.startPage(newPageInfo)
-                    activeCanvas = activePage.canvas
+                        y = 35f
+                        drawUnifiedTableHeader(activeCanvas, y, isFrench, bodyBoldFont)
+                        y += 20f
+                    }
 
-                    y = 35f
-                    drawUnifiedTableHeader(activeCanvas, y, isFrench, bodyBoldFont)
-                    y += 20f
+                    // Collect all entries for this day that fit on current page
+                    val sliceEntries = mutableListOf<EntryRenderData>()
+                    var sliceHeight = 0f
+                    while (entryIdx < dayGroup.entries.size && y + sliceHeight + dayGroup.entries[entryIdx].rowHeight <= 765f) {
+                        sliceHeight += dayGroup.entries[entryIdx].rowHeight
+                        sliceEntries.add(dayGroup.entries[entryIdx])
+                        entryIdx++
+                    }
+                    if (sliceEntries.isEmpty() && entryIdx < dayGroup.entries.size) {
+                        sliceEntries.add(dayGroup.entries[entryIdx])
+                        sliceHeight += dayGroup.entries[entryIdx].rowHeight
+                        entryIdx++
+                    }
+
+                    val dayStartY = y
+                    val dayEndY = dayStartY + sliceHeight
+
+                    // 1. Merged Date Cell Background (Columns: 26f to 118f)
+                    paint.style = Paint.Style.FILL
+                    paint.color = if (dayIndex % 2 == 0) Color.parseColor("#F1F5F9") else Color.parseColor("#F8FAFC")
+                    activeCanvas.drawRect(26f, dayStartY, 118f, dayEndY, paint)
+
+                    // 2. Render each activity row (Columns 2 to 5: 118f to 569f)
+                    var currentRecordY = dayStartY
+                    sliceEntries.forEachIndexed { recordIdx, record ->
+                        val recordEndY = currentRecordY + record.rowHeight
+
+                        // Row background for activities
+                        paint.style = Paint.Style.FILL
+                        paint.color = if (recordIdx % 2 == 0) Color.WHITE else Color.parseColor("#FAFAFA")
+                        activeCanvas.drawRect(118f, currentRecordY, 569f, recordEndY, paint)
+
+                        // Horizontal divider line between activities of the same day (inside activity area only)
+                        if (recordIdx > 0) {
+                            paint.style = Paint.Style.STROKE
+                            paint.color = Color.parseColor("#CBD5E1")
+                            paint.strokeWidth = 0.5f
+                            activeCanvas.drawLine(118f, currentRecordY, 569f, currentRecordY, paint)
+                        }
+
+                        // Column vertical divider lines inside record row
+                        paint.style = Paint.Style.STROKE
+                        paint.color = Color.parseColor("#94A3B8")
+                        paint.strokeWidth = 0.6f
+                        activeCanvas.drawLine(274f, currentRecordY, 274f, recordEndY, paint)
+                        activeCanvas.drawLine(350f, currentRecordY, 350f, recordEndY, paint)
+                        activeCanvas.drawLine(410f, currentRecordY, 410f, recordEndY, paint)
+
+                        // Draw entry texts
+                        paint.style = Paint.Style.FILL
+                        paint.color = Color.parseColor("#0F172A")
+                        paint.typeface = bodyRegularFont ?: Typeface.DEFAULT
+                        paint.textSize = 8.5f
+
+                        // Column 2: Activity
+                        record.activityLines.forEachIndexed { lineIdx, line ->
+                            activeCanvas.drawText(line, 122f, currentRecordY + 12f + (lineIdx * 11.5f), paint)
+                        }
+
+                        // Column 3: Time span
+                        record.timeSpanLines.forEachIndexed { lineIdx, line ->
+                            activeCanvas.drawText(line, 278f, currentRecordY + 12f + (lineIdx * 11.5f), paint)
+                        }
+
+                        // Column 4: Duration
+                        record.durationLines.forEachIndexed { lineIdx, line ->
+                            activeCanvas.drawText(line, 354f, currentRecordY + 12f + (lineIdx * 11.5f), paint)
+                        }
+
+                        // Column 5: Notes & Reflection
+                        record.notesLines.forEachIndexed { lineIdx, line ->
+                            activeCanvas.drawText(line, 414f, currentRecordY + 12f + (lineIdx * 11.5f), paint)
+                        }
+
+                        currentRecordY = recordEndY
+                    }
+
+                    // 3. Merged Date Column Text (Date appears ONCE for the entire day cell)
+                    paint.style = Paint.Style.FILL
+                    paint.color = Color.parseColor("#0F2942")
+                    paint.typeface = bodyBoldFont ?: Typeface.DEFAULT_BOLD
+                    paint.textSize = 8.5f
+
+                    val totalDateTextHeight = dayGroup.dateLines.size * 11.5f
+                    val dateTextStartY = if (sliceHeight > totalDateTextHeight + 16f) {
+                        dayStartY + ((sliceHeight - totalDateTextHeight) / 2f) + 8f
+                    } else {
+                        dayStartY + 12f
+                    }
+                    dayGroup.dateLines.forEachIndexed { lineIdx, line ->
+                        activeCanvas.drawText(line, 30f, dateTextStartY + (lineIdx * 11.5f), paint)
+                    }
+
+                    // If multiple entries are present, add a subtle acts count badge under date
+                    if (dayGroup.entries.size > 1 && sliceHeight >= 42f) {
+                        paint.typeface = bodyRegularFont ?: Typeface.DEFAULT
+                        paint.textSize = 7.5f
+                        paint.color = Color.parseColor("#64748B")
+                        val countText = if (isFrench) "(${dayGroup.entries.size} entrées)" else "(${dayGroup.entries.size} entries)"
+                        activeCanvas.drawText(countText, 30f, dateTextStartY + (dayGroup.dateLines.size * 11.5f) + 9f, paint)
+                    }
+
+                    // 4. Outer Boundary and Divider lines for this day block
+                    paint.style = Paint.Style.STROKE
+                    paint.color = Color.parseColor("#94A3B8")
+                    paint.strokeWidth = 0.7f
+                    activeCanvas.drawRect(26f, dayStartY, 569f, dayEndY, paint)
+
+                    // Vertical line between merged Date cell and Activity cell
+                    activeCanvas.drawLine(118f, dayStartY, 118f, dayEndY, paint)
+
+                    y = dayEndY
                 }
-
-                // High Contrast Alternating Row Background
-                paint.style = Paint.Style.FILL
-                paint.color = if (rowIndex % 2 == 0) Color.parseColor("#F8FAFC") else Color.WHITE
-                activeCanvas.drawRect(26f, y, 569f, y + rowHeight, paint)
-
-                // Crisp Row Grid Line
-                paint.style = Paint.Style.STROKE
-                paint.color = Color.parseColor("#94A3B8")
-                paint.strokeWidth = 0.6f
-                activeCanvas.drawRect(26f, y, 569f, y + rowHeight, paint)
-
-                // Vertical Column Dividers
-                activeCanvas.drawLine(118f, y, 118f, y + rowHeight, paint)
-                activeCanvas.drawLine(274f, y, 274f, y + rowHeight, paint)
-                activeCanvas.drawLine(350f, y, 350f, y + rowHeight, paint)
-                activeCanvas.drawLine(410f, y, 410f, y + rowHeight, paint)
-
-                // Deep, clear text drawing
-                paint.style = Paint.Style.FILL
-                paint.color = Color.parseColor("#0F172A")
-
-                // Column 1: Date (Day)
-                dateLines.forEachIndexed { i, line ->
-                    activeCanvas.drawText(line, 30f, y + 12f + (i * 11.5f), paint)
-                }
-
-                // Column 2: Activity
-                activityLines.forEachIndexed { i, line ->
-                    activeCanvas.drawText(line, 122f, y + 12f + (i * 11.5f), paint)
-                }
-
-                // Column 3: Time span
-                timeSpanLines.forEachIndexed { i, line ->
-                    activeCanvas.drawText(line, 278f, y + 12f + (i * 11.5f), paint)
-                }
-
-                // Column 4: Duration
-                durationLines.forEachIndexed { i, line ->
-                    activeCanvas.drawText(line, 354f, y + 12f + (i * 11.5f), paint)
-                }
-
-                // Column 5: Notes & Reflection
-                notesLines.forEachIndexed { i, line ->
-                    activeCanvas.drawText(line, 414f, y + 12f + (i * 11.5f), paint)
-                }
-
-                y += rowHeight
-                rowIndex++
             }
         }
 

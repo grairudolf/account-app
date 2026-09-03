@@ -80,13 +80,6 @@ object ReminderManager {
                 ex.printStackTrace()
             }
         }
-
-        // Show immediate confirmation notification so the user knows notifications are working!
-        ReminderNotificationReceiver.showNotification(
-            context,
-            "Reminder Set: ${reminder.title}",
-            "Daily reminder scheduled for ${String.format("%02d:%02d", reminder.hour, reminder.minute)}"
-        )
     }
 
     fun cancelReminder(context: Context, reminderId: String) {

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,26 +16,37 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.BookmarkAdded
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.NoFood
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -84,7 +96,11 @@ fun ReportsScreen(
     val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
     var lastGeneratedFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
-    var showCalendarDatePicker by remember { mutableStateOf(false) }
+    var isReportTypeDropdownExpanded by remember { mutableStateOf(false) }
+    var isDomainSelectionExpanded by remember { mutableStateOf(false) }
+    var showTargetDatePicker by remember { mutableStateOf(false) }
+    var showCustomStartDatePicker by remember { mutableStateOf(false) }
+    var showCustomEndDatePicker by remember { mutableStateOf(false) }
     var reportToDelete by remember { mutableStateOf<ReportRecordEntity?>(null) }
 
     fun sharePdfFile(file: File) {
@@ -204,66 +220,336 @@ fun ReportsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Period selector chips (Scrollable Row with Dark Pill Active States for internationalization)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf("DAILY", "WEEKLY", "MONTHLY", "CUSTOM").forEach { type ->
-                            val chipLabel = when (type) {
-                                "DAILY" -> strings.dailyReport
-                                "WEEKLY" -> strings.weeklyReport
-                                "MONTHLY" -> strings.monthlyReport
-                                else -> type
-                            }
-                            val selected = selectedReportType == type
-                            val containerBg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                            val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            val borderStroke = if (selected) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = containerBg,
-                                border = borderStroke,
+                    // Report Type Selector - Material 3 Dropdown
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isReportTypeDropdownExpanded = true }
+                                .testTag("report_type_dropdown_trigger")
+                        ) {
+                            Row(
                                 modifier = Modifier
-                                    .clickable { onSelectReportType(type) }
-                                    .testTag("report_type_chip_$type")
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = chipLabel,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = contentColor,
-                                    maxLines = 1,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    val reportTypeIcon = when (selectedReportType) {
+                                        "DAILY" -> Icons.Default.Today
+                                        "WEEKLY" -> Icons.Default.DateRange
+                                        "MONTHLY" -> Icons.Default.CalendarMonth
+                                        else -> Icons.Default.Tune
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = reportTypeIcon,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            text = when (selectedReportType) {
+                                                "DAILY" -> strings.dailyReport
+                                                "WEEKLY" -> strings.weeklyReport
+                                                "MONTHLY" -> strings.monthlyReport
+                                                else -> if (isFrench) "Période personnalisée" else "Custom Date Range"
+                                            },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = when (selectedReportType) {
+                                                "DAILY" -> if (isFrench) "Journal d'une journée précise" else "Single day audit"
+                                                "WEEKLY" -> if (isFrench) "Bilan sur 7 jours consécutifs" else "7-day summary & progress"
+                                                "MONTHLY" -> if (isFrench) "Bilan spirituel mensuel complet" else "Full month spiritual audit"
+                                                else -> if (isFrench) "Intervalle de dates flexible" else "Custom flexible date range"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Report Type",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = isReportTypeDropdownExpanded,
+                            onDismissRequest = { isReportTypeDropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            listOf("DAILY", "WEEKLY", "MONTHLY", "CUSTOM").forEach { type ->
+                                val isSelected = selectedReportType == type
+                                val (icon, title, desc) = when (type) {
+                                    "DAILY" -> Triple(Icons.Default.Today, strings.dailyReport, if (isFrench) "Journal d'une journée spécifique" else "Specific day's complete audit")
+                                    "WEEKLY" -> Triple(Icons.Default.DateRange, strings.weeklyReport, if (isFrench) "Synthèse sur 7 jours consécutifs" else "7-day spiritual summary")
+                                    "MONTHLY" -> Triple(Icons.Default.CalendarMonth, strings.monthlyReport, if (isFrench) "Bilan du mois calendaire" else "Full month spiritual review")
+                                    else -> Triple(Icons.Default.Tune, if (isFrench) "Période personnalisée" else "Custom Date Range", if (isFrench) "Choisissez vos dates de début et fin" else "Specify exact start & end dates")
+                                }
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = title,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = desc,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        onSelectReportType(type)
+                                        isReportTypeDropdownExpanded = false
+                                    }
                                 )
                             }
                         }
                     }
 
                     // Exact Date / Date Range Selector
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.background,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    if (selectedReportType == "CUSTOM") {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.background,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = strings.exactDateSelection,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (isFrench) "Intervalle de dates sélectionné" else "Selected Date Interval",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(startDate, isFrench)} — ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(endDate, isFrench)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                // Responsive Date Range Cards (Start and End Date)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { showCustomStartDatePicker = true }
+                                            .testTag("report_custom_start_date_card")
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Text(
+                                                text = if (isFrench) "De (Début) :" else "From (Start):",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CalendarToday,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Text(
+                                                    text = com.example.services.reports.PdfReportGenerator.formatOrdinalDate(startDate, isFrench),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { showCustomEndDatePicker = true }
+                                            .testTag("report_custom_end_date_card")
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Text(
+                                                text = if (isFrench) "À (Fin) :" else "To (End):",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CalendarToday,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Text(
+                                                    text = com.example.services.reports.PdfReportGenerator.formatOrdinalDate(endDate, isFrench),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Quick Interval Presets
+                                Text(
+                                    text = if (isFrench) "Raccourcis rapides :" else "Quick Presets:",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    val today = java.time.LocalDate.now()
+                                    val presets = listOf(
+                                        Pair(if (isFrench) "7 Derniers Jours" else "Last 7 Days", Pair(today.minusDays(6), today)),
+                                        Pair(if (isFrench) "14 Derniers Jours" else "Last 14 Days", Pair(today.minusDays(13), today)),
+                                        Pair(if (isFrench) "30 Derniers Jours" else "Last 30 Days", Pair(today.minusDays(29), today)),
+                                        Pair(if (isFrench) "Ce Mois" else "This Month", Pair(today.withDayOfMonth(1), today)),
+                                        Pair(if (isFrench) "Mois Précédent" else "Last Month", run {
+                                            val prevMonth = today.minusMonths(1)
+                                            Pair(prevMonth.withDayOfMonth(1), prevMonth.withDayOfMonth(prevMonth.lengthOfMonth()))
+                                        })
+                                    )
+                                    presets.forEach { (label, range) ->
+                                        val isSelected = startDate == range.first && endDate == range.second
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                                            modifier = Modifier.clickable { onSetDateRange(range.first, range.second) }
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.background,
+                            border = BorderStroke(1.dp, DividerColor),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = strings.exactDateSelection,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    OutlinedButton(
+                                        onClick = { showTargetDatePicker = true },
+                                        shape = RoundedCornerShape(16.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier.testTag("report_change_date_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CalendarToday,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(strings.changeDate, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+
                                 val monthNameRaw = targetDate.format(java.time.format.DateTimeFormatter.ofPattern("MMMM", locale))
                                 val monthName = monthNameRaw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                                 val dateText = when (selectedReportType) {
@@ -275,29 +561,25 @@ fun ReportsScreen(
                                     "MONTHLY" -> "${strings.monthLabel}: $monthName ${targetDate.year}"
                                     else -> "${strings.dateRangeLabel}: ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(startDate, isFrench)} — ${com.example.services.reports.PdfReportGenerator.formatOrdinalDate(endDate, isFrench)}"
                                 }
-                                Text(
-                                    text = dateText,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                OutlinedButton(
-                                    onClick = { showCalendarDatePicker = true },
-                                    shape = RoundedCornerShape(16.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
+                                    Text(
+                                        text = dateText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(strings.changeDate, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
                     }
 
-                    // Domain Chips Selection Grid
+                    // Domain Selection Dropdown / Accordion Card (Hidden until opened)
                     Surface(
                         shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.surface,
@@ -305,128 +587,185 @@ fun ReportsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
+                            // Clickable Header to Expand/Collapse
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isDomainSelectionExpanded = !isDomainSelectionExpanded }
+                                    .padding(vertical = 4.dp)
+                                    .testTag("report_domains_accordion_toggle"),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
                                     modifier = Modifier.weight(1f),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Text(
-                                        text = strings.selectDomainsToInclude,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        val totalCount = 13
+                                        Icon(
+                                            imageVector = Icons.Default.FilterList,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    Column {
                                         Text(
-                                            text = "${selectedDomains.size}/$totalCount",
-                                            style = MaterialTheme.typography.labelSmall,
+                                            text = strings.selectDomainsToInclude,
+                                            style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = if (selectedDomains.size >= 13) {
+                                                if (isFrench) "Toutes les 13 disciplines incluses" else "All 13 disciplines included"
+                                            } else {
+                                                if (isFrench) "${selectedDomains.size}/13 disciplines sélectionnées" else "${selectedDomains.size}/13 disciplines selected"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
 
-                                TextButton(
-                                    onClick = onSelectAllDomains,
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text(
-                                        text = if (selectedDomains.size >= 13) "Deselect All" else strings.selectAll,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        softWrap = false
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    ) {
+                                        Text(
+                                            text = "${selectedDomains.size}/13",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Toggle Disciplines Selection",
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            AnimatedVisibility(visible = isDomainSelectionExpanded) {
+                                Column(modifier = Modifier.padding(top = 12.dp)) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
-                            val availableDomains = listOf(
-                                ReportDomainItem("ddewg", strings.ddewgTitle, Icons.Default.AutoAwesome),
-                                ReportDomainItem("bible_reading", strings.bibleReadingTitle, Icons.Default.MenuBook),
-                                ReportDomainItem("prayer_alone", strings.prayerAloneTitle, Icons.Default.SelfImprovement),
-                                ReportDomainItem("prayer_with_others", strings.prayerWithOthersTitle, Icons.Default.Groups),
-                                ReportDomainItem("proclamation_importunity", strings.proclamationTitle, Icons.Default.Campaign),
-                                ReportDomainItem("retreats", strings.retreatsTitle, Icons.Default.Landscape),
-                                ReportDomainItem("fasting", strings.fastingTitle, Icons.Default.Timer),
-                                ReportDomainItem("giving", strings.givingTitle, Icons.Default.VolunteerActivism),
-                                ReportDomainItem("christian_lit", strings.christianLitTitle, Icons.Default.AutoStories),
-                                ReportDomainItem("christian_lit_mem", strings.christianLitMemTitle, Icons.Default.Psychology),
-                                ReportDomainItem("bible_mem", strings.bibleMemTitle, Icons.Default.FormatQuote),
-                                ReportDomainItem("soul_winning", strings.soulWinningTitle, Icons.Default.GroupAdd),
-                                ReportDomainItem("making_disciples", strings.makingDisciplesTitle, Icons.Default.People)
-                            )
-
-                            // Render in neat 2-column grid rows
-                            availableDomains.chunked(2).forEach { rowPair ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    rowPair.forEach { item ->
-                                        val isChecked = selectedDomains.contains(item.id)
-
-                                        Surface(
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                            border = BorderStroke(
-                                                width = if (isChecked) 1.5.dp else 1.dp,
-                                                color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                            ),
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .heightIn(min = 48.dp)
-                                                .clickable { onToggleDomainFilter(item.id) }
-                                                .testTag("domain_chip_${item.id}")
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (isFrench) "Disciplines incluses :" else "Included disciplines:",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        TextButton(
+                                            onClick = onSelectAllDomains,
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                         ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = item.icon,
-                                                    contentDescription = null,
-                                                    tint = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Text(
-                                                    text = item.title,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
-                                                    color = if (isChecked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    modifier = Modifier.weight(1f)
-                                                )
-                                                if (isChecked) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.CheckCircle,
-                                                        contentDescription = "Selected",
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
+                                            Text(
+                                                text = if (selectedDomains.size >= 13) (if (isFrench) "Tout désélectionner" else "Deselect All") else strings.selectAll,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         }
                                     }
-                                    if (rowPair.size == 1) {
-                                        Spacer(modifier = Modifier.weight(1f))
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Domains using the exact identical icons as configured in Domains
+                                    val availableDomains = listOf(
+                                        ReportDomainItem("ddewg", strings.ddewgTitle, Icons.Default.WbSunny),
+                                        ReportDomainItem("bible_reading", strings.bibleReadingTitle, Icons.Default.MenuBook),
+                                        ReportDomainItem("prayer_alone", strings.prayerAloneTitle, Icons.Default.SelfImprovement),
+                                        ReportDomainItem("prayer_with_others", strings.prayerWithOthersTitle, Icons.Default.Groups),
+                                        ReportDomainItem("proclamation_importunity", strings.proclamationTitle, Icons.Default.Campaign),
+                                        ReportDomainItem("retreats", strings.retreatsTitle, Icons.Default.Landscape),
+                                        ReportDomainItem("fasting", strings.fastingTitle, Icons.Default.NoFood),
+                                        ReportDomainItem("giving", strings.givingTitle, Icons.Default.VolunteerActivism),
+                                        ReportDomainItem("christian_lit", strings.christianLitTitle, Icons.Default.LibraryBooks),
+                                        ReportDomainItem("christian_lit_mem", strings.christianLitMemTitle, Icons.Default.Psychology),
+                                        ReportDomainItem("bible_mem", strings.bibleMemTitle, Icons.Default.BookmarkAdded),
+                                        ReportDomainItem("soul_winning", strings.soulWinningTitle, Icons.Default.DirectionsWalk),
+                                        ReportDomainItem("making_disciples", strings.makingDisciplesTitle, Icons.Default.GroupAdd)
+                                    )
+
+                                    // Render in neat 2-column grid rows
+                                    availableDomains.chunked(2).forEach { rowPair ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            rowPair.forEach { item ->
+                                                val isChecked = selectedDomains.contains(item.id)
+
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                    border = BorderStroke(
+                                                        width = if (isChecked) 1.5.dp else 1.dp,
+                                                        color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                                    ),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .heightIn(min = 48.dp)
+                                                        .clickable { onToggleDomainFilter(item.id) }
+                                                        .testTag("domain_chip_${item.id}")
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = item.icon,
+                                                            contentDescription = null,
+                                                            tint = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                        Text(
+                                                            text = item.title,
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                            fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
+                                                            color = if (isChecked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                                            maxLines = 2,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                        if (isChecked) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.CheckCircle,
+                                                                contentDescription = "Selected",
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (rowPair.size == 1) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -704,22 +1043,46 @@ fun ReportsScreen(
         }
     }
 
-    if (showCalendarDatePicker) {
-        ReportDatePickerDialog(
-            strings = strings,
-            currentReportType = selectedReportType,
-            currentTargetDate = targetDate,
-            currentStartDate = startDate,
-            currentEndDate = endDate,
-            onDismiss = { showCalendarDatePicker = false },
-            onConfirmDate = { date ->
-                onSetTargetDate(date)
-                showCalendarDatePicker = false
+    if (showTargetDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = targetDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try {
+                    onSetTargetDate(java.time.LocalDate.parse(iso))
+                } catch (_: Exception) {}
+                showTargetDatePicker = false
             },
-            onConfirmRange = { start, end ->
-                onSetDateRange(start, end)
-                showCalendarDatePicker = false
-            }
+            onDismiss = { showTargetDatePicker = false }
+        )
+    }
+
+    if (showCustomStartDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = startDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try {
+                    val newStart = java.time.LocalDate.parse(iso)
+                    val newEnd = if (newStart.isAfter(endDate)) newStart else endDate
+                    onSetDateRange(newStart, newEnd)
+                } catch (_: Exception) {}
+                showCustomStartDatePicker = false
+            },
+            onDismiss = { showCustomStartDatePicker = false }
+        )
+    }
+
+    if (showCustomEndDatePicker) {
+        AppDatePickerDialog(
+            initialDateIso = endDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            onDateSelected = { iso ->
+                try {
+                    val newEnd = java.time.LocalDate.parse(iso)
+                    val newStart = if (newEnd.isBefore(startDate)) newEnd else startDate
+                    onSetDateRange(newStart, newEnd)
+                } catch (_: Exception) {}
+                showCustomEndDatePicker = false
+            },
+            onDismiss = { showCustomEndDatePicker = false }
         )
     }
 
@@ -762,288 +1125,4 @@ fun ReportsScreen(
         )
     }
 }
-}
-
-@Composable
-fun ReportDatePickerDialog(
-    strings: AppStrings,
-    currentReportType: String,
-    currentTargetDate: java.time.LocalDate,
-    currentStartDate: java.time.LocalDate,
-    currentEndDate: java.time.LocalDate,
-    onDismiss: () -> Unit,
-    onConfirmDate: (java.time.LocalDate) -> Unit,
-    onConfirmRange: (java.time.LocalDate, java.time.LocalDate) -> Unit
-) {
-    val isFrench = strings is com.example.core.localization.FrenchStrings
-    var selectedDate by remember { mutableStateOf(currentTargetDate) }
-    var selectedStart by remember { mutableStateOf(currentStartDate) }
-    var selectedEnd by remember { mutableStateOf(currentEndDate) }
-
-    var showTargetPicker by remember { mutableStateOf(false) }
-    var showStartPicker by remember { mutableStateOf(false) }
-    var showEndPicker by remember { mutableStateOf(false) }
-
-    val today = java.time.LocalDate.now()
-    val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = if (currentReportType == "CUSTOM")
-                        (if (isFrench) "Sélectionner la période" else "Select Date Range")
-                    else
-                        (if (isFrench) "Sélectionner la date" else "Select Date"),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Quick Presets
-                Text(
-                    text = if (isFrench) "Raccourcis rapides :" else "Quick Presets:",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedDate == today,
-                        onClick = {
-                            selectedDate = today
-                            selectedStart = today.minusDays(6)
-                            selectedEnd = today
-                        },
-                        label = { Text(strings.today) },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    FilterChip(
-                        selected = selectedDate == today.minusDays(1),
-                        onClick = {
-                            val yest = today.minusDays(1)
-                            selectedDate = yest
-                            selectedStart = today.minusDays(7)
-                            selectedEnd = yest
-                        },
-                        label = { Text(if (isFrench) "Hier" else "Yesterday") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    FilterChip(
-                        selected = false,
-                        onClick = {
-                            selectedStart = today.minusDays(29)
-                            selectedEnd = today
-                            selectedDate = today
-                        },
-                        label = { Text(if (isFrench) "30 Jours" else "30 Days") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                if (currentReportType == "CUSTOM") {
-                    // Start Date Button Card
-                    Text(
-                        text = if (isFrench) "Date de début :" else "Start Date:",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showStartPicker = true }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                Text(
-                                    text = selectedStart.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Text(
-                                text = if (isFrench) "Modifier" else "Change",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // End Date Button Card
-                    Text(
-                        text = if (isFrench) "Date de fin :" else "End Date:",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showEndPicker = true }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                Text(
-                                    text = selectedEnd.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Text(
-                                text = if (isFrench) "Modifier" else "Change",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                } else {
-                    // Single Date Button Card
-                    Text(
-                        text = when (currentReportType) {
-                            "DAILY" -> if (isFrench) "Jour du rapport :" else "Report Date:"
-                            "WEEKLY" -> if (isFrench) "Fin de la semaine :" else "Week Ending Date:"
-                            "MONTHLY" -> if (isFrench) "Mois / Année cible :" else "Target Month / Year:"
-                            else -> if (isFrench) "Date :" else "Date:"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showTargetPicker = true }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                Text(
-                                    text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Text(
-                                text = if (isFrench) "Choisir" else "Pick",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (currentReportType == "CUSTOM") {
-                        val finalStart = if (selectedStart.isAfter(selectedEnd)) selectedEnd else selectedStart
-                        val finalEnd = if (selectedEnd.isBefore(selectedStart)) selectedStart else selectedEnd
-                        onConfirmRange(finalStart, finalEnd)
-                    } else {
-                        onConfirmDate(selectedDate)
-                    }
-                },
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(if (isFrench) "Appliquer" else "Apply Date")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(strings.cancel)
-            }
-        },
-        shape = RoundedCornerShape(28.dp)
-    )
-
-    if (showTargetPicker) {
-        AppDatePickerDialog(
-            initialDateIso = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
-            onDateSelected = { iso ->
-                try { selectedDate = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
-                showTargetPicker = false
-            },
-            onDismiss = { showTargetPicker = false }
-        )
-    }
-
-    if (showStartPicker) {
-        AppDatePickerDialog(
-            initialDateIso = selectedStart.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
-            onDateSelected = { iso ->
-                try { selectedStart = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
-                showStartPicker = false
-            },
-            onDismiss = { showStartPicker = false }
-        )
-    }
-
-    if (showEndPicker) {
-        AppDatePickerDialog(
-            initialDateIso = selectedEnd.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
-            onDateSelected = { iso ->
-                try { selectedEnd = java.time.LocalDate.parse(iso) } catch (_: Exception) {}
-                showEndPicker = false
-            },
-            onDismiss = { showEndPicker = false }
-        )
-    }
 }

@@ -56,6 +56,7 @@ fun StatisticsScreen(
     onDeleteEntry: (String) -> Unit = {}
 ) {
     var editingEntry by remember { mutableStateOf<AccountabilityEntryEntity?>(null) }
+    var pastRecordsLimit by remember { mutableIntStateOf(10) }
     val isFrench = strings is com.example.core.localization.FrenchStrings
     val locale = if (isFrench) java.util.Locale.FRENCH else java.util.Locale.ENGLISH
 
@@ -857,21 +858,105 @@ fun StatisticsScreen(
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "${strings.allPastRecords} (${allEntries.size})",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${strings.allPastRecords} (${allEntries.size})",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (allEntries.size > 10) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                ) {
+                                    val showingCount = minOf(pastRecordsLimit, allEntries.size)
+                                    Text(
+                                        text = "$showingCount / ${allEntries.size}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
 
-                    items(allEntries, key = { "all_${it.id}" }) { entry ->
+                    val displayedPastRecords = if (allEntries.size <= pastRecordsLimit) allEntries else allEntries.take(pastRecordsLimit)
+
+                    items(displayedPastRecords, key = { "all_${it.id}" }) { entry ->
                         EntryLogCard(
                             entry = entry,
                             strings = strings,
                             onEdit = { editingEntry = entry },
                             onDelete = { onDeleteEntry(entry.id) }
                         )
+                    }
+
+                    if (allEntries.size > 10) {
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                if (allEntries.size > pastRecordsLimit) {
+                                    Button(
+                                        onClick = { pastRecordsLimit += 15 },
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("statistics_view_more_records_btn")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        val remaining = allEntries.size - pastRecordsLimit
+                                        val nextBatch = minOf(remaining, 15)
+                                        Text(
+                                            text = if (isFrench) "Voir plus (+${nextBatch})" else "View More (+${nextBatch})",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                }
+
+                                if (pastRecordsLimit > 10) {
+                                    OutlinedButton(
+                                        onClick = { pastRecordsLimit = 10 },
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier
+                                            .weight(if (allEntries.size > pastRecordsLimit) 0.7f else 1f)
+                                            .testTag("statistics_show_less_records_btn")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ExpandLess,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isFrench) "Réduire" else "Show Less",
+                                            fontWeight = FontWeight.SemiBold,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
                 }
             }

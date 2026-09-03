@@ -13,6 +13,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,8 +30,8 @@ fun AppDatePickerDialog(
         LocalDate.now()
     }
     
-    val initialMillis = initialLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    val todayMaxMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() + (86400000 - 1)
+    val initialMillis = initialLocalDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    val todayMaxMillis = LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialMillis,
@@ -49,7 +50,7 @@ fun AppDatePickerDialog(
                     val selectedMillis = datePickerState.selectedDateMillis
                     if (selectedMillis != null) {
                         val selectedLocalDate = Instant.ofEpochMilli(selectedMillis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(ZoneOffset.UTC)
                             .toLocalDate()
                         
                         val finalDate = if (selectedLocalDate.isAfter(LocalDate.now())) {
