@@ -47,6 +47,10 @@ import com.example.ui.components.AppDatePickerDialog
 import androidx.compose.material3.ripple
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.ProclamationViewModel
 
@@ -75,6 +79,9 @@ fun ProclamationScreen(
     var showInfoDialog by remember { mutableStateOf(false) }
     var showSaveConfirmDialog by remember { mutableStateOf(false) }
     var showAddTopicDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    var resetTopicAcrossApp by remember { mutableStateOf(false) }
+    var isFullscreenCounterOpen by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
 
@@ -283,9 +290,11 @@ fun ProclamationScreen(
                             }
                         }
 
-                        // Saved Topics Selector
+                        // Saved Topics Selector Dropdown
                         if (topics.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            var topicDropdownExpanded by remember { mutableStateOf(false) }
+
                             Text(
                                 text = strings.yourSavedPrayerTopics,
                                 style = MaterialTheme.typography.labelSmall,
@@ -293,27 +302,97 @@ fun ProclamationScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ExposedDropdownMenuBox(
+                                expanded = topicDropdownExpanded,
+                                onExpandedChange = { topicDropdownExpanded = !topicDropdownExpanded },
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                items(topics) { item ->
-                                    val isSelected = selectedTopic?.id == item.id || topicText == item.topic
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = { viewModel.resumeTopicSession(item) },
-                                        label = {
-                                            Text(
-                                                text = "${item.topic} (${item.cumulativeCount})",
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        },
-                                        leadingIcon = if (isSelected) {
-                                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                                        } else {
-                                            { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary) }
-                                        },
-                                        shape = RoundedCornerShape(8.dp)
+                                val selectedTopicTitle = selectedTopic?.let { "${it.topic} (${it.cumulativeCount})" }
+                                    ?: topics.find { it.topic.equals(topicText, ignoreCase = true) }?.let { "${it.topic} (${it.cumulativeCount})" }
+                                    ?: (if (topicText.isNotBlank()) topicText else if (strings is FrenchStrings) "Sélectionner un sujet enregistré..." else "Select saved prayer topic...")
+
+                                OutlinedTextField(
+                                    value = selectedTopicTitle,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text(if (strings is FrenchStrings) "Sujet de prière enregistré" else "Saved Prayer Topic") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Bookmark,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = topicDropdownExpanded)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                        .testTag("saved_topics_dropdown"),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                                )
+
+                                ExposedDropdownMenu(
+                                    expanded = topicDropdownExpanded,
+                                    onDismissRequest = { topicDropdownExpanded = false }
+                                ) {
+                                    topics.forEach { item ->
+                                        val isSelected = selectedTopic?.id == item.id || topicText.equals(item.topic, ignoreCase = true)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = item.topic,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                                    ) {
+                                                        Text(
+                                                            text = "${item.cumulativeCount}",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.PlayCircle,
+                                                    contentDescription = null,
+                                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            },
+                                            onClick = {
+                                                viewModel.resumeTopicSession(item)
+                                                topicDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text(if (strings is FrenchStrings) "+ Nouveau sujet personnalisé" else "+ Enter Custom Topic", color = MaterialTheme.colorScheme.primary) },
+                                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        onClick = {
+                                            viewModel.setTopicText("")
+                                            topicDropdownExpanded = false
+                                        }
                                     )
                                 }
                             }
@@ -420,8 +499,28 @@ fun ProclamationScreen(
                                 )
                             }
 
-                            // Timer Play/Pause Controls
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // Header Action Buttons: Fullscreen Counter + Timer Play/Pause
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        HapticHelper.vibrateClick(context)
+                                        isFullscreenCounterOpen = true
+                                    },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .testTag("open_fullscreen_counter_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Fullscreen,
+                                        contentDescription = "Open Fullscreen Counter",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
                                 if (!isTimerRunning) {
                                     FilledTonalIconButton(
                                         onClick = {
@@ -446,16 +545,6 @@ fun ProclamationScreen(
                                     ) {
                                         Icon(Icons.Default.Pause, contentDescription = "Pause Timer", modifier = Modifier.size(20.dp))
                                     }
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        HapticHelper.vibrateWarning(context)
-                                        viewModel.resetTimer()
-                                    },
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.RestartAlt, contentDescription = "Reset Timer", modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
@@ -655,9 +744,11 @@ fun ProclamationScreen(
                             IconButton(
                                 onClick = {
                                     HapticHelper.vibrateWarning(context)
-                                    viewModel.resetCounter()
+                                    showResetDialog = true
                                 },
-                                modifier = Modifier.size(44.dp)
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .testTag("proclamation_reset_button")
                             ) {
                                 Icon(Icons.Default.Refresh, contentDescription = "Reset Count")
                             }
@@ -1038,6 +1129,115 @@ fun ProclamationScreen(
             }
         )
     }
+
+    // Dialog: Reset Proclamation Count Confirmation
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = if (strings is FrenchStrings) "Réinitialiser le compteur ?" else "Reset Counter?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = if (strings is FrenchStrings)
+                            "Voulez-vous remettre le compteur actif et le chronomètre à 0 pour cette session ?"
+                        else
+                            "Reset the active session counter and chronometer to 0?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    if (isResumedSession || selectedTopic != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clickable { resetTopicAcrossApp = !resetTopicAcrossApp }
+                                    .padding(8.dp)
+                            ) {
+                                Checkbox(
+                                    checked = resetTopicAcrossApp,
+                                    onCheckedChange = { resetTopicAcrossApp = it },
+                                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (strings is FrenchStrings)
+                                        "Réinitialiser également le cumul de '${selectedTopic?.topic ?: topicText}' à 0 dans toute l'application"
+                                    else
+                                        "Also reset '${selectedTopic?.topic ?: topicText}' cumulative count to 0 across the app",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        HapticHelper.vibrateWarning(context)
+                        viewModel.resetCounter(resetTopicAcrossApp = resetTopicAcrossApp)
+                        showResetDialog = false
+                        resetTopicAcrossApp = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.testTag("confirm_reset_counter_button")
+                ) {
+                    Text(if (strings is FrenchStrings) "Réinitialiser à 0" else "Reset to 0")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    // Dialog: Fullscreen Counter
+    if (isFullscreenCounterOpen) {
+        FullscreenCounterDialog(
+            topic = topicText.ifBlank { selectedTopic?.topic ?: if (strings is FrenchStrings) "Proclamation de Foi" else "Faith Proclamation" },
+            counter = counter,
+            targetCount = targetCount,
+            elapsedSeconds = elapsedSeconds,
+            isTimerRunning = isTimerRunning,
+            onIncrement = {
+                val nextCount = counter + 1
+                if (nextCount >= targetCount && counter < targetCount) {
+                    HapticHelper.vibrateMilestone(context)
+                } else {
+                    HapticHelper.vibrateProclamationTap(context)
+                }
+                viewModel.incrementCounter(1)
+            },
+            onToggleTimer = {
+                HapticHelper.vibrateClick(context)
+                if (isTimerRunning) viewModel.pauseTimer() else viewModel.startTimer()
+            },
+            onDismiss = { isFullscreenCounterOpen = false }
+        )
+    }
 }
 
 @Composable
@@ -1051,6 +1251,7 @@ private fun TopicHistoryCard(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var editVal by remember { mutableStateOf(topic.cumulativeCount.toString()) }
 
     Card(
@@ -1122,55 +1323,74 @@ private fun TopicHistoryCard(
                     }
                 }
 
-                Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     IconButton(
-                        onClick = { menuExpanded = true },
-                        modifier = Modifier.size(36.dp)
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .testTag("delete_topic_${topic.id}")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Topic options",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Delete topic",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit Number / Count") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                showEditDialog = true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue Session") },
-                            leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                onResume()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(if (strings is FrenchStrings) "Nouvelle Session (+0)" else "Start Fresh (+0)") },
-                            leadingIcon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                onStartFresh()
-                            }
-                        )
-                        HorizontalDivider()
-                        DropdownMenuItem(
-                            text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                menuExpanded = false
-                                onDelete()
-                            }
-                        )
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Topic options",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit Number / Count") },
+                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    showEditDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue Session") },
+                                leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onResume()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (strings is FrenchStrings) "Nouvelle Session (+0)" else "Start Fresh (+0)") },
+                                leadingIcon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onStartFresh()
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    menuExpanded = false
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -1260,6 +1480,54 @@ private fun TopicHistoryCard(
             }
         )
     }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = {
+                Text(
+                    text = if (strings is FrenchStrings) "Supprimer ce sujet ?" else "Delete Saved Topic?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = if (strings is FrenchStrings)
+                        "Êtes-vous sûr de vouloir supprimer '${topic.topic}' des sujets enregistrés ?"
+                    else
+                        "Are you sure you want to delete '${topic.topic}' from your saved prayer topics?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.testTag("confirm_delete_topic_${topic.id}")
+                ) {
+                    Text(strings.delete)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -1270,6 +1538,7 @@ private fun ManualProclamationCard(
     val context = LocalContext.current
     var manualDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var showManualDatePicker by remember { mutableStateOf(false) }
+    var showTimeSpanPicker by remember { mutableStateOf(false) }
     var manualTopic by remember { mutableStateOf(initialTopic) }
     var manualCountStr by remember { mutableStateOf("100") }
     var manualDurationStr by remember { mutableStateOf("15") }
@@ -1355,12 +1624,26 @@ private fun ManualProclamationCard(
                     singleLine = true
                 )
 
+                val durMinutes = manualDurationStr.toLongOrNull() ?: 15L
+                val durHours = durMinutes / 60
+                val durMins = durMinutes % 60
+                val timeSpanLabel = if (durHours > 0) "${durHours}h ${durMins}m" else "${durMins}m"
+
                 OutlinedTextField(
-                    value = manualDurationStr,
-                    onValueChange = { manualDurationStr = it.filter { c -> c.isDigit() } },
-                    label = { Text("Duration (mins)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    value = timeSpanLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Time Span") },
+                    leadingIcon = { Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    trailingIcon = {
+                        IconButton(onClick = { showTimeSpanPicker = true }) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Time Span")
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showTimeSpanPicker = true }
+                        .testTag("manual_time_span_field"),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
@@ -1414,6 +1697,349 @@ private fun ManualProclamationCard(
                         showManualDatePicker = false
                     }
                 )
+            }
+
+            if (showTimeSpanPicker) {
+                val durMinutes = manualDurationStr.toLongOrNull() ?: 15L
+                TimeSpanPickerDialog(
+                    initialMinutes = durMinutes,
+                    onDismiss = { showTimeSpanPicker = false },
+                    onConfirm = { chosenMinutes ->
+                        manualDurationStr = chosenMinutes.toString()
+                        showTimeSpanPicker = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeSpanPickerDialog(
+    initialMinutes: Long,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    var selectedHours by remember { mutableIntStateOf((initialMinutes / 60).toInt()) }
+    var selectedMinutes by remember { mutableIntStateOf((initialMinutes % 60).toInt()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.AccessTime,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+        },
+        title = {
+            Text("Select Time Span", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "Quick Presets",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(15L to "15m", 30L to "30m", 45L to "45m", 60L to "1h", 90L to "1.5h").forEach { (presetMins, label) ->
+                        val isPresetActive = (selectedHours * 60 + selectedMinutes) == presetMins.toInt()
+                        FilterChip(
+                            selected = isPresetActive,
+                            onClick = {
+                                selectedHours = (presetMins / 60).toInt()
+                                selectedMinutes = (presetMins % 60).toInt()
+                            },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Hours and Minutes Adjusters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Hours column
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Hours",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FilledTonalIconButton(
+                                onClick = { if (selectedHours > 0) selectedHours-- },
+                                enabled = selectedHours > 0,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease hours", modifier = Modifier.size(18.dp))
+                            }
+                            Text(
+                                text = "$selectedHours h",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                            FilledTonalIconButton(
+                                onClick = { if (selectedHours < 24) selectedHours++ },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase hours", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+
+                    // Minutes column
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Minutes",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FilledTonalIconButton(
+                                onClick = {
+                                    if (selectedMinutes >= 5) {
+                                        selectedMinutes -= 5
+                                    } else if (selectedHours > 0) {
+                                        selectedHours--
+                                        selectedMinutes = 55
+                                    }
+                                },
+                                enabled = selectedHours > 0 || selectedMinutes > 0,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease minutes", modifier = Modifier.size(18.dp))
+                            }
+                            Text(
+                                text = "$selectedMinutes m",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                            FilledTonalIconButton(
+                                onClick = {
+                                    if (selectedMinutes < 55) {
+                                        selectedMinutes += 5
+                                    } else {
+                                        selectedHours++
+                                        selectedMinutes = 0
+                                    }
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase minutes", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+
+                // Summary
+                val totalMins = (selectedHours * 60 + selectedMinutes).toLong()
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Total Duration: $totalMins min" + if (selectedHours > 0) " (${selectedHours}h ${selectedMinutes}m)" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val total = (selectedHours * 60 + selectedMinutes).toLong().coerceAtLeast(1L)
+                    onConfirm(total)
+                }
+            ) {
+                Text("Set Time Span")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun FullscreenCounterDialog(
+    topic: String,
+    counter: Int,
+    targetCount: Int,
+    elapsedSeconds: Long,
+    isTimerRunning: Boolean,
+    onIncrement: () -> Unit,
+    onToggleTimer: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme() || (MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+    // Light theme: dark blue with white text; Dark theme: charcoal dark with yellow text
+    val backgroundColor = if (isDark) Color(0xFF141518) else Color(0xFF0D2040)
+    val primaryTextColor = if (isDark) Color(0xFFFFD54F) else Color(0xFFFFFFFF)
+    val secondaryTextColor = if (isDark) Color(0xFFFFE082) else Color(0xFFD6E4FF)
+    val tertiaryTextColor = if (isDark) Color(0xFFC8B880) else Color(0xFFB0C4DE)
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        val context = LocalContext.current
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(color = primaryTextColor.copy(alpha = 0.25f))
+                ) {
+                    onIncrement()
+                }
+                .systemBarsPadding()
+                .padding(24.dp)
+        ) {
+            // Top Bar: Prayer Topic + Close/Minimize Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = topic.ifBlank { "Proclamation & Prayer" },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryTextColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Target: $targetCount proclamations",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondaryTextColor
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        HapticHelper.vibrateClick(context)
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .testTag("fullscreen_counter_close")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Fullscreen",
+                        tint = primaryTextColor,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            // Giant Central Counter Visualizer
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "$counter",
+                    fontSize = 110.sp,
+                    fontWeight = FontWeight.Black,
+                    color = primaryTextColor,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = "Tap anywhere to proclaim",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = tertiaryTextColor
+                )
+            }
+
+            // Bottom Bar: Timer Display & Play/Pause Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val mins = elapsedSeconds / 60
+                val secs = elapsedSeconds % 60
+                val formattedTime = String.format("%02d:%02d", mins, secs)
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = secondaryTextColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = formattedTime,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryTextColor
+                    )
+                }
+
+                FilledTonalIconButton(
+                    onClick = {
+                        onToggleTimer()
+                    },
+                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = primaryTextColor.copy(alpha = 0.2f),
+                        contentColor = primaryTextColor
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isTimerRunning) "Pause Timer" else "Start Timer",
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
         }
     }

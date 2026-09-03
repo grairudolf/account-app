@@ -249,9 +249,9 @@ class AccountabilityRepository(
                     val updated = if (existing != null) {
                         existing.copy(
                             topic = canonicalTopic,
-                            cumulativeCount = totalCount,
+                            cumulativeCount = maxOf(existing.cumulativeCount, totalCount),
                             targetCount = if (existing.targetCount > 0) existing.targetCount else maxTarget,
-                            totalDurationSeconds = totalDuration,
+                            totalDurationSeconds = maxOf(existing.totalDurationSeconds, totalDuration),
                             lastPracticedIso = latestIso,
                             updatedAtMs = System.currentTimeMillis()
                         )
