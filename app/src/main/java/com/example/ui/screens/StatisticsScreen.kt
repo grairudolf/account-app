@@ -667,7 +667,7 @@ fun StatisticsScreen(
                                     )
                                     Row {
                                         IconButton(onClick = onGoToToday) {
-                                            Icon(Icons.Default.Today, contentDescription = "Today", tint = PrimaryBlue)
+                                            Icon(Icons.Default.Today, contentDescription = "Today", tint = MaterialTheme.colorScheme.primary)
                                         }
                                         IconButton(onClick = onNextMonth) {
                                             Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
@@ -1000,7 +1000,7 @@ fun EntryLogCard(
                     text = domainLabel.uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "Date: ${entry.dateIso}",
@@ -1153,7 +1153,7 @@ fun EntryLogCard(
             }
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = PrimaryBlue)
+                    Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = MaterialTheme.colorScheme.error)

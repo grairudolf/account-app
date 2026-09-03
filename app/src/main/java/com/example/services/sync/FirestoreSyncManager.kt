@@ -42,6 +42,21 @@ object FirestoreSyncManager {
     private val _syncProgressFlow = MutableStateFlow(SyncProgress())
     val syncProgressFlow: StateFlow<SyncProgress> = _syncProgressFlow.asStateFlow()
 
+    private const val PREFS_NAME = "cmfi_backup_sync_prefs"
+    private const val KEY_LAST_BACKUP_PREFIX = "last_backup_ms_"
+
+    fun getLastCloudBackupTime(context: Context, userId: String): Long {
+        if (userId.isBlank() || userId == "guest_user") return 0L
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_LAST_BACKUP_PREFIX + userId, 0L)
+    }
+
+    fun setLastCloudBackupTime(context: Context, userId: String, timeMs: Long) {
+        if (userId.isBlank() || userId == "guest_user") return
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putLong(KEY_LAST_BACKUP_PREFIX + userId, timeMs).apply()
+    }
+
     private fun updateProgress(
         isSyncing: Boolean,
         progress: Float,
@@ -98,7 +113,8 @@ object FirestoreSyncManager {
         context: Context,
         database: AppDatabase,
         userId: String,
-        isPartOfFullSync: Boolean = false
+        isPartOfFullSync: Boolean = false,
+        forceRestore: Boolean = false
     ): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             if (userId.isBlank() || userId == "guest_user") return@withContext Result.success(false)
@@ -120,14 +136,16 @@ object FirestoreSyncManager {
             val maxProgress = if (isPartOfFullSync) 0.45f else 0.95f
             fun scaleProgress(relative: Float): Float = baseProgress + (maxProgress - baseProgress) * relative.coerceIn(0f, 1f)
 
-            Log.i(TAG, "Starting cloud restore for user: $userId")
+            Log.i(TAG, "Starting cloud restore for user: $userId (forceRestore=$forceRestore)")
             updateProgress(
                 isSyncing = true,
                 progress = scaleProgress(0.10f),
                 stage = SyncStage.DOWNLOADING,
                 stageTitle = "Connecting to Cloud Database",
-                details = "Fetching your user profile..."
+                details = "Checking cloud status & profile..."
             )
+
+            var remoteLastCloudUpdateMs = 0L
 
             // 1. Fetch User Profile Document with timeout
             withTimeoutOrNull(TIMEOUT_MS) {
@@ -136,6 +154,9 @@ object FirestoreSyncManager {
                     if (userDoc.exists()) {
                         val data = userDoc.data
                         if (data != null) {
+                            remoteLastCloudUpdateMs = (data["lastCloudUpdateMs"] as? Number)?.toLong()
+                                ?: (data["updatedAtMs"] as? Number)?.toLong() ?: 0L
+
                             val existing = database.userDao().getCurrentUser()
                             val remoteName = data["fullName"] as? String ?: ""
                             val remoteEmail = data["email"] as? String ?: ""
@@ -171,6 +192,33 @@ object FirestoreSyncManager {
                 } catch (e: Exception) {
                     Log.w(TAG, "Notice fetching user profile: ${e.message}")
                 }
+            }
+
+            // Check if local data is already up to date with cloud
+            val localEntries = database.entryDao().getAllEntriesList().filter { it.userId == userId }
+            val lastLocalSync = getLastCloudBackupTime(context, userId)
+
+            if (!forceRestore && localEntries.isNotEmpty() && lastLocalSync > 0 && remoteLastCloudUpdateMs > 0 && remoteLastCloudUpdateMs <= lastLocalSync) {
+                Log.i(TAG, "Local records are already up to date with cloud for user: $userId (remote=$remoteLastCloudUpdateMs, local=$lastLocalSync). Skipping redundant downloads.")
+                if (!isPartOfFullSync) {
+                    updateProgress(
+                        isSyncing = false,
+                        progress = 1.0f,
+                        stage = SyncStage.COMPLETED,
+                        stageTitle = "Data Already Up to Date",
+                        details = "All local spiritual records match the cloud. No download needed.",
+                        lastSyncTimeMs = lastLocalSync
+                    )
+                } else {
+                    updateProgress(
+                        isSyncing = true,
+                        progress = scaleProgress(1.0f),
+                        stage = SyncStage.DOWNLOADING,
+                        stageTitle = "Data Already Up to Date",
+                        details = "Local records match cloud. Checking for local changes to backup..."
+                    )
+                }
+                return@withContext Result.success(true)
             }
 
             updateProgress(
@@ -416,6 +464,9 @@ object FirestoreSyncManager {
                 }
             }
 
+            val now = System.currentTimeMillis()
+            setLastCloudBackupTime(context, userId, now)
+
             if (!isPartOfFullSync) {
                 Log.i(TAG, "Cloud restore finished successfully for user: $userId")
                 updateProgress(
@@ -424,7 +475,7 @@ object FirestoreSyncManager {
                     stage = SyncStage.COMPLETED,
                     stageTitle = "Restore Completed",
                     details = "All records downloaded and restored from cloud",
-                    lastSyncTimeMs = System.currentTimeMillis()
+                    lastSyncTimeMs = now
                 )
             }
             Result.success(true)
@@ -478,10 +529,10 @@ object FirestoreSyncManager {
     /**
      * Pushes an AccountabilityEntryEntity to Firestore
      */
-    suspend fun syncEntry(context: Context, entry: AccountabilityEntryEntity) = withContext(Dispatchers.IO) {
-        if (entry.userId.isBlank() || entry.userId == "guest_user") return@withContext
-        val firestore = getFirestore(context) ?: return@withContext
-        withTimeoutOrNull(TIMEOUT_MS) {
+    suspend fun syncEntry(context: Context, entry: AccountabilityEntryEntity): Boolean = withContext(Dispatchers.IO) {
+        if (entry.userId.isBlank() || entry.userId == "guest_user") return@withContext false
+        val firestore = getFirestore(context) ?: return@withContext false
+        val result = withTimeoutOrNull(TIMEOUT_MS) {
             try {
                 val map = hashMapOf(
                     "id" to entry.id,
@@ -547,10 +598,13 @@ object FirestoreSyncManager {
                     "updatedAtMs" to entry.updatedAtMs
                 )
                 firestore.collection("users").document(entry.userId).collection("entries").document(entry.id).set(map, SetOptions.merge()).await()
+                true
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to sync entry to cloud: ${e.message}")
+                false
             }
         }
+        result ?: false
     }
 
     suspend fun deleteEntry(context: Context, userId: String, entryId: String) = withContext(Dispatchers.IO) {
@@ -747,13 +801,14 @@ object FirestoreSyncManager {
     }
 
     /**
-     * Full local-to-cloud backup for all tables with guaranteed progress
+     * Optimized local-to-cloud backup: only uploads new or modified records (incremental sync)
      */
     suspend fun syncAllLocalDataToCloud(
         context: Context,
         database: AppDatabase,
         userId: String,
-        isPartOfFullSync: Boolean = false
+        isPartOfFullSync: Boolean = false,
+        forceUploadAll: Boolean = false
     ) = withContext(Dispatchers.IO) {
         if (userId.isBlank() || userId == "guest_user") return@withContext
         try {
@@ -771,6 +826,8 @@ object FirestoreSyncManager {
                 return@withContext
             }
 
+            val lastBackupMs = if (forceUploadAll) 0L else getLastCloudBackupTime(context, userId)
+
             val baseProgress = if (isPartOfFullSync) 0.50f else 0.05f
             val maxProgress = 1.0f
             fun scaleProgress(relative: Float): Float = baseProgress + (maxProgress - baseProgress) * relative.coerceIn(0f, 1f)
@@ -780,146 +837,184 @@ object FirestoreSyncManager {
                 progress = scaleProgress(0.05f),
                 stage = SyncStage.UPLOADING,
                 stageTitle = "Preparing Cloud Backup",
-                details = "Gathering local spiritual records..."
-            )
-
-            // 1. Sync User Profile
-            val user = database.userDao().getCurrentUser()
-            if (user != null && !user.isGuest) {
-                updateProgress(
-                    isSyncing = true,
-                    progress = scaleProgress(0.15f),
-                    stage = SyncStage.UPLOADING,
-                    stageTitle = "Backing Up Profile",
-                    details = "Saving account settings and profile..."
-                )
-                syncUserProfile(context, user)
-            } else {
-                updateProgress(
-                    isSyncing = true,
-                    progress = scaleProgress(0.15f),
-                    stage = SyncStage.UPLOADING,
-                    stageTitle = "Backing Up Profile",
-                    details = "Profile verified"
-                )
-            }
-
-            // 2. Sync all Entries
-            val entries = database.entryDao().getAllEntriesList()
-            val userEntries = entries.filter { it.userId == userId || it.userId == "guest_user" }
-            val totalEntries = userEntries.size
-
-            updateProgress(
-                isSyncing = true,
-                progress = scaleProgress(0.20f),
-                stage = SyncStage.UPLOADING,
-                stageTitle = "Uploading Spiritual Entries",
-                details = if (totalEntries == 0) "All entries up to date" else "Uploading $totalEntries entries..."
+                details = "Checking for new and modified records..."
             )
 
             // Migrate guest records in bulk once to avoid repetitive database writes & flow emissions
             database.entryDao().migrateUserEntries(userId)
             database.goalDao().migrateUserGoals(userId)
 
-            for ((index, entry) in userEntries.withIndex()) {
-                val entryToSync = if (entry.userId != userId) entry.copy(userId = userId) else entry
-                syncEntry(context, entryToSync)
+            val entries = database.entryDao().getAllEntriesList()
+            val userEntries = entries.filter { it.userId == userId || it.userId == "guest_user" }
+            val pendingEntries = userEntries.filter { forceUploadAll || it.syncStatus != "SYNCED" || it.updatedAtMs > lastBackupMs }
 
-                if (index % 5 == 0 || index == totalEntries - 1) {
-                    val p = scaleProgress(0.20f + 0.30f * ((index + 1).toFloat() / totalEntries.coerceAtLeast(1)))
-                    updateProgress(
-                        isSyncing = true,
-                        progress = p,
-                        stage = SyncStage.UPLOADING,
-                        stageTitle = "Uploading Spiritual Entries",
-                        details = "Backed up ${index + 1} of $totalEntries prayer & scripture records"
-                    )
-                }
-            }
-
-            // 3. Sync all Goals
             val goals = database.goalDao().getAllGoalsList()
             val userGoals = goals.filter { it.userId == userId || it.userId == "guest_user" }
-            val totalGoals = userGoals.size
+            val pendingGoals = userGoals.filter { forceUploadAll || it.updatedAtMs > lastBackupMs }
 
-            updateProgress(
-                isSyncing = true,
-                progress = scaleProgress(0.55f),
-                stage = SyncStage.UPLOADING,
-                stageTitle = "Uploading Spiritual Goals",
-                details = if (totalGoals == 0) "Goals up to date" else "Uploading $totalGoals goals..."
-            )
-
-            for ((index, goal) in userGoals.withIndex()) {
-                val goalToSync = if (goal.userId != userId) goal.copy(userId = userId) else goal
-                syncGoal(context, goalToSync)
-
-                if (index % 4 == 0 || index == totalGoals - 1) {
-                    val p = scaleProgress(0.55f + 0.15f * ((index + 1).toFloat() / totalGoals.coerceAtLeast(1)))
-                    updateProgress(
-                        isSyncing = true,
-                        progress = p,
-                        stage = SyncStage.UPLOADING,
-                        stageTitle = "Uploading Spiritual Goals",
-                        details = "Backed up ${index + 1} of $totalGoals active goals"
-                    )
-                }
-            }
-
-            // 4. Sync Disciples
             val disciples = database.discipleDao().getDisciplesList(userId)
-            val totalDisciples = disciples.size
+            val pendingDisciples = disciples.filter { forceUploadAll || it.updatedAtMs > lastBackupMs }
 
-            updateProgress(
-                isSyncing = true,
-                progress = scaleProgress(0.72f),
-                stage = SyncStage.UPLOADING,
-                stageTitle = "Uploading Disciples",
-                details = if (totalDisciples == 0) "Disciples up to date" else "Uploading $totalDisciples disciples..."
-            )
+            val procTopics = database.proclamationTopicDao().getTopicsForUser(userId)
+            val pendingTopics = procTopics.filter { forceUploadAll || it.updatedAtMs > lastBackupMs }
 
-            for ((index, disciple) in disciples.withIndex()) {
-                syncDisciple(context, disciple)
-                if (index % 2 == 0 || index == totalDisciples - 1) {
-                    val p = scaleProgress(0.72f + 0.10f * ((index + 1).toFloat() / totalDisciples.coerceAtLeast(1)))
+            val customDomains = database.customDomainDao().getAllDomainsList()
+            val pendingDomains = customDomains.filter { (it.userId == userId || it.userId == "guest_user") && (forceUploadAll || it.createdAtMs > lastBackupMs) }
+
+            val reports = database.reportDao().getAllReportsList()
+            val pendingReports = reports.filter { (it.userId == userId || it.userId == "guest_user") && (forceUploadAll || it.generatedAtMs > lastBackupMs) }
+
+            val totalPending = pendingEntries.size + pendingGoals.size + pendingDisciples.size + pendingTopics.size + pendingDomains.size + pendingReports.size
+
+            if (totalPending == 0 && lastBackupMs > 0) {
+                Log.i(TAG, "Incremental backup: 0 pending changes for user: $userId. Everything is already up to date in cloud.")
+                val now = System.currentTimeMillis()
+                setLastCloudBackupTime(context, userId, now)
+                updateProgress(
+                    isSyncing = false,
+                    progress = 1.0f,
+                    stage = SyncStage.COMPLETED,
+                    stageTitle = "Cloud Backup Up to Date",
+                    details = "All records are already safely backed up. No new changes detected.",
+                    lastSyncTimeMs = now
+                )
+                return@withContext
+            }
+
+            // 1. Sync User Profile if changed
+            val user = database.userDao().getCurrentUser()
+            if (user != null && !user.isGuest) {
+                if (forceUploadAll || user.updatedAtMs > lastBackupMs) {
                     updateProgress(
                         isSyncing = true,
-                        progress = p,
+                        progress = scaleProgress(0.15f),
                         stage = SyncStage.UPLOADING,
-                        stageTitle = "Uploading Disciples",
-                        details = "Backed up ${index + 1} of $totalDisciples disciples"
+                        stageTitle = "Backing Up Profile",
+                        details = "Saving account settings and profile..."
                     )
+                    syncUserProfile(context, user)
                 }
             }
 
-            // 5. Sync Custom Domains
-            val customDomains = database.customDomainDao().getAllDomainsList()
-            for (cd in customDomains) {
-                if (cd.userId == userId || cd.userId == "guest_user") {
-                    val cdToSync = if (cd.userId != userId) cd.copy(userId = userId) else cd
-                    if (cd.userId != userId) {
-                        database.customDomainDao().insertCustomDomain(cdToSync)
+            // 2. Sync Pending Entries
+            val totalPendingEntries = pendingEntries.size
+            if (totalPendingEntries > 0) {
+                updateProgress(
+                    isSyncing = true,
+                    progress = scaleProgress(0.20f),
+                    stage = SyncStage.UPLOADING,
+                    stageTitle = "Uploading New Spiritual Entries",
+                    details = "Uploading $totalPendingEntries new/modified entries..."
+                )
+
+                for ((index, entry) in pendingEntries.withIndex()) {
+                    val entryToSync = if (entry.userId != userId) entry.copy(userId = userId) else entry
+                    val synced = syncEntry(context, entryToSync)
+                    if (synced) {
+                        database.entryDao().updateSyncStatus(entryToSync.id, "SYNCED")
                     }
-                    syncCustomDomain(context, cdToSync)
+
+                    if (index % 5 == 0 || index == totalPendingEntries - 1) {
+                        val p = scaleProgress(0.20f + 0.35f * ((index + 1).toFloat() / totalPendingEntries.coerceAtLeast(1)))
+                        updateProgress(
+                            isSyncing = true,
+                            progress = p,
+                            stage = SyncStage.UPLOADING,
+                            stageTitle = "Uploading New Spiritual Entries",
+                            details = "Backed up ${index + 1} of $totalPendingEntries prayer & scripture records"
+                        )
+                    }
                 }
             }
 
-            // 6. Sync Proclamation Topics
-            val procTopics = database.proclamationTopicDao().getTopicsForUser(userId)
-            for (topic in procTopics) {
+            // 3. Sync Pending Goals
+            val totalPendingGoals = pendingGoals.size
+            if (totalPendingGoals > 0) {
+                updateProgress(
+                    isSyncing = true,
+                    progress = scaleProgress(0.58f),
+                    stage = SyncStage.UPLOADING,
+                    stageTitle = "Uploading Spiritual Goals",
+                    details = "Uploading $totalPendingGoals goals..."
+                )
+
+                for ((index, goal) in pendingGoals.withIndex()) {
+                    val goalToSync = if (goal.userId != userId) goal.copy(userId = userId) else goal
+                    syncGoal(context, goalToSync)
+
+                    if (index % 4 == 0 || index == totalPendingGoals - 1) {
+                        val p = scaleProgress(0.58f + 0.14f * ((index + 1).toFloat() / totalPendingGoals.coerceAtLeast(1)))
+                        updateProgress(
+                            isSyncing = true,
+                            progress = p,
+                            stage = SyncStage.UPLOADING,
+                            stageTitle = "Uploading Spiritual Goals",
+                            details = "Backed up ${index + 1} of $totalPendingGoals active goals"
+                        )
+                    }
+                }
+            }
+
+            // 4. Sync Pending Disciples
+            val totalPendingDisciples = pendingDisciples.size
+            if (totalPendingDisciples > 0) {
+                updateProgress(
+                    isSyncing = true,
+                    progress = scaleProgress(0.74f),
+                    stage = SyncStage.UPLOADING,
+                    stageTitle = "Uploading Disciples",
+                    details = "Uploading $totalPendingDisciples disciples..."
+                )
+
+                for ((index, disciple) in pendingDisciples.withIndex()) {
+                    syncDisciple(context, disciple)
+                    if (index % 2 == 0 || index == totalPendingDisciples - 1) {
+                        val p = scaleProgress(0.74f + 0.10f * ((index + 1).toFloat() / totalPendingDisciples.coerceAtLeast(1)))
+                        updateProgress(
+                            isSyncing = true,
+                            progress = p,
+                            stage = SyncStage.UPLOADING,
+                            stageTitle = "Uploading Disciples",
+                            details = "Backed up ${index + 1} of $totalPendingDisciples disciples"
+                        )
+                    }
+                }
+            }
+
+            // 5. Sync Pending Custom Domains
+            for (cd in pendingDomains) {
+                val cdToSync = if (cd.userId != userId) cd.copy(userId = userId) else cd
+                if (cd.userId != userId) {
+                    database.customDomainDao().insertCustomDomain(cdToSync)
+                }
+                syncCustomDomain(context, cdToSync)
+            }
+
+            // 6. Sync Pending Proclamation Topics
+            for (topic in pendingTopics) {
                 syncProclamationTopic(context, topic)
             }
 
-            // 7. Sync Reports
-            val reports = database.reportDao().getAllReportsList()
-            for (report in reports) {
-                if (report.userId == userId || report.userId == "guest_user") {
-                    val repToSync = if (report.userId != userId) report.copy(userId = userId) else report
-                    if (report.userId != userId) {
-                        database.reportDao().insertReport(repToSync)
-                    }
-                    syncReport(context, repToSync)
+            // 7. Sync Pending Reports
+            for (report in pendingReports) {
+                val repToSync = if (report.userId != userId) report.copy(userId = userId) else report
+                if (report.userId != userId) {
+                    database.reportDao().insertReport(repToSync)
                 }
+                syncReport(context, repToSync)
+            }
+
+            val now = System.currentTimeMillis()
+            setLastCloudBackupTime(context, userId, now)
+
+            // Update timestamp in remote user document so sync knows cloud is fresh
+            try {
+                firestore.collection("users").document(userId).set(
+                    mapOf("lastCloudUpdateMs" to now, "updatedAtMs" to now),
+                    SetOptions.merge()
+                ).await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Notice updating remote lastCloudUpdateMs: ${e.message}")
             }
 
             updateProgress(
@@ -927,20 +1022,20 @@ object FirestoreSyncManager {
                 progress = scaleProgress(0.95f),
                 stage = SyncStage.UPLOADING,
                 stageTitle = "Finalizing Backup",
-                details = "Finalizing cloud sync..."
+                details = "Finalizing cloud backup..."
             )
 
-            Log.i(TAG, "Full local sync to cloud finished for user: $userId")
+            Log.i(TAG, "Incremental local sync to cloud finished for user: $userId (uploaded $totalPending records)")
             updateProgress(
                 isSyncing = false,
                 progress = 1.0f,
                 stage = SyncStage.COMPLETED,
                 stageTitle = "Cloud Sync & Backup Complete",
-                details = "All entries, goals, disciples and settings are safely stored in Firebase",
-                lastSyncTimeMs = System.currentTimeMillis()
+                details = if (totalPending > 0) "Backed up $totalPending new/modified records to the cloud" else "All records up to date in cloud",
+                lastSyncTimeMs = now
             )
         } catch (e: Exception) {
-            Log.w(TAG, "Error in full local sync: ${e.message}")
+            Log.w(TAG, "Error in incremental local sync: ${e.message}")
             updateProgress(
                 isSyncing = false,
                 progress = 1.0f,

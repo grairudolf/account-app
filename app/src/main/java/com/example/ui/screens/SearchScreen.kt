@@ -88,7 +88,7 @@ fun SearchScreen(
                 value = query,
                 onValueChange = { query = it },
                 placeholder = { Text("Search by discipline, book, or notes...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = PrimaryBlue) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { query = "" }) {
@@ -185,7 +185,7 @@ fun SearchScreen(
                                 text = strings.recentActivities,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         items(filteredEntries) { entry ->

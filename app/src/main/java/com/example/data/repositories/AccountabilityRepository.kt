@@ -174,34 +174,43 @@ class AccountabilityRepository(
     }
 
     suspend fun saveEntry(entry: AccountabilityEntryEntity) {
-        entryDao.insertOrUpdateEntry(entry)
-        if (context != null && entry.userId.isNotBlank() && entry.userId != "guest_user") {
-            FirestoreSyncManager.syncEntry(context, entry)
+        val now = System.currentTimeMillis()
+        val entryToSave = entry.copy(
+            createdAtMs = if (entry.createdAtMs == 0L) now else entry.createdAtMs,
+            updatedAtMs = now,
+            syncStatus = "PENDING"
+        )
+        entryDao.insertOrUpdateEntry(entryToSave)
+        if (context != null && entryToSave.userId.isNotBlank() && entryToSave.userId != "guest_user") {
+            val synced = FirestoreSyncManager.syncEntry(context, entryToSave)
+            if (synced) {
+                entryDao.updateSyncStatus(entryToSave.id, "SYNCED")
+            }
         }
-        if (entry.domainId == "proclamation_importunity") {
+        if (entryToSave.domainId == "proclamation_importunity") {
             // Directly and additively update the topic's cumulative count and duration
-            if (entry.proclamationTopic.isNotBlank()) {
-                val cleanTopic = entry.proclamationTopic.trim()
-                val existing = proclamationTopicDao.findTopicByName(entry.userId, cleanTopic)
+            if (entryToSave.proclamationTopic.isNotBlank()) {
+                val cleanTopic = entryToSave.proclamationTopic.trim()
+                val existing = proclamationTopicDao.findTopicByName(entryToSave.userId, cleanTopic)
                 val updatedTopic = if (existing != null) {
                     existing.copy(
-                        cumulativeCount = existing.cumulativeCount + entry.proclamationCount,
-                        targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else existing.targetCount,
-                        totalDurationSeconds = existing.totalDurationSeconds + entry.durationSeconds,
-                        lastPracticedIso = entry.dateIso,
-                        updatedAtMs = System.currentTimeMillis()
+                        cumulativeCount = existing.cumulativeCount + entryToSave.proclamationCount,
+                        targetCount = if (entryToSave.proclamationTarget > 0) entryToSave.proclamationTarget else existing.targetCount,
+                        totalDurationSeconds = existing.totalDurationSeconds + entryToSave.durationSeconds,
+                        lastPracticedIso = entryToSave.dateIso,
+                        updatedAtMs = now
                     )
                 } else {
                     ProclamationTopicEntity(
                         id = UUID.randomUUID().toString(),
-                        userId = entry.userId,
+                        userId = entryToSave.userId,
                         topic = cleanTopic,
-                        cumulativeCount = entry.proclamationCount,
-                        targetCount = if (entry.proclamationTarget > 0) entry.proclamationTarget else 100,
-                        totalDurationSeconds = entry.durationSeconds,
-                        lastPracticedIso = entry.dateIso,
-                        createdAtMs = System.currentTimeMillis(),
-                        updatedAtMs = System.currentTimeMillis()
+                        cumulativeCount = entryToSave.proclamationCount,
+                        targetCount = if (entryToSave.proclamationTarget > 0) entryToSave.proclamationTarget else 100,
+                        totalDurationSeconds = entryToSave.durationSeconds,
+                        lastPracticedIso = entryToSave.dateIso,
+                        createdAtMs = now,
+                        updatedAtMs = now
                     )
                 }
                 proclamationTopicDao.insertOrUpdateTopic(updatedTopic)

@@ -51,6 +51,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.app.Activity
+import androidx.core.view.WindowCompat
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.ProclamationViewModel
 
@@ -1900,12 +1902,12 @@ private fun FullscreenCounterDialog(
     onToggleTimer: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme() || (MaterialTheme.colorScheme.surface.luminance() < 0.5f)
-    // Light theme: dark blue with white text; Dark theme: charcoal dark with yellow text
-    val backgroundColor = if (isDark) Color(0xFF141518) else Color(0xFF0D2040)
+    val isDark = isAppInDarkTheme()
+    // Light theme: dark blue (#14214C / PrimaryBlue) with white text; Dark theme: charcoal dark (#141518) with yellow text
+    val backgroundColor = if (isDark) Color(0xFF141518) else PrimaryBlue
     val primaryTextColor = if (isDark) Color(0xFFFFD54F) else Color(0xFFFFFFFF)
-    val secondaryTextColor = if (isDark) Color(0xFFFFE082) else Color(0xFFD6E4FF)
-    val tertiaryTextColor = if (isDark) Color(0xFFC8B880) else Color(0xFFB0C4DE)
+    val secondaryTextColor = if (isDark) Color(0xFFFFE082) else Color(0xFFE2E8F0)
+    val tertiaryTextColor = if (isDark) Color(0xFFC8B880) else Color(0xFFCBD5E1)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1915,6 +1917,17 @@ private fun FullscreenCounterDialog(
         )
     ) {
         val context = LocalContext.current
+        val activity = context as? Activity
+
+        DisposableEffect(isDark) {
+            val window = activity?.window
+            val insetsController = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+            // Dialog has a dark background in both light and dark modes, so status bar icons should be light (white)
+            insetsController?.isAppearanceLightStatusBars = false
+            onDispose {
+                insetsController?.isAppearanceLightStatusBars = !isDark
+            }
+        }
 
         Box(
             modifier = Modifier

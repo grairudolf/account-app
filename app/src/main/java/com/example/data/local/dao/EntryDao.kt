@@ -45,4 +45,7 @@ interface EntryDao {
 
     @Query("UPDATE accountability_entries SET userId = :newUserId")
     suspend fun migrateUserEntries(newUserId: String)
+
+    @Query("UPDATE accountability_entries SET syncStatus = :status WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, status: String)
 }
