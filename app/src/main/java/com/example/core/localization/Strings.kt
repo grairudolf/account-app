@@ -325,8 +325,11 @@ interface AppStrings {
     val shareSummary: String
     val copyLink: String
 
-    // Daily Word of Encouragement
+    // Daily Word of Encouragement (3B Messages)
     val dailyWordTitle: String
+    val propheticMessages3bTitle: String
+    val practicalHelpsForOvercomers: String
+    val shareQuoteCard: String
     val nextQuote: String
     val dailyQuotes: List<String>
 
@@ -1147,6 +1150,9 @@ object EnglishStrings : AppStrings {
     override val copyLink = "Copy Link"
 
     override val dailyWordTitle = "Daily Word of Encouragement (3B Messages)"
+    override val propheticMessages3bTitle = "The 3B Prophetic Messages"
+    override val practicalHelpsForOvercomers = "Practical Helps For Overcomers • Book 26"
+    override val shareQuoteCard = "Share 3B Prophecy Graphic"
     override val nextQuote = "Next Quote"
     override val dailyQuotes = listOf(
         "Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness. — The Bertoua Message (Z.T. Fomum)",
@@ -1751,6 +1757,9 @@ object FrenchStrings : AppStrings {
     override val copyLink = "Copier le Lien"
 
     override val dailyWordTitle = "Parole d'Encouragement Quotidienne (Messages 3B)"
+    override val propheticMessages3bTitle = "Les Messages Prophétiques 3B"
+    override val practicalHelpsForOvercomers = "Aides Pratiques Pour Vainqueurs • Livre 26"
+    override val shareQuoteCard = "Partager l'Image Prophétique 3B"
     override val nextQuote = "Citation Suivante"
     override val dailyQuotes = listOf(
         "Retourne à ton premier amour pour le Seigneur Jésus-Christ. Ce retour inclut la libération de tout péché, de l'amour de soi, de l'amour du monde, de la cupidité, de la paresse et du manque de buts. — Le Message de Bertoua (Z.T. Fomum)",

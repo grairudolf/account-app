@@ -41,6 +41,8 @@ import com.example.core.util.HapticHelper
 import com.example.core.util.QuoteImageSharer
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.domain.models.PredefinedDomains
+import com.example.domain.models.PropheticQuote
+import com.example.domain.models.PropheticQuotesRepository
 import com.example.ui.components.DuolingoFlame
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.DashboardUiState
@@ -613,43 +615,26 @@ fun DashboardScreen(
             }
         }
 
-        // Daily Spiritual Encouragement Devotional Card (Multiple Image Backgrounds + Interactive Refresh + Share Action)
+        // Daily 3B Prophetic Messages Devotional Card (Matched Inspirational Backgrounds + Interactive Refresh + Graphic Share)
         item {
-            val quotes = remember(strings) { strings.dailyQuotes }
+            val isFrench = remember(strings) { strings is FrenchStrings }
             val dayOfYear = remember { LocalDate.now().dayOfYear }
             var manualQuoteOffset by remember { mutableIntStateOf(0) }
             
-            val activeIndex = (dayOfYear + manualQuoteOffset) % if (quotes.isNotEmpty()) quotes.size else 1
-            val currentQuote = remember(quotes, activeIndex) {
-                quotes.getOrElse(activeIndex) { quotes.firstOrNull() ?: "" }
+            val currentQuote = remember(dayOfYear, manualQuoteOffset) {
+                PropheticQuotesRepository.getQuoteForDay(dayOfYear, manualQuoteOffset)
             }
-            val cleanQuote = remember(currentQuote) {
-                currentQuote.trim().trim('“', '”', '"', '\'').trim()
+            val quoteText = remember(currentQuote, isFrench) { currentQuote.getText(isFrench) }
+            val cleanQuote = remember(quoteText) {
+                quoteText.trim().trim('“', '”', '"', '\'').trim()
             }
-            val devotionalBgList = remember {
-                listOf(
-                    com.example.R.drawable.quote_bg_open_bible_1788139223471,
-                    com.example.R.drawable.quote_bg_global_harvest_1788139235063,
-                    com.example.R.drawable.quote_bg_prayer_altar_1788139251276,
-                    com.example.R.drawable.quote_bg_radiant_cross_1788139262304,
-                    com.example.R.drawable.quote_bg_cross_1787235555876,
-                    com.example.R.drawable.quote_bg_mountains_1787235541853,
-                    com.example.R.drawable.quote_bg_sunrise_1787220672419,
-                    com.example.R.drawable.quote_bg_heavens_1787220708792,
-                    com.example.R.drawable.quote_bg_path_1787220696837,
-                    com.example.R.drawable.quote_bg_waters_1787220685176,
-                    com.example.R.drawable.devotional_quote_bg_1787144263336
-                )
-            }
-            val currentBgRes = remember(activeIndex) {
-                devotionalBgList[activeIndex % devotionalBgList.size]
-            }
+            val currentBgRes = currentQuote.bgDrawableRes
 
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = SurfaceDark,
-                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.4f)),
-                shadowElevation = 6.dp,
+                border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.45f)),
+                shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("dashboard_encouragement_card")
@@ -657,9 +642,9 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 175.dp)
+                        .heightIn(min = 200.dp)
                 ) {
-                    // Inspirational Devotional Background Image (rotates daily + manual interactive refresh!)
+                    // Inspirational Matched Devotional Background Image (Uplifting, sunlit & hopeful)
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = currentBgRes),
                         contentDescription = null,
@@ -667,16 +652,16 @@ fun DashboardScreen(
                         contentScale = ContentScale.Crop
                     )
 
-                    // Readability Cinematic Gradient Overlay
+                    // Luminous, Radiant Gradient Scrim (Non-gloomy, preserves bright dawn & mountains while ensuring high-contrast readability)
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        BrandDarkNavy.copy(alpha = 0.45f),
-                                        Color(0xFF0D1636).copy(alpha = 0.70f),
-                                        Color(0xFF070B1E).copy(alpha = 0.88f)
+                                        Color(0x350A1428), // Gentle ~21% scrim top
+                                        Color(0x550B1630), // Luminous ~33% scrim mid
+                                        Color(0xDE060D1E)  // Solid ~87% rich navy scrim base
                                     )
                                 )
                             )
@@ -685,43 +670,45 @@ fun DashboardScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // Top Header Row with PROMINENT 3B Messages Badge & Action Buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.weight(1f, fill = false),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            // Highlighting Pill for 3B Prophetic Messages
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = BrandDarkNavy.copy(alpha = 0.92f),
+                                border = BorderStroke(1.5.dp, BrandBrightYellow),
+                                shadowElevation = 2.dp
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(BrandMutedGold),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.FormatQuote,
+                                        imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
                                         tint = BrandBrightYellow,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = strings.propheticMessages3bTitle.uppercase(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = BrandBrightYellow,
+                                        letterSpacing = 0.8.sp,
+                                        maxLines = 1
                                     )
                                 }
-                                Text(
-                                    text = strings.dailyWordTitle.uppercase(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = BrandVibrantYellow,
-                                    letterSpacing = 0.5.sp,
-                                    maxLines = 1
-                                )
                             }
 
+                            // Cycle / Next Quote & Share Actions
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -729,9 +716,9 @@ fun DashboardScreen(
                                 // Interactive Quote & Image Refresh Button
                                 Surface(
                                     shape = CircleShape,
-                                    color = BrandDarkNavy.copy(alpha = 0.8f),
-                                    border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
-                                    modifier = Modifier.size(38.dp)
+                                    color = BrandDarkNavy.copy(alpha = 0.88f),
+                                    border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.7f)),
+                                    modifier = Modifier.size(36.dp)
                                 ) {
                                     IconButton(
                                         onClick = { manualQuoteOffset++ },
@@ -739,27 +726,26 @@ fun DashboardScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Cycle Quote & Background",
+                                            contentDescription = strings.nextQuote,
                                             tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(17.dp)
                                         )
                                     }
                                 }
 
-                                // Inline Share Action Button
+                                // Highlighting Share Graphic Button
                                 Surface(
                                     shape = CircleShape,
-                                    color = BrandDarkNavy.copy(alpha = 0.8f),
-                                    border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.6f)),
-                                    modifier = Modifier.size(38.dp)
+                                    color = BrandDarkNavy.copy(alpha = 0.88f),
+                                    border = BorderStroke(1.dp, BrandWarmGold.copy(alpha = 0.8f)),
+                                    modifier = Modifier.size(36.dp)
                                 ) {
                                     IconButton(
                                         onClick = {
-                                            QuoteImageSharer.shareQuoteImage(
+                                            QuoteImageSharer.sharePropheticQuote(
                                                 context = context,
-                                                quoteText = cleanQuote,
-                                                title = strings.dailyWordTitle,
-                                                bgResId = currentBgRes
+                                                quote = currentQuote,
+                                                isFrench = isFrench
                                             )
                                         },
                                         modifier = Modifier
@@ -768,25 +754,82 @@ fun DashboardScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Share,
-                                            contentDescription = "Share Quote",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
+                                            contentDescription = strings.shareQuoteCard,
+                                            tint = BrandBrightYellow,
+                                            modifier = Modifier.size(17.dp)
                                         )
                                     }
                                 }
                             }
                         }
 
+                        // Specific Prophecy Origin & Spiritual Theme Sub-badges
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF1E293B).copy(alpha = 0.85f),
+                                border = BorderStroke(1.dp, Color(0xFF94A3B8).copy(alpha = 0.4f))
+                            ) {
+                                Text(
+                                    text = currentQuote.getProphecySource(isFrench),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = BrandMutedGold.copy(alpha = 0.35f),
+                                border = BorderStroke(1.dp, BrandWarmGold.copy(alpha = 0.6f))
+                            ) {
+                                Text(
+                                    text = currentQuote.getThemeTag(isFrench),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandBrightYellow,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+
+                        // Quote Body Text (High Contrast & Balanced Typography)
                         Text(
-                            text = cleanQuote,
+                            text = "“$cleanQuote”",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontFamily = QuoteFontFamily,
-                                fontSize = 17.sp,
-                                lineHeight = 26.sp,
+                                fontSize = 16.5.sp,
+                                lineHeight = 24.sp,
                                 fontWeight = FontWeight.Medium
                             ),
-                            color = Color.White
+                            color = Color.White,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
+
+                        // Citation Divider & Book Reference
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "— ${currentQuote.getAuthor(isFrench)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = BrandWarmGold
+                            )
+                            Text(
+                                text = currentQuote.getBookCitation(isFrench),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
