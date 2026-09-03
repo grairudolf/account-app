@@ -177,6 +177,18 @@ To assemble a debug APK package using Gradle:
 gradle :app:assembleDebug
 ```
 
+To build a production signed Release Android App Bundle (AAB):
+```bash
+# On Mac/Linux:
+chmod +x gradlew
+./gradlew :app:bundleRelease
+
+# Or on Windows:
+gradlew.bat :app:bundleRelease
+```
+The resulting production `.aab` file will be generated at:
+`app/build/outputs/bundle/release/app-release.aab`
+
 To execute local unit and ViewModel state tests:
 ```bash
 gradle :app:testDebugUnitTest

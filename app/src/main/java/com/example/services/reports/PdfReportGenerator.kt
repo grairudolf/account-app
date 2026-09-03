@@ -8,6 +8,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import androidx.core.content.res.ResourcesCompat
+import com.example.R
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.UserEntity
 import java.io.File
@@ -19,6 +21,14 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 object PdfReportGenerator {
+
+    private fun getCustomTypeface(context: Context, fontResId: Int, fallbackStyle: Int): Typeface {
+        return try {
+            ResourcesCompat.getFont(context, fontResId) ?: Typeface.create(Typeface.DEFAULT, fallbackStyle)
+        } catch (e: Exception) {
+            Typeface.create(Typeface.DEFAULT, fallbackStyle)
+        }
+    }
 
     fun formatOrdinalDate(date: LocalDate, isFrench: Boolean = false): String {
         val day = date.dayOfMonth
@@ -89,6 +99,12 @@ object PdfReportGenerator {
         var canvas: Canvas = currentPage.canvas
         var pageNumber = 1
 
+        val headingBoldFont = getCustomTypeface(context, R.font.plusjakartasans_bold, Typeface.BOLD)
+        val headingMediumFont = getCustomTypeface(context, R.font.plusjakartasans_semibold, Typeface.BOLD)
+        val bodyRegularFont = getCustomTypeface(context, R.font.poppins_regular, Typeface.NORMAL)
+        val bodyBoldFont = getCustomTypeface(context, R.font.poppins_bold, Typeface.BOLD)
+        val quoteFont = getCustomTypeface(context, R.font.montserrat_italic, Typeface.ITALIC)
+
         val paint = Paint().apply { isAntiAlias = true }
         val locale = if (isFrench) Locale.FRENCH else Locale.ENGLISH
 
@@ -120,12 +136,12 @@ object PdfReportGenerator {
         // Header Title
         paint.color = Color.WHITE
         paint.textSize = 17.5f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         val headerTitle = if (isFrench) "FICHE DE COMPTE CMFI ACCAP" else "CMFI ACCAP ACCOUNT SHEET"
         canvas.drawText(headerTitle, 26f, 38f, paint)
 
         paint.textSize = 9.5f
-        paint.typeface = Typeface.DEFAULT
+        paint.typeface = bodyRegularFont
         paint.color = Color.parseColor("#E2E8F0")
         val subTitle = if (isFrench) "Communauté Missionnaire Chrétienne Internationale (CMFI)" else "Christian Missionary Fellowship International (CMFI)"
         canvas.drawText(subTitle, 26f, 56f, paint)
@@ -136,7 +152,7 @@ object PdfReportGenerator {
             "“So then, each of us will give an account of ourselves to God.” — Romans 14:12 (NIV)"
         paint.textSize = 8.2f
         paint.color = Color.parseColor("#FDE047") // Vibrant Gold
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+        paint.typeface = quoteFont
         canvas.drawText(mottoText, 26f, 74f, paint)
 
         y = 108f
@@ -159,14 +175,14 @@ object PdfReportGenerator {
         val discipleName = if (!rawName.isNullOrEmpty()) rawName else if (isFrench) "Disciple du Seigneur" else "Disciple of the Lord"
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 11.5f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         canvas.drawText("${if (isFrench) "Disciple :" else "Disciple:"} $discipleName", 36f, y + 20f, paint)
 
         val assemblyName = user?.localAssembly?.trim()
         val assemblyDisplay = if (!assemblyName.isNullOrEmpty()) assemblyName else if (isFrench) "Assemblée Locale Non Spécifiée" else "Local Assembly Not Set"
         paint.color = Color.parseColor("#334155")
         paint.textSize = 9.5f
-        paint.typeface = Typeface.DEFAULT
+        paint.typeface = bodyRegularFont
         canvas.drawText("${if (isFrench) "Assemblée :" else "Assembly:"} $assemblyDisplay", 36f, y + 38f, paint)
 
         val periodTypeTrans = when (reportType) {
@@ -185,12 +201,12 @@ object PdfReportGenerator {
         val makerDisplay = if (hasMaker) rawMaker!! else "________________________"
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 10.5f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         canvas.drawText(if (isFrench) "Faiseur de Disciples :" else "Disciple Maker:", 310f, y + 20f, paint)
 
         paint.color = if (hasMaker) Color.parseColor("#1E40AF") else Color.parseColor("#475569")
         paint.textSize = 10.5f
-        paint.typeface = if (hasMaker) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
+        paint.typeface = if (hasMaker) headingBoldFont else bodyRegularFont
         canvas.drawText(makerDisplay, 310f, y + 38f, paint)
 
         y += 78f
@@ -257,14 +273,14 @@ object PdfReportGenerator {
         // 4. Section Title & 3 Summary Pillar Cards (For all report types to show key aggregates)
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 11.5f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         val summaryTitle = if (isFrench) "RÉSUMÉ DES DISCIPLINES SPIRITUELLES" else "SPIRITUAL DISCIPLINES SUMMARY"
         canvas.drawText(summaryTitle, 26f, y + 10f, paint)
 
         val timeWithGodLabel = "${if (isFrench) "Temps Total avec Dieu :" else "Total Time with God:"} ${formatDuration(totalTimeWithGodSecs, isFrench)}"
         paint.color = Color.parseColor("#15803D")
         paint.textSize = 10f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingMediumFont
         canvas.drawText(timeWithGodLabel, 290f, y + 10f, paint)
 
         y += 18f
@@ -293,13 +309,13 @@ object PdfReportGenerator {
         var cy = y + 14f
         paint.color = Color.parseColor("#0D47A1")
         paint.textSize = 9f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         canvas.drawText(if (isFrench) "COMMUNION & PRIÈRE" else "COMMUNION & PRAYER", 32f, cy, paint)
         cy += 14f
 
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 8.5f
-        paint.typeface = Typeface.DEFAULT
+        paint.typeface = bodyRegularFont
         canvas.drawText(if (isFrench) "• DREQD : $ddewgCount (${formatDurationShort(ddewgTimeSecs, isFrench)})" else "• DDEWG: $ddewgCount (${formatDurationShort(ddewgTimeSecs, isFrench)})", 32f, cy, paint)
         cy += 13f
         canvas.drawText(if (isFrench) "• Prière Seul : ${formatDurationShort(prayerAloneTimeSecs, isFrench)}" else "• Prayer Alone: ${formatDurationShort(prayerAloneTimeSecs, isFrench)}", 32f, cy, paint)
@@ -316,13 +332,13 @@ object PdfReportGenerator {
         cy = y + 14f
         paint.color = Color.parseColor("#0D47A1")
         paint.textSize = 9f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         canvas.drawText(if (isFrench) "PAROLE & LITTÉRATURE" else "WORD & LITERATURE", 214f, cy, paint)
         cy += 14f
 
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 8.5f
-        paint.typeface = Typeface.DEFAULT
+        paint.typeface = bodyRegularFont
         canvas.drawText(if (isFrench) "• Bible : $totalBibleChapters ch (${formatDurationShort(bibleTimeSecs, isFrench)})" else "• Bible: $totalBibleChapters chs (${formatDurationShort(bibleTimeSecs, isFrench)})", 214f, cy, paint)
         cy += 13f
         canvas.drawText(if (isFrench) "• Mém. Bible : $bibleMemVerses versets" else "• Bible Mem: $bibleMemVerses verses", 214f, cy, paint)
@@ -339,13 +355,13 @@ object PdfReportGenerator {
         cy = y + 14f
         paint.color = Color.parseColor("#0D47A1")
         paint.textSize = 9f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         canvas.drawText(if (isFrench) "MINISTÈRE & SERVICE" else "MINISTRY & SERVICE", 398f, cy, paint)
         cy += 14f
 
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 8.5f
-        paint.typeface = Typeface.DEFAULT
+        paint.typeface = bodyRegularFont
         canvas.drawText(if (isFrench) "• Évangélisation : $sPreached prêchés" else "• Evangelism: $sPreached preached", 398f, cy, paint)
         cy += 13f
         canvas.drawText(if (isFrench) "• Convertis : $sConverts âmes" else "• Converts: $sConverts souls", 398f, cy, paint)
@@ -362,7 +378,7 @@ object PdfReportGenerator {
         if (reportType == "WEEKLY") {
             paint.color = Color.parseColor("#0F172A")
             paint.textSize = 10.5f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            paint.typeface = headingBoldFont
             val dayBreakdownTitle = if (isFrench) "RÉPARTITION JOURNALIÈRE DE LA SEMAINE" else "WEEKLY DAILY OVERVIEW"
             canvas.drawText(dayBreakdownTitle, 26f, y + 10f, paint)
             y += 16f
@@ -373,7 +389,7 @@ object PdfReportGenerator {
 
             paint.color = Color.WHITE
             paint.textSize = 8.5f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            paint.typeface = bodyBoldFont
             canvas.drawText(if (isFrench) "Jour" else "Day", 34f, y + 13f, paint)
             canvas.drawText(if (isFrench) "DREQD" else "DDEWG", 125f, y + 13f, paint)
             canvas.drawText(if (isFrench) "Prière Seul" else "Prayer Alone", 200f, y + 13f, paint)
@@ -425,7 +441,7 @@ object PdfReportGenerator {
         } else if (reportType == "MONTHLY") {
             paint.color = Color.parseColor("#0F172A")
             paint.textSize = 10.5f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            paint.typeface = headingBoldFont
             val weekBreakdownTitle = if (isFrench) "RÉPARTITION PAR SEMAINE DU MOIS" else "MONTHLY WEEKLY OVERVIEW"
             canvas.drawText(weekBreakdownTitle, 26f, y + 10f, paint)
             y += 16f
@@ -436,7 +452,7 @@ object PdfReportGenerator {
 
             paint.color = Color.WHITE
             paint.textSize = 8.5f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            paint.typeface = bodyBoldFont
             canvas.drawText(if (isFrench) "Semaine" else "Week", 34f, y + 13f, paint)
             canvas.drawText(if (isFrench) "DREQD" else "DDEWG", 130f, y + 13f, paint)
             canvas.drawText(if (isFrench) "Prière Seul" else "Prayer Alone", 205f, y + 13f, paint)
@@ -481,7 +497,7 @@ object PdfReportGenerator {
                 paint.style = Paint.Style.FILL
                 paint.color = Color.parseColor("#0F172A")
                 paint.textSize = 8f
-                paint.typeface = Typeface.DEFAULT
+                paint.typeface = bodyRegularFont
 
                 canvas.drawText(label, 34f, y + 11f, paint)
                 canvas.drawText(if (dCount > 0) "$dCount (${formatDurationShort(dSecs, isFrench)})" else "-", 130f, y + 11f, paint)
@@ -498,7 +514,7 @@ object PdfReportGenerator {
         // 6. Unified Itemized Activity Breakdown (SAME exact 5 columns for ALL report types)
         // Check if there is enough space on page 1 for the table header + at least 2 rows (needs ~75f). If not, start on a new page.
         if (y > 670f) {
-            drawFooter(canvas, pageNumber, user, isFrench)
+            drawFooter(canvas, pageNumber, user, isFrench, bodyBoldFont, bodyRegularFont)
             document.finishPage(currentPage)
 
             pageNumber++
@@ -511,12 +527,12 @@ object PdfReportGenerator {
         // Breakdown Section Title
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 11f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headingBoldFont
         val breakdownTitle = if (isFrench) "DÉTAIL CHRONOLOGIQUE DES ACTIVITÉS" else "CHRONOLOGICAL ACTIVITIES BREAKDOWN"
         canvas.drawText(breakdownTitle, 26f, y + 12f, paint)
         y += 18f
 
-        drawUnifiedTableHeader(canvas, y, isFrench)
+        drawUnifiedTableHeader(canvas, y, isFrench, bodyBoldFont)
         y += 20f
 
         // Render the sorted entries using the 5 unified columns
@@ -529,7 +545,10 @@ object PdfReportGenerator {
             entries = sortedEntries,
             user = user,
             isFrench = isFrench,
-            dateRangeLabel = dateRangeLabel
+            dateRangeLabel = dateRangeLabel,
+            bodyRegularFont = bodyRegularFont,
+            bodyBoldFont = bodyBoldFont,
+            quoteFont = quoteFont
         )
 
         val reportDir = File(context.filesDir, "reports")
@@ -544,7 +563,7 @@ object PdfReportGenerator {
         return pdfFile
     }
 
-    private fun drawUnifiedTableHeader(c: Canvas, startY: Float, isFrench: Boolean) {
+    private fun drawUnifiedTableHeader(c: Canvas, startY: Float, isFrench: Boolean, headerFont: Typeface? = null) {
         val paint = Paint().apply { isAntiAlias = true }
         paint.style = Paint.Style.FILL
         paint.color = Color.parseColor("#0F2942")
@@ -552,7 +571,7 @@ object PdfReportGenerator {
 
         paint.color = Color.WHITE
         paint.textSize = 9f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = headerFont ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
         val hDate = if (isFrench) "Date (Jour)" else "Date (Day)"
         val hActivity = if (isFrench) "Activité" else "Activity"
@@ -604,7 +623,10 @@ object PdfReportGenerator {
         entries: List<AccountabilityEntryEntity>,
         user: UserEntity?,
         isFrench: Boolean,
-        dateRangeLabel: String
+        dateRangeLabel: String,
+        bodyRegularFont: Typeface? = null,
+        bodyBoldFont: Typeface? = null,
+        quoteFont: Typeface? = null
     ) {
         val paint = Paint().apply { isAntiAlias = true }
         var y = startY
@@ -617,7 +639,7 @@ object PdfReportGenerator {
             paint.style = Paint.Style.FILL
             paint.color = Color.parseColor("#475569")
             paint.textSize = 9.5f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+            paint.typeface = quoteFont ?: Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
             val noEntriesText = if (isFrench)
                 "Aucune activité enregistrée trouvée pour la période sélectionnée ($dateRangeLabel)."
             else
@@ -627,7 +649,7 @@ object PdfReportGenerator {
         } else {
             for (entry in entries) {
                 paint.style = Paint.Style.FILL
-                paint.typeface = Typeface.DEFAULT
+                paint.typeface = bodyRegularFont ?: Typeface.DEFAULT
                 paint.textSize = 8.5f
                 paint.color = Color.parseColor("#0F172A")
 
@@ -655,7 +677,7 @@ object PdfReportGenerator {
                 val rowHeight = (maxLineCount * 11.5f + 8f).coerceAtLeast(22f)
 
                 if (y + rowHeight > 765f) {
-                    drawFooter(activeCanvas, currentPageNum, user, isFrench)
+                    drawFooter(activeCanvas, currentPageNum, user, isFrench, bodyBoldFont, bodyRegularFont)
                     document.finishPage(activePage)
 
                     currentPageNum++
@@ -664,7 +686,7 @@ object PdfReportGenerator {
                     activeCanvas = activePage.canvas
 
                     y = 35f
-                    drawUnifiedTableHeader(activeCanvas, y, isFrench)
+                    drawUnifiedTableHeader(activeCanvas, y, isFrench, bodyBoldFont)
                     y += 20f
                 }
 
@@ -719,11 +741,18 @@ object PdfReportGenerator {
             }
         }
 
-        drawFooter(activeCanvas, currentPageNum, user, isFrench)
+        drawFooter(activeCanvas, currentPageNum, user, isFrench, bodyBoldFont, bodyRegularFont)
         document.finishPage(activePage)
     }
 
-    private fun drawFooter(c: Canvas, pNum: Int, user: UserEntity?, isFrench: Boolean) {
+    private fun drawFooter(
+        c: Canvas,
+        pNum: Int,
+        user: UserEntity?,
+        isFrench: Boolean,
+        boldFont: Typeface? = null,
+        regularFont: Typeface? = null
+    ) {
         val paint = Paint().apply { isAntiAlias = true }
         paint.style = Paint.Style.STROKE
         paint.color = Color.parseColor("#94A3B8")
@@ -733,6 +762,7 @@ object PdfReportGenerator {
         paint.style = Paint.Style.FILL
         paint.color = Color.parseColor("#475569")
         paint.textSize = 8.5f
+        paint.typeface = regularFont ?: Typeface.DEFAULT
         val genText = if (isFrench) "Généré le ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accap • Page $pNum"
         else "Generated on ${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} via CMFI Accap • Page $pNum"
         c.drawText(genText, 26f, 796f, paint)
@@ -740,7 +770,7 @@ object PdfReportGenerator {
         // Disciple Maker Signature Line
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 8.5f
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        paint.typeface = boldFont ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
         val makerName = user?.discipleMaker?.trim()
         val sigText = if (isFrench) {

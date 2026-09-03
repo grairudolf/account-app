@@ -2,6 +2,7 @@ package com.example.services.sync
 
 import android.content.Context
 import android.util.Log
+import com.example.core.util.NetworkUtils
 import com.example.data.local.AppDatabase
 import com.example.data.local.entities.*
 import com.google.firebase.FirebaseApp
@@ -100,8 +101,20 @@ object FirestoreSyncManager {
         isPartOfFullSync: Boolean = false
     ): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
-            val firestore = getFirestore(context) ?: return@withContext Result.success(false)
             if (userId.isBlank() || userId == "guest_user") return@withContext Result.success(false)
+            val firestore = getFirestore(context)
+            if (firestore == null) {
+                Log.w(TAG, "Cannot restore from cloud: Firebase Firestore is not initialized (missing google-services.json)")
+                updateProgress(
+                    isSyncing = false,
+                    progress = 0f,
+                    stage = SyncStage.ERROR,
+                    stageTitle = "Cloud Not Connected",
+                    details = "Firebase is not configured. Add google-services.json to enable cloud restore.",
+                    error = "Firebase not initialized"
+                )
+                return@withContext Result.failure(IllegalStateException("Firebase Firestore is not initialized"))
+            }
 
             val baseProgress = if (isPartOfFullSync) 0.05f else 0.05f
             val maxProgress = if (isPartOfFullSync) 0.45f else 0.95f
@@ -194,6 +207,8 @@ object FirestoreSyncManager {
                             chaptersCount = (d["chaptersCount"] as? Number)?.toInt() ?: 0,
                             prayerType = d["prayerType"] as? String ?: "",
                             prayerTopicsCount = (d["prayerTopicsCount"] as? Number)?.toInt() ?: 0,
+                            startPrayerTopicNumber = (d["startPrayerTopicNumber"] as? Number)?.toInt() ?: 0,
+                            endPrayerTopicNumber = (d["endPrayerTopicNumber"] as? Number)?.toInt() ?: 0,
                             prayerParticipantsCount = (d["prayerParticipantsCount"] as? Number)?.toInt() ?: 1,
                             prayerParticipantNames = d["prayerParticipantNames"] as? String ?: "",
                             fastingType = d["fastingType"] as? String ?: "",
@@ -487,6 +502,8 @@ object FirestoreSyncManager {
                     "chaptersCount" to entry.chaptersCount,
                     "prayerType" to entry.prayerType,
                     "prayerTopicsCount" to entry.prayerTopicsCount,
+                    "startPrayerTopicNumber" to entry.startPrayerTopicNumber,
+                    "endPrayerTopicNumber" to entry.endPrayerTopicNumber,
                     "prayerParticipantsCount" to entry.prayerParticipantsCount,
                     "prayerParticipantNames" to entry.prayerParticipantNames,
                     "fastingType" to entry.fastingType,
@@ -740,6 +757,20 @@ object FirestoreSyncManager {
     ) = withContext(Dispatchers.IO) {
         if (userId.isBlank() || userId == "guest_user") return@withContext
         try {
+            val firestore = getFirestore(context)
+            if (firestore == null) {
+                Log.w(TAG, "Cannot backup to cloud: Firebase Firestore is not initialized (missing google-services.json)")
+                updateProgress(
+                    isSyncing = false,
+                    progress = 0f,
+                    stage = SyncStage.ERROR,
+                    stageTitle = "Cloud Not Connected",
+                    details = "Firebase is not configured. Records remain stored locally on your device only.",
+                    error = "Missing google-services.json"
+                )
+                return@withContext
+            }
+
             val baseProgress = if (isPartOfFullSync) 0.50f else 0.05f
             val maxProgress = 1.0f
             fun scaleProgress(relative: Float): Float = baseProgress + (maxProgress - baseProgress) * relative.coerceIn(0f, 1f)
@@ -930,6 +961,18 @@ object FirestoreSyncManager {
         userId: String
     ): Boolean = withContext(Dispatchers.IO) {
         if (userId.isBlank() || userId == "guest_user") return@withContext false
+        if (!NetworkUtils.isOnline(context)) {
+            Log.d(TAG, "Skipping full sync: device is currently offline")
+            updateProgress(
+                isSyncing = false,
+                progress = 1.0f,
+                stage = SyncStage.COMPLETED,
+                stageTitle = "Offline Mode",
+                details = "Working offline with local database",
+                lastSyncTimeMs = _syncProgressFlow.value.lastSyncTimeMs
+            )
+            return@withContext false
+        }
         try {
             updateProgress(
                 isSyncing = true,

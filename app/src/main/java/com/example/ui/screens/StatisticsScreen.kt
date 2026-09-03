@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
@@ -417,26 +418,7 @@ fun StatisticsScreen(
                                             )
                                         }
                                     }
-                                }
-
-                                if (uiState.total15MinRetreats > 0) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
-                                            horizontalArrangement = Arrangement.SpaceEvenly,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text("🌅 M: ${uiState.total15MinMorning}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                            Text("☀️ N: ${uiState.total15MinNoon}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                            Text("🌆 E: ${uiState.total15MinEvening}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                            Text("🌙 Nt: ${uiState.total15MinNight}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                        }
-                                    }
-                                }
+                                 }
                             }
                         }
                     }
@@ -1079,7 +1061,8 @@ fun EntryLogCard(
                     Text(
                         text = "${strings.notes}: ${entry.notes}",
                         style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 3
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

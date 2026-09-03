@@ -225,7 +225,7 @@ class ProclamationViewModel(
             accountabilityRepository.saveProclamationTopic(updatedTopic)
             _selectedTopic.value = updatedTopic
 
-            if (addedCount > 0 || currentTotal > 0) {
+            if (addedCount > 0 || currentTotal > 0 || duration > 0) {
                 val allEntries = accountabilityRepository.getAllEntriesList()
                 val existingEntry = allEntries.find {
                     it.userId == user.id &&
@@ -234,30 +234,27 @@ class ProclamationViewModel(
                     (it.proclamationTopic.equals(finalTopic, ignoreCase = true) || it.proclamationTopic.isBlank())
                 }
 
-                val entryToSave = if (existingEntry != null) {
-                    existingEntry.copy(
-                        proclamationCount = maxOf(existingEntry.proclamationCount, if (isResumed) existingEntry.proclamationCount + addedCount else currentTotal),
-                        proclamationTopic = finalTopic,
-                        proclamationTarget = _targetCount.value,
-                        durationSeconds = maxOf(existingEntry.durationSeconds, duration),
-                        timestampMs = System.currentTimeMillis()
-                    )
-                } else {
-                    AccountabilityEntryEntity(
-                        id = UUID.randomUUID().toString(),
-                        userId = user.id,
-                        domainId = "proclamation_importunity",
-                        dateIso = todayIso,
-                        timestampMs = System.currentTimeMillis(),
-                        timezoneId = java.util.TimeZone.getDefault().id,
-                        durationSeconds = duration,
-                        proclamationTopic = finalTopic,
-                        proclamationCount = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1),
-                        proclamationTarget = _targetCount.value,
-                        notes = _notes.value,
-                        reflection = _reflection.value
-                    )
-                }
+                val countToSet = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1)
+                val entryToSave = existingEntry?.copy(
+                    proclamationCount = countToSet,
+                    proclamationTopic = finalTopic,
+                    proclamationTarget = if (_targetCount.value > 0) _targetCount.value else existingEntry.proclamationTarget,
+                    durationSeconds = maxOf(existingEntry.durationSeconds, duration),
+                    timestampMs = System.currentTimeMillis()
+                ) ?: AccountabilityEntryEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    domainId = "proclamation_importunity",
+                    dateIso = todayIso,
+                    timestampMs = System.currentTimeMillis(),
+                    timezoneId = java.util.TimeZone.getDefault().id,
+                    durationSeconds = duration,
+                    proclamationTopic = finalTopic,
+                    proclamationCount = countToSet,
+                    proclamationTarget = if (_targetCount.value > 0) _targetCount.value else 100,
+                    notes = _notes.value,
+                    reflection = _reflection.value
+                )
                 accountabilityRepository.saveEntry(entryToSave)
             }
         }
@@ -344,8 +341,22 @@ class ProclamationViewModel(
             }
             accountabilityRepository.saveProclamationTopic(updatedTopic)
 
-            // Save Entry
-            val entry = AccountabilityEntryEntity(
+            // Upsert Entry for today to keep statistics and reports in sync
+            val allEntries = accountabilityRepository.getAllEntriesList()
+            val existingEntry = allEntries.find {
+                it.userId == user.id &&
+                it.dateIso == todayIso &&
+                it.domainId == "proclamation_importunity" &&
+                (it.proclamationTopic.equals(finalTopic, ignoreCase = true) || it.proclamationTopic.isBlank())
+            }
+            val countToSet = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1)
+            val entry = existingEntry?.copy(
+                proclamationCount = countToSet,
+                proclamationTopic = finalTopic,
+                proclamationTarget = if (_targetCount.value > 0) _targetCount.value else existingEntry.proclamationTarget,
+                durationSeconds = maxOf(existingEntry.durationSeconds, duration),
+                timestampMs = System.currentTimeMillis()
+            ) ?: AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
                 userId = user.id,
                 domainId = "proclamation_importunity",
@@ -354,8 +365,8 @@ class ProclamationViewModel(
                 timezoneId = java.util.TimeZone.getDefault().id,
                 durationSeconds = duration,
                 proclamationTopic = finalTopic,
-                proclamationCount = if (addedCount > 0) addedCount else currentTotal.coerceAtLeast(1),
-                proclamationTarget = _targetCount.value,
+                proclamationCount = countToSet,
+                proclamationTarget = if (_targetCount.value > 0) _targetCount.value else 100,
                 notes = sessionNote,
                 reflection = _reflection.value
             )

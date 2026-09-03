@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
@@ -1030,8 +1031,25 @@ fun RecentActivityCard(
     strings: AppStrings,
     onClick: () -> Unit
 ) {
+    val domainIcon = when (entry.domainId.lowercase().trim()) {
+        "bible_reading" -> Icons.Default.AutoStories
+        "ddewg" -> Icons.Default.WbSunny
+        "prayer_alone" -> Icons.Default.SelfImprovement
+        "prayer_with_others" -> Icons.Default.Groups
+        "proclamation_importunity" -> Icons.Default.Campaign
+        "fasting" -> Icons.Default.Timer
+        "giving" -> Icons.Default.VolunteerActivism
+        "making_disciples", "disciple_maker", "disciples", "accountability" -> Icons.Default.GroupAdd
+        "soul_winning" -> Icons.Default.DirectionsWalk
+        "christian_lit_reading", "christian_lit", "literature" -> Icons.Default.MenuBook
+        "christian_lit_memory", "christian_lit_mem" -> Icons.Default.Psychology
+        "bible_memory", "bible_mem" -> Icons.Default.AutoStories
+        "retreats" -> Icons.Default.Landscape
+        else -> Icons.Default.MenuBook
+    }
+
     Surface(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, DividerColor),
         modifier = Modifier
@@ -1052,23 +1070,31 @@ fun RecentActivityCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.MenuBook,
+                    imageVector = domainIcon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = strings.getDomainTitleById(entry.domainId).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = strings.formatActivitySummary(entry),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
             }
             Text(

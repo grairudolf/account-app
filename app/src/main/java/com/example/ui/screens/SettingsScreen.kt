@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import android.content.Context
+import android.widget.Toast
+import com.example.core.util.NetworkUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
@@ -920,13 +922,13 @@ fun SettingsScreen(
                                 }
                                 Column {
                                     Text(
-                                        "Guest Mode Active (Offline)",
+                                        strings.guestModeOffline,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        "Your data is only stored on this device. Sign in to automatically sync and backup your records to the cloud.",
+                                        strings.guestModeDesc,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -943,7 +945,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Sign In / Create Account", fontWeight = FontWeight.Bold)
+                                Text(strings.signInOrCreateAccount, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -960,12 +962,16 @@ fun SettingsScreen(
                             label = "sync_progress"
                         )
 
+                        val isFirebaseConfigured = remember { com.example.services.sync.FirestoreSyncManager.isFirestoreAvailable(context) }
+                        val isDeviceOnline = remember(activelySyncing) { NetworkUtils.isOnline(context) }
+
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                             border = BorderStroke(
                                 1.dp,
                                 if (activelySyncing) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                else if (!isDeviceOnline || !isFirebaseConfigured) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                                 else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                             ),
                             modifier = Modifier.fillMaxWidth()
@@ -979,11 +985,13 @@ fun SettingsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     val iconColor = when {
-                                        syncProgress.stage == SyncStage.ERROR -> StatusError
+                                        syncProgress.stage == SyncStage.ERROR -> MaterialTheme.colorScheme.tertiary
+                                        !isDeviceOnline || !isFirebaseConfigured -> MaterialTheme.colorScheme.tertiary
                                         activelySyncing -> MaterialTheme.colorScheme.primary
                                         else -> StatusSuccess
                                     }
                                     val icon = when {
+                                        !isDeviceOnline || !isFirebaseConfigured -> Icons.Default.CloudOff
                                         syncProgress.stage == SyncStage.DOWNLOADING -> Icons.Default.CloudDownload
                                         syncProgress.stage == SyncStage.UPLOADING -> Icons.Default.CloudUpload
                                         syncProgress.stage == SyncStage.ERROR -> Icons.Default.SyncProblem
@@ -1011,17 +1019,31 @@ fun SettingsScreen(
                                         ) {
                                             Text(
                                                 if (activelySyncing) {
-                                                    if (syncProgress.stage == SyncStage.DOWNLOADING) "Downloading from Cloud"
-                                                    else if (syncProgress.stage == SyncStage.UPLOADING) "Uploading to Cloud"
-                                                    else "Synchronizing..."
-                                                } else "Cloud Backup & Sync Active",
+                                                    if (syncProgress.stage == SyncStage.DOWNLOADING) strings.downloadingFromCloud
+                                                    else if (syncProgress.stage == SyncStage.UPLOADING) strings.uploadingToCloud
+                                                    else strings.synchronizing
+                                                } else if (!isDeviceOnline) {
+                                                    strings.localDatabaseOffline
+                                                } else if (!isFirebaseConfigured) {
+                                                    strings.localDatabaseOffline
+                                                } else {
+                                                    strings.cloudBackupSyncActive
+                                                },
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                         Text(
-                                            if (!user?.email.isNullOrBlank()) "Linked to: ${user!!.email}" else "Connected to Firebase Cloud Database",
+                                            if (!isDeviceOnline) {
+                                                strings.offlineBackupResumeNotice
+                                            } else if (!isFirebaseConfigured) {
+                                                strings.localSqliteStorageDesc
+                                            } else if (!user?.email.isNullOrBlank()) {
+                                                strings.linkedToAccount.format(user!!.email)
+                                            } else {
+                                                strings.connectedToCloudDb
+                                            },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -1060,7 +1082,7 @@ fun SettingsScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = if (syncProgress.stageTitle.isNotBlank()) syncProgress.stageTitle else "Syncing records...",
+                                                text = if (syncProgress.stageTitle.isNotBlank()) syncProgress.stageTitle else strings.synchronizing,
                                                 style = MaterialTheme.typography.labelLarge,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.primary
@@ -1101,7 +1123,7 @@ fun SettingsScreen(
                                         }
 
                                         Text(
-                                            text = "Background sync active — you can continue using the app while data transfers.",
+                                            text = strings.backgroundSyncActiveDesc,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                                         )
@@ -1109,7 +1131,7 @@ fun SettingsScreen(
                                 } else {
                                     // Idle / Finished State
                                     Text(
-                                        "All your prayer sessions, scripture readings, fasts, disciples, goals, and reports are backed up in real-time. If you switch phones, simply sign in with this account to restore all your data.",
+                                        strings.cloudBackupFullDesc,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -1118,8 +1140,8 @@ fun SettingsScreen(
                                         val timeStr = remember(syncProgress.lastSyncTimeMs) {
                                             val diffMin = (System.currentTimeMillis() - syncProgress.lastSyncTimeMs) / 60000
                                             when {
-                                                diffMin < 1 -> "Just now"
-                                                diffMin < 60 -> "$diffMin min ago"
+                                                diffMin < 1 -> strings.justNow
+                                                diffMin < 60 -> strings.minAgo.format(diffMin)
                                                 else -> {
                                                     val dt = java.time.Instant.ofEpochMilli(syncProgress.lastSyncTimeMs)
                                                         .atZone(java.time.ZoneId.systemDefault())
@@ -1139,7 +1161,7 @@ fun SettingsScreen(
                                                 modifier = Modifier.size(14.dp)
                                             )
                                             Text(
-                                                "Last synced: $timeStr",
+                                                "${strings.lastSynced}: $timeStr",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1147,7 +1169,13 @@ fun SettingsScreen(
                                     }
 
                                     Button(
-                                        onClick = onSyncCloudData,
+                                        onClick = {
+                                            if (!NetworkUtils.isOnline(context)) {
+                                                Toast.makeText(context, strings.offlineSyncWarning, Toast.LENGTH_LONG).show()
+                                            } else {
+                                                onSyncCloudData()
+                                            }
+                                        },
                                         enabled = !activelySyncing,
                                         modifier = Modifier.fillMaxWidth().height(42.dp),
                                         shape = RoundedCornerShape(12.dp),
@@ -1158,7 +1186,7 @@ fun SettingsScreen(
                                     ) {
                                         Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Sync & Backup Now", fontWeight = FontWeight.Bold)
+                                        Text(strings.syncBackupNow, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }

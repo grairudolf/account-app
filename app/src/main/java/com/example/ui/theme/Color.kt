@@ -9,8 +9,10 @@ val BrandDarkNavy = Color(0xFF14214C)       // Dark blue (#14214c)
 val BrandSlateBlue = Color(0xFF5F6987)      // Navy slate (#5f6987)
 val BrandMutedGold = Color(0xFF696240)      // Muted accent fill (#696240)
 val BrandWarmGold = Color(0xFFBB9828)       // Warm mid-tone gold (#bb9828)
-val BrandVibrantYellow = Color(0xFFFDBC0A)  // Vibrant yellow highlight (#fdbc0a)
-val BrandBrightYellow = Color(0xFFFAE611)   // Bright yellow indicator (#fae611)
+val BrandChampagneGold = Color(0xFFE5B96B)  // Refined warm champagne gold for dark theme
+val BrandAmberGold = Color(0xFFD4AF37)      // Warm amber gold
+val BrandVibrantYellow = Color(0xFFE5B96B)  // Refined warm golden accent (#e5b96b)
+val BrandBrightYellow = Color(0xFFECC27E)   // Soft warm gold indicator (#ecc27e)
 val BrandLightText = Color(0xFFCACED7)      // Light text for dark containers (#caced7)
 
 // Canvas & Surfaces
@@ -19,23 +21,24 @@ val SurfaceLight = Color(0xFFFFFFFF)        // Crisp white card surface
 val SurfaceVariantLight = Color(0xFFF1F3F7) // Subtle card container
 val SurfaceBorderLight = Color(0xFFE2E6EF)  // Crisp border
 
-val AppBackgroundDark = Color(0xFF0D1636)   // Deep navy dark canvas
-val SurfaceDark = Color(0xFF14214C)         // Dark navy card surface
-val SurfaceDarkCard = Color(0xFF14214C)     // Dark navy card surface
-val SurfaceVariantDark = Color(0xFF1B2B5C)  // Elevated dark container
-val SurfaceBorderDark = Color(0xFF5F6987).copy(alpha = 0.4f)
+// Deep Midnight Slate / Charcoal Obsidian Dark Canvas (Warm & Eye-Safe for Night Devotions)
+val AppBackgroundDark = Color(0xFF0D131A)   // Deep midnight slate dark canvas (#0D131A)
+val SurfaceDark = Color(0xFF141C24)         // Charcoal slate card surface (#141C24)
+val SurfaceDarkCard = Color(0xFF141C24)     // Charcoal slate card surface (#141C24)
+val SurfaceVariantDark = Color(0xFF1B2530)  // Elevated midnight container (#1B2530)
+val SurfaceBorderDark = Color(0xFF283444)   // Clean contrast dark border (#283444)
 
 // Navigation & Pill Tokens
-val DarkNavBarBackground = Color(0xFF14214C)
-val DarkPillBackground = Color(0xFF14214C)
-val DarkPillText = Color(0xFFFFFFFF)
+val DarkNavBarBackground = Color(0xFF101720)
+val DarkPillBackground = Color(0xFF1B2530)
+val DarkPillText = Color(0xFFE1E4EB)
 
 // Typography
 val TextPrimary = Color(0xFF141519)
 val TextSecondary = Color(0xFF5F6987)
 val TextMuted = Color(0xFF8C98AC)
-val TextPrimaryNight = Color(0xFFFFFFFF)
-val TextSecondaryNight = Color(0xFFCACED7)
+val TextPrimaryNight = Color(0xFFE2E6EE)
+val TextSecondaryNight = Color(0xFF9BA5B7)
 val DividerColor: Color
     @Composable
     get() = MaterialTheme.colorScheme.outline

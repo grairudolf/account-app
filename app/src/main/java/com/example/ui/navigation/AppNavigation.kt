@@ -95,16 +95,7 @@ fun MainApp() {
         }
 
         if (currentUserState == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            com.example.ui.components.InteractiveWarmSplash(strings = strings)
         } else {
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()

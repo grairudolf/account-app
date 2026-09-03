@@ -83,6 +83,135 @@ object BibleMetadata {
 
     const val TOTAL_BIBLE_CHAPTERS = 1189
 
+    data class BibleChapterRef(
+        val bookIndex: Int,
+        val bookName: String,
+        val chapterNumber: Int
+    )
+
+    data class BookReadingSegment(
+        val bookName: String,
+        val startChapter: Int,
+        val endChapter: Int,
+        val chaptersReadCount: Int
+    )
+
+    fun getBookIndex(name: String): Int {
+        val idx = BOOKS.indexOfFirst { it.name.equals(name, ignoreCase = true) }
+        return if (idx >= 0) idx else 0
+    }
+
+    /**
+     * Expands a contiguous multi-book span (e.g. Genesis 45 -> Leviticus 3) into
+     * individual chapters across canonical Bible order.
+     */
+    fun expandRange(
+        startBookName: String,
+        startChapter: Int,
+        endBookName: String,
+        endChapter: Int
+    ): List<BibleChapterRef> {
+        var startIdx = getBookIndex(startBookName)
+        var endIdx = getBookIndex(endBookName)
+        var startCh = startChapter
+        var endCh = endChapter
+
+        // Auto-swap if start is after end
+        if (startIdx > endIdx || (startIdx == endIdx && startCh > endCh)) {
+            val tempIdx = startIdx
+            val tempCh = startCh
+            startIdx = endIdx
+            startCh = endCh
+            endIdx = tempIdx
+            endCh = tempCh
+        }
+
+        val result = mutableListOf<BibleChapterRef>()
+        for (b in startIdx..endIdx) {
+            val book = BOOKS[b]
+            val firstCh = if (b == startIdx) startCh.coerceIn(1, book.totalChapters) else 1
+            val lastCh = if (b == endIdx) endCh.coerceIn(1, book.totalChapters) else book.totalChapters
+
+            for (c in firstCh..lastCh) {
+                result.add(BibleChapterRef(b, book.name, c))
+            }
+        }
+        return result
+    }
+
+    /**
+     * Groups contiguous reading into book segments for breakdowns and summaries.
+     */
+    fun getSpanBreakdown(
+        startBookName: String,
+        startChapter: Int,
+        endBookName: String,
+        endChapter: Int
+    ): List<BookReadingSegment> {
+        var startIdx = getBookIndex(startBookName)
+        var endIdx = getBookIndex(endBookName)
+        var startCh = startChapter
+        var endCh = endChapter
+
+        if (startIdx > endIdx || (startIdx == endIdx && startCh > endCh)) {
+            val tempIdx = startIdx
+            val tempCh = startCh
+            startIdx = endIdx
+            startCh = endCh
+            endIdx = tempIdx
+            endCh = tempCh
+        }
+
+        val list = mutableListOf<BookReadingSegment>()
+        for (b in startIdx..endIdx) {
+            val book = BOOKS[b]
+            val firstCh = if (b == startIdx) startCh.coerceIn(1, book.totalChapters) else 1
+            val lastCh = if (b == endIdx) endCh.coerceIn(1, book.totalChapters) else book.totalChapters
+            val count = (lastCh - firstCh + 1).coerceAtLeast(1)
+
+            list.add(
+                BookReadingSegment(
+                    bookName = book.name,
+                    startChapter = firstCh,
+                    endChapter = lastCh,
+                    chaptersReadCount = count
+                )
+            )
+        }
+        return list
+    }
+
+    /**
+     * Calculates the exact total number of chapters read across a multi-book span.
+     */
+    fun calculateSpanChapters(
+        startBookName: String,
+        startChapter: Int,
+        endBookName: String,
+        endChapter: Int
+    ): Int {
+        return getSpanBreakdown(startBookName, startChapter, endBookName, endChapter).sumOf { it.chaptersReadCount }
+    }
+
+    /**
+     * Formats a multi-book span into a clean, canonical summary string.
+     */
+    fun formatSpanSummary(
+        startBookName: String,
+        startChapter: Int,
+        endBookName: String,
+        endChapter: Int
+    ): String {
+        val breakdown = getSpanBreakdown(startBookName, startChapter, endBookName, endChapter)
+        if (breakdown.isEmpty()) return "$startBookName $startChapter"
+        if (breakdown.size == 1) {
+            val seg = breakdown[0]
+            return if (seg.startChapter == seg.endChapter) "${seg.bookName} ${seg.startChapter}"
+            else "${seg.bookName} ${seg.startChapter}-${seg.endChapter}"
+        }
+        return breakdown.joinToString(", ") { "${it.bookName} ${it.startChapter}-${it.endChapter}" }
+    }
+
     fun getBook(name: String): BibleBook? {
         return BOOKS.find { it.name.equals(name, ignoreCase = true) }
     }

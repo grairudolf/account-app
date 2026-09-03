@@ -89,19 +89,21 @@ class UserRepository(
             hasCompletedAuthPrompt = true
 
             if (context != null) {
-                try {
-                    val db = AppDatabase.getInstance(context)
-                    db.entryDao().migrateUserEntries(fbUid)
-                    db.goalDao().migrateUserGoals(fbUid)
-                    db.discipleDao().migrateUserDisciples(fbUid)
-                    db.customDomainDao().migrateUserCustomDomains(fbUid)
-                    db.proclamationTopicDao().migrateUserTopics(fbUid)
-                    FirestoreSyncManager.restoreUserDataFromCloud(context, db, fbUid)
-                    val fresh = userDao.getCurrentUser() ?: updated
-                    FirestoreSyncManager.syncUserProfile(context, fresh)
-                    FirestoreSyncManager.syncAllLocalDataToCloud(context, db, fbUid)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    try {
+                        val db = AppDatabase.getInstance(context)
+                        db.entryDao().migrateUserEntries(fbUid)
+                        db.goalDao().migrateUserGoals(fbUid)
+                        db.discipleDao().migrateUserDisciples(fbUid)
+                        db.customDomainDao().migrateUserCustomDomains(fbUid)
+                        db.proclamationTopicDao().migrateUserTopics(fbUid)
+                        FirestoreSyncManager.restoreUserDataFromCloud(context, db, fbUid)
+                        val fresh = userDao.getCurrentUser() ?: updated
+                        FirestoreSyncManager.syncUserProfile(context, fresh)
+                        FirestoreSyncManager.syncAllLocalDataToCloud(context, db, fbUid)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
             return updated

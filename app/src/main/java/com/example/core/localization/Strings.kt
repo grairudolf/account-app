@@ -243,6 +243,25 @@ interface AppStrings {
     val cloudBackup: String
     val cloudRestore: String
     val lastSynced: String
+    val guestModeOffline: String
+    val guestModeDesc: String
+    val signInOrCreateAccount: String
+    val downloadingFromCloud: String
+    val uploadingToCloud: String
+    val synchronizing: String
+    val localDatabaseOffline: String
+    val cloudBackupSyncActive: String
+    val localSqliteStorageDesc: String
+    val linkedToAccount: String
+    val connectedToCloudDb: String
+    val backgroundSyncActiveDesc: String
+    val cloudBackupFullDesc: String
+    val syncBackupNow: String
+    val offlineSyncWarning: String
+    val offlineSyncTitle: String
+    val offlineBackupResumeNotice: String
+    val justNow: String
+    val minAgo: String
     val clearData: String
     val clearDataConfirm: String
     val version: String
@@ -395,6 +414,16 @@ interface AppStrings {
     val removeBookSegment: String
     val bookSegment: String
     val totalChaptersCalculated: String
+    val readingModeSpan: String
+    val readingModeSegments: String
+    val startPoint: String
+    val endPoint: String
+    val startBook: String
+    val endBook: String
+    val spanBreakdown: String
+    val chaptersAcrossBooks: String
+    val dailyScripture: String
+    val loadingDevotional: String
 
     // Prayer Focus Types & Inputs
     val prayerTypePersonalSupplication: String
@@ -723,35 +752,102 @@ interface AppStrings {
     }
 
     fun formatActivitySummary(entry: AccountabilityEntryEntity): String {
-        return when (entry.domainId) {
-            "bible_reading" -> "${entry.bibleBook} Ch. ${entry.startChapter}-${entry.endChapter}"
-            "retreats" -> {
+        val domain = entry.domainId.lowercase().trim()
+        return when {
+            domain == "bible_reading" -> {
+                if (entry.bibleBook.isNotBlank()) {
+                    if (entry.startChapter > 0 && entry.endChapter > 0) {
+                        "${entry.bibleBook} Ch. ${entry.startChapter}–${entry.endChapter}"
+                    } else {
+                        entry.bibleBook
+                    }
+                } else {
+                    "${entry.chaptersCount} chapters"
+                }
+            }
+            domain == "christian_lit_reading" || domain == "christian_lit" || domain == "literature" -> {
+                val pages = if (entry.pagesRead > 0) entry.pagesRead else if (entry.startPage > 0 && entry.endPage >= entry.startPage) (entry.endPage - entry.startPage + 1) else 0
+                val pagesStr = if (entry.startPage > 0 && entry.endPage >= entry.startPage) "pp. ${entry.startPage}–${entry.endPage} ($pages $pagesRead)" else if (pages > 0) "$pages $pagesRead" else ""
+                val mins = entry.durationSeconds / 60
+                val durStr = if (mins > 0) {
+                    if (mins >= 60) "${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$mins $minutesUnit"
+                } else ""
+                
+                val parts = listOfNotNull(
+                    entry.bookTitle.takeIf { it.isNotBlank() },
+                    pagesStr.takeIf { it.isNotBlank() },
+                    durStr.takeIf { it.isNotBlank() }
+                )
+                if (parts.isNotEmpty()) {
+                    parts.joinToString(" • ")
+                } else {
+                    val cleanNote = entry.notes.replace("\n", " ").replace(Regex("\\s+"), " ").trim()
+                    if (cleanNote.isNotBlank()) {
+                        if (cleanNote.length > 75) cleanNote.take(72).trimEnd() + "..." else cleanNote
+                    } else {
+                        loggedDisciplineActivities
+                    }
+                }
+            }
+            domain == "christian_lit_memory" || domain == "christian_lit_mem" -> {
+                val pages = if (entry.pagesMemorized > 0) entry.pagesMemorized else entry.pagesRead
+                val pagesStr = if (pages > 0) "$pages $pagesRead" else ""
+                val title = entry.bookTitle.ifBlank { christianLitMemTitle }
+                val parts = listOfNotNull(
+                    title.takeIf { it.isNotBlank() },
+                    entry.litMemPassage.takeIf { it.isNotBlank() },
+                    pagesStr.takeIf { it.isNotBlank() }
+                )
+                if (parts.isNotEmpty()) parts.joinToString(" • ") else loggedDisciplineActivities
+            }
+            domain == "bible_memory" || domain == "bible_mem" -> {
+                val ref = if (entry.bibleBook.isNotBlank()) "${entry.bibleBook} ${entry.startChapter}:${entry.endChapter}" else bibleMemTitle
+                val versesStr = if (entry.chaptersCount > 0) "${entry.chaptersCount} $versesPrompt" else ""
+                val parts = listOfNotNull(ref, versesStr.takeIf { it.isNotBlank() })
+                parts.joinToString(" • ")
+            }
+            domain == "retreats" -> {
                 val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
                 val focusStr = if (entry.retreatFocus.isNotBlank()) "${entry.retreatFocus} - " else ""
                 if (mins >= 60) "$focusStr${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$focusStr$mins $minutesUnit"
             }
-            "ddewg", "prayer_alone", "prayer_with_others" -> {
+            domain in listOf("ddewg", "prayer_alone", "prayer_with_others") -> {
                 val mins = (entry.durationSeconds / 60).coerceAtLeast(1)
-                if (mins >= 60) "${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$mins $minutesUnit"
+                val typeStr = if (entry.prayerType.isNotBlank()) "${entry.prayerType} - " else ""
+                if (mins >= 60) "$typeStr${mins / 60} $hoursUnit ${mins % 60} $minutesUnit" else "$typeStr$mins $minutesUnit"
             }
-            "proclamation_importunity" -> {
+            domain == "proclamation_importunity" -> {
                 val topic = entry.proclamationTopic.ifBlank { proclamationTitle }
                 val mins = entry.durationSeconds / 60
-                "$topic: ${entry.proclamationCount} proclamations ($mins $minutesUnit)"
+                val dur = if (mins > 0) " ($mins $minutesUnit)" else ""
+                "$topic: ${entry.proclamationCount} proclamations$dur"
             }
-            "soul_winning" -> {
+            domain == "soul_winning" -> {
                 "$preachedTo: ${entry.preachedToCount}, $converted: ${entry.convertedCount}"
             }
-            "giving" -> {
+            domain == "making_disciples" || domain == "disciple_maker" || domain == "disciples" || domain == "accountability" -> {
+                val areas = if (entry.areasDiscussed.isNotBlank()) ": ${entry.areasDiscussed}" else ""
+                val mins = entry.durationSeconds / 60
+                val durStr = if (mins > 0) " ($mins $minutesUnit)" else ""
+                "$makingDisciplesTitle$areas$durStr"
+            }
+            domain == "giving" -> {
                 val typeStr = if (entry.givingType.isNotBlank()) "${entry.givingType}: " else ""
                 "$givingTitle: $typeStr$amount $${entry.givingAmount}"
             }
-            "fasting" -> {
+            domain == "fasting" -> {
                 val daysCount = if (entry.fastingDaysCount > 0) entry.fastingDaysCount else 1
                 val typeStr = if (entry.fastingType.isNotBlank()) " (${entry.fastingType})" else ""
                 "$fastingTitle: $daysCount $days$typeStr"
             }
-            else -> entry.notes.ifBlank { loggedDisciplineActivities }
+            else -> {
+                val cleanNote = entry.notes.replace("\n", " ").replace(Regex("\\s+"), " ").trim()
+                if (cleanNote.isNotBlank()) {
+                    if (cleanNote.length > 75) cleanNote.take(72).trimEnd() + "..." else cleanNote
+                } else {
+                    loggedDisciplineActivities
+                }
+            }
         }
     }
 
@@ -971,6 +1067,25 @@ object EnglishStrings : AppStrings {
     override val cloudBackup = "Cloud Backup"
     override val cloudRestore = "Cloud Restore"
     override val lastSynced = "Last synced"
+    override val guestModeOffline = "Guest Mode Active (Offline)"
+    override val guestModeDesc = "Your data is only stored on this device. Sign in to automatically sync and backup your records to the cloud."
+    override val signInOrCreateAccount = "Sign In / Create Account"
+    override val downloadingFromCloud = "Downloading from Cloud"
+    override val uploadingToCloud = "Uploading to Cloud"
+    override val synchronizing = "Synchronizing..."
+    override val localDatabaseOffline = "Local Database (Offline)"
+    override val cloudBackupSyncActive = "Cloud Backup & Sync Active"
+    override val localSqliteStorageDesc = "Local SQLite storage • Add google-services.json for cloud"
+    override val linkedToAccount = "Linked to: %s"
+    override val connectedToCloudDb = "Connected to Firebase Cloud Database"
+    override val backgroundSyncActiveDesc = "Background sync active — you can continue using the app while data transfers."
+    override val cloudBackupFullDesc = "All your prayer sessions, scripture readings, fasts, disciples, goals, and reports are backed up in real-time. If you switch phones, simply sign in with this account to restore all your data."
+    override val syncBackupNow = "Sync & Backup Now"
+    override val offlineSyncWarning = "Cannot backup or sync while offline. Please connect to Wi-Fi or mobile data."
+    override val offlineSyncTitle = "No Internet Connection"
+    override val offlineBackupResumeNotice = "Offline • Backup will resume when connected"
+    override val justNow = "Just now"
+    override val minAgo = "%d min ago"
     override val clearData = "Clear Local Data"
     override val clearDataConfirm = "Are you sure you want to delete all local records?"
     override val version = "App Version"
@@ -1141,6 +1256,16 @@ object EnglishStrings : AppStrings {
     override val removeBookSegment = "Remove Segment"
     override val bookSegment = "Book Segment"
     override val totalChaptersCalculated = "Total Chapters Read: %d"
+    override val readingModeSpan = "Continuous Span (Multi-Book)"
+    override val readingModeSegments = "Discrete Segments"
+    override val startPoint = "Start Point"
+    override val endPoint = "End Point"
+    override val startBook = "Start Book"
+    override val endBook = "End Book"
+    override val spanBreakdown = "Reading Breakdown"
+    override val chaptersAcrossBooks = "%d chapters across %d books"
+    override val dailyScripture = "Daily Scripture"
+    override val loadingDevotional = "Preparing devotional space..."
 
     // Prayer Focus Types & Inputs
     override val prayerTypePersonalSupplication = "Personal Supplication"
@@ -1546,6 +1671,25 @@ object FrenchStrings : AppStrings {
     override val cloudBackup = "Sauvegarde Nuage"
     override val cloudRestore = "Restauration Nuage"
     override val lastSynced = "Dernière synchro"
+    override val guestModeOffline = "Mode Invité Actif (Hors Ligne)"
+    override val guestModeDesc = "Vos données sont uniquement stockées sur cet appareil. Connectez-vous pour synchroniser et sauvegarder automatiquement vos enregistrements sur le cloud."
+    override val signInOrCreateAccount = "Se Connecter / Créer un Compte"
+    override val downloadingFromCloud = "Téléchargement depuis le Cloud"
+    override val uploadingToCloud = "Téléversement vers le Cloud"
+    override val synchronizing = "Synchronisation en cours..."
+    override val localDatabaseOffline = "Base de Données Locale (Hors Ligne)"
+    override val cloudBackupSyncActive = "Sauvegarde & Synchronisation Cloud Actives"
+    override val localSqliteStorageDesc = "Stockage SQLite local • Ajoutez google-services.json pour le cloud"
+    override val linkedToAccount = "Lié à : %s"
+    override val connectedToCloudDb = "Connecté à la Base de Données Cloud Firebase"
+    override val backgroundSyncActiveDesc = "Synchronisation en arrière-plan active — vous pouvez continuer à utiliser l'application."
+    override val cloudBackupFullDesc = "Toutes vos sessions de prière, lectures bibliques, jeûnes, disciples, objectifs et rapports sont sauvegardés en temps réel. Si vous changez de téléphone, connectez-vous simplement avec ce compte pour restaurer toutes vos données."
+    override val syncBackupNow = "Synchroniser & Sauvegarder Maintenant"
+    override val offlineSyncWarning = "Impossible de sauvegarder ou synchroniser hors ligne. Veuillez vous connecter au Wi-Fi ou aux données mobiles."
+    override val offlineSyncTitle = "Aucune Connexion Internet"
+    override val offlineBackupResumeNotice = "Hors ligne • La sauvegarde reprendra une fois connecté"
+    override val justNow = "À l'instant"
+    override val minAgo = "Il y a %d min"
     override val clearData = "Effacer les Données Locales"
     override val clearDataConfirm = "Êtes-vous sûr de vouloir supprimer tous les enregistrements locaux ?"
     override val version = "App Version"
@@ -1716,6 +1860,16 @@ object FrenchStrings : AppStrings {
     override val removeBookSegment = "Supprimer le Segment"
     override val bookSegment = "Segment de Livre"
     override val totalChaptersCalculated = "Total des Chapitres Lus : %d"
+    override val readingModeSpan = "Étendue Continue (Multi-Livres)"
+    override val readingModeSegments = "Segments Distincts"
+    override val startPoint = "Point de Départ"
+    override val endPoint = "Point d'Arrivée"
+    override val startBook = "Livre de Début"
+    override val endBook = "Livre de Fin"
+    override val spanBreakdown = "Détail des Livres Lus"
+    override val chaptersAcrossBooks = "%d chapitres à travers %d livres"
+    override val dailyScripture = "Parole du Jour"
+    override val loadingDevotional = "Préparation de votre espace dévotionnel..."
 
     // Prayer Focus Types & Inputs
     override val prayerTypePersonalSupplication = "Supplication Personnelle"

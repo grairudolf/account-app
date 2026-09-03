@@ -78,6 +78,11 @@ fun DomainDetailScreen(
     var stopTimeText by remember { mutableStateOf("07:00") }
 
     // Multi-Book Bible Reading Segments
+    var isBibleSpanMode by remember { mutableStateOf(true) }
+    var bibleStartBook by remember { mutableStateOf("Genesis") }
+    var bibleStartChapter by remember { mutableStateOf(1) }
+    var bibleEndBook by remember { mutableStateOf("Genesis") }
+    var bibleEndChapter by remember { mutableStateOf(1) }
     val bibleSegments = remember {
         mutableStateListOf(BibleReadingSegment(book = "Genesis", startChapter = 1, endChapter = 1))
     }
@@ -126,6 +131,10 @@ fun DomainDetailScreen(
                 when (domainId) {
                     "bible_reading" -> {
                         val (targetBook, targetCh) = BibleMetadata.getNextReadPosition(last)
+                        bibleStartBook = targetBook
+                        bibleStartChapter = targetCh
+                        bibleEndBook = targetBook
+                        bibleEndChapter = targetCh
                         if (bibleSegments.isNotEmpty()) {
                             bibleSegments[0] = BibleReadingSegment(book = targetBook, startChapter = targetCh, endChapter = targetCh)
                         }
@@ -171,11 +180,10 @@ fun DomainDetailScreen(
             if (prayerFocusType == "Thanksgiving") {
                 val lastThanks = allEntries.filter { 
                     (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
-                    it.prayerType.equals("Thanksgiving", ignoreCase = true)
+                    it.prayerType.equals("Thanksgiving", ignoreCase = true) &&
+                    it.endPrayerTopicNumber > 0
                 }.maxByOrNull { it.timestampMs }
-                val prevEnd = if (lastThanks != null) {
-                    if (lastThanks.endPrayerTopicNumber > 0) lastThanks.endPrayerTopicNumber else lastThanks.prayerTopicsCount
-                } else 0
+                val prevEnd = lastThanks?.endPrayerTopicNumber ?: 0
                 previousEndTopicNumber = prevEnd
                 if (prevEnd > 0) {
                     startPrayerTopicNumberText = (prevEnd + 1).toString()
@@ -189,11 +197,10 @@ fun DomainDetailScreen(
             } else if (prayerFocusType == "Request" || prayerFocusType == "Requests") {
                 val lastReq = allEntries.filter { 
                     (it.domainId == "prayer_alone" || it.domainId == "prayer_with_others") &&
-                    (it.prayerType.equals("Request", ignoreCase = true) || it.prayerType.equals("Requests", ignoreCase = true))
+                    (it.prayerType.equals("Request", ignoreCase = true) || it.prayerType.equals("Requests", ignoreCase = true)) &&
+                    it.endPrayerTopicNumber > 0
                 }.maxByOrNull { it.timestampMs }
-                val prevEnd = if (lastReq != null) {
-                    if (lastReq.endPrayerTopicNumber > 0) lastReq.endPrayerTopicNumber else lastReq.prayerTopicsCount
-                } else 0
+                val prevEnd = lastReq?.endPrayerTopicNumber ?: 0
                 previousEndTopicNumber = prevEnd
                 if (prevEnd > 0) {
                     startPrayerTopicNumberText = (prevEnd + 1).toString()
@@ -313,8 +320,12 @@ fun DomainDetailScreen(
     }
 
     // Calculated Bible Chapters Total
-    val calculatedTotalBibleChapters = remember(bibleSegments.toList()) {
-        bibleSegments.sumOf { (it.endChapter - it.startChapter + 1).coerceAtLeast(1) }
+    val calculatedTotalBibleChapters = remember(isBibleSpanMode, bibleStartBook, bibleStartChapter, bibleEndBook, bibleEndChapter, bibleSegments.toList()) {
+        if (isBibleSpanMode) {
+            BibleMetadata.calculateSpanChapters(bibleStartBook, bibleStartChapter, bibleEndBook, bibleEndChapter)
+        } else {
+            bibleSegments.sumOf { (it.endChapter - it.startChapter + 1).coerceAtLeast(1) }
+        }
     }
 
     // Calculated Giving Percentage
@@ -623,172 +634,29 @@ fun DomainDetailScreen(
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-
-                                    bibleSegments.forEachIndexed { index, segment ->
-                                        Surface(
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        text = "${strings.bookSegment} #${index + 1}",
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    )
-                                                    if (bibleSegments.size > 1) {
-                                                        IconButton(
-                                                            onClick = { bibleSegments.removeAt(index) },
-                                                            modifier = Modifier.size(28.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.Delete, contentDescription = strings.removeBookSegment, tint = StatusError)
-                                                        }
-                                                    }
-                                                }
-
-                                                var bookExpanded by remember { mutableStateOf(false) }
-                                                ExposedDropdownMenuBox(
-                                                    expanded = bookExpanded,
-                                                    onExpandedChange = { bookExpanded = !bookExpanded }
-                                                ) {
-                                                    OutlinedTextField(
-                                                        value = strings.getBibleBookName(segment.book),
-                                                        onValueChange = {},
-                                                        readOnly = true,
-                                                        label = { Text(strings.selectBibleBook) },
-                                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bookExpanded) },
-                                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                                                        singleLine = true
-                                                    )
-                                                    ExposedDropdownMenu(
-                                                        expanded = bookExpanded,
-                                                        onDismissRequest = { bookExpanded = false }
-                                                    ) {
-                                                        BibleMetadata.BOOKS.forEach { b ->
-                                                            DropdownMenuItem(
-                                                                text = { Text("${strings.getBibleBookName(b.name)} (${b.chapters} ch)") },
-                                                                onClick = {
-                                                                    bibleSegments[index] = segment.copy(
-                                                                        book = b.name,
-                                                                        startChapter = 1,
-                                                                        endChapter = 1
-                                                                    )
-                                                                    bookExpanded = false
-                                                                }
-                                                            )
-                                                        }
-                                                    }
-                                                }
-
-                                                val bookInfo = BibleMetadata.BOOKS.find { it.name.equals(segment.book, ignoreCase = true) } ?: BibleMetadata.BOOKS.first()
-                                                val maxCh = bookInfo.chapters
-
-                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                    var startChExpanded by remember { mutableStateOf(false) }
-                                                    var endChExpanded by remember { mutableStateOf(false) }
-
-                                                    ExposedDropdownMenuBox(
-                                                        expanded = startChExpanded,
-                                                        onExpandedChange = { startChExpanded = !startChExpanded },
-                                                        modifier = Modifier.weight(1f)
-                                                    ) {
-                                                        OutlinedTextField(
-                                                            value = "Ch. ${segment.startChapter}",
-                                                            onValueChange = {},
-                                                            readOnly = true,
-                                                            label = { Text(strings.startChapter) },
-                                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = startChExpanded) },
-                                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                                                            singleLine = true
-                                                        )
-                                                        ExposedDropdownMenu(
-                                                            expanded = startChExpanded,
-                                                            onDismissRequest = { startChExpanded = false }
-                                                        ) {
-                                                            (1..maxCh).forEach { ch ->
-                                                                DropdownMenuItem(
-                                                                    text = { Text("Ch. $ch") },
-                                                                    onClick = {
-                                                                        val newEnd = if (segment.endChapter < ch) ch else segment.endChapter
-                                                                        bibleSegments[index] = segment.copy(
-                                                                            startChapter = ch,
-                                                                            endChapter = newEnd
-                                                                        )
-                                                                        startChExpanded = false
-                                                                    }
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-
-                                                    ExposedDropdownMenuBox(
-                                                        expanded = endChExpanded,
-                                                        onExpandedChange = { endChExpanded = !endChExpanded },
-                                                        modifier = Modifier.weight(1f)
-                                                    ) {
-                                                        OutlinedTextField(
-                                                            value = "Ch. ${segment.endChapter}",
-                                                            onValueChange = {},
-                                                            readOnly = true,
-                                                            label = { Text(strings.endChapter) },
-                                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = endChExpanded) },
-                                                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                                                            singleLine = true
-                                                        )
-                                                        ExposedDropdownMenu(
-                                                            expanded = endChExpanded,
-                                                            onDismissRequest = { endChExpanded = false }
-                                                        ) {
-                                                            (segment.startChapter..maxCh).forEach { ch ->
-                                                                DropdownMenuItem(
-                                                                    text = { Text("Ch. $ch") },
-                                                                    onClick = {
-                                                                        bibleSegments[index] = segment.copy(
-                                                                            endChapter = ch
-                                                                        )
-                                                                        endChExpanded = false
-                                                                    }
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
+                                    com.example.ui.components.BibleReadingSelector(
+                                        strings = strings,
+                                        isSpanMode = isBibleSpanMode,
+                                        onSpanModeChange = { isBibleSpanMode = it },
+                                        startBook = bibleStartBook,
+                                        onStartBookChange = { bibleStartBook = it },
+                                        startChapter = bibleStartChapter,
+                                        onStartChapterChange = { bibleStartChapter = it },
+                                        endBook = bibleEndBook,
+                                        onEndBookChange = { bibleEndBook = it },
+                                        endChapter = bibleEndChapter,
+                                        onEndChapterChange = { bibleEndChapter = it },
+                                        discreteSegments = bibleSegments,
+                                        onAddSegment = {
                                             bibleSegments.add(BibleReadingSegment(book = "Genesis", startChapter = 1, endChapter = 1))
                                         },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Icon(Icons.Default.Add, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(strings.addAnotherBook)
-                                    }
-
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = String.format(strings.totalChaptersCalculated, calculatedTotalBibleChapters),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
+                                        onRemoveSegment = { idx ->
+                                            if (bibleSegments.size > 1) bibleSegments.removeAt(idx)
+                                        },
+                                        onUpdateSegment = { idx, updated ->
+                                            bibleSegments[idx] = updated
+                                        }
+                                    )
                                 }
 
                                 "prayer_alone" -> {
@@ -1895,7 +1763,13 @@ fun DomainDetailScreen(
                                     // Build isolated entity according to DomainType
                                     val entry = when (domainId) {
                                         "bible_reading" -> {
-                                            val combinedBook = bibleSegments.joinToString(", ") { "${it.book} ${it.startChapter}-${it.endChapter}" }
+                                            val combinedBook = if (isBibleSpanMode) {
+                                                BibleMetadata.formatSpanSummary(bibleStartBook, bibleStartChapter, bibleEndBook, bibleEndChapter)
+                                            } else {
+                                                bibleSegments.joinToString(", ") { "${it.book} ${it.startChapter}-${it.endChapter}" }
+                                            }
+                                            val sCh = if (isBibleSpanMode) bibleStartChapter else (bibleSegments.firstOrNull()?.startChapter ?: 1)
+                                            val eCh = if (isBibleSpanMode) bibleEndChapter else (bibleSegments.lastOrNull()?.endChapter ?: 1)
                                             AccountabilityEntryEntity(
                                                 id = UUID.randomUUID().toString(),
                                                 userId = userId,
@@ -1907,8 +1781,8 @@ fun DomainDetailScreen(
                                                 startTimeIso = startTimeText,
                                                 endTimeIso = stopTimeText,
                                                 bibleBook = combinedBook,
-                                                startChapter = bibleSegments.firstOrNull()?.startChapter ?: 1,
-                                                endChapter = bibleSegments.lastOrNull()?.endChapter ?: 1,
+                                                startChapter = sCh,
+                                                endChapter = eCh,
                                                 chaptersCount = calculatedTotalBibleChapters,
                                                 notes = notes
                                             )
@@ -1949,6 +1823,8 @@ fun DomainDetailScreen(
                                                 startTimeIso = startTimeText,
                                                 endTimeIso = stopTimeText,
                                                 prayerType = effectiveFocus,
+                                                startPrayerTopicNumber = startPrayerTopicNumberText.toIntOrNull() ?: 0,
+                                                endPrayerTopicNumber = endPrayerTopicNumberText.toIntOrNull() ?: 0,
                                                 prayerParticipantsCount = prayerParticipantsCountText.toIntOrNull() ?: 1,
                                                 notes = notes
                                             )
