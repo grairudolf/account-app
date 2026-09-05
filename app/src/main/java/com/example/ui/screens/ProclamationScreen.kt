@@ -180,6 +180,8 @@ fun ProclamationScreen(
 
             // 1. Enter Prayer Topic / Proclamation
             item {
+                val activeTopic = selectedTopic ?: topics.find { it.topic.trim().equals(topicText.trim(), ignoreCase = true) }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -201,9 +203,9 @@ fun ProclamationScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (selectedTopic != null) {
+                                if (activeTopic != null) {
                                     IconButton(
-                                        onClick = { topicToEdit = selectedTopic },
+                                        onClick = { topicToEdit = activeTopic },
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
@@ -214,7 +216,7 @@ fun ProclamationScreen(
                                         )
                                     }
                                     IconButton(
-                                        onClick = { topicToDelete = selectedTopic },
+                                        onClick = { topicToDelete = activeTopic },
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
@@ -277,6 +279,113 @@ fun ProclamationScreen(
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             shape = RoundedCornerShape(12.dp)
                         )
+
+                        // Active Saved Topic Banner with Direct Edit & Delete Buttons
+                        if (activeTopic != null) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Bookmark,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = if (strings is FrenchStrings) "Sujet enregistré" else "Saved Prayer Topic",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "${activeTopic.cumulativeCount} / ${activeTopic.targetCount} proclamations",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        OutlinedButton(
+                                            onClick = { topicToEdit = activeTopic },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier.height(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(if (strings is FrenchStrings) "Modifier" else "Edit", style = MaterialTheme.typography.labelSmall)
+                                        }
+                                        OutlinedButton(
+                                            onClick = { topicToDelete = activeTopic },
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier.height(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(13.dp), tint = MaterialTheme.colorScheme.error)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(if (strings is FrenchStrings) "Supprimer" else "Delete", style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (topicText.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (strings is FrenchStrings) "Sujet non enregistré" else "Unsaved Topic",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Button(
+                                        onClick = {
+                                            viewModel.savePrayerTopic(
+                                                topicText = topicText,
+                                                targetCount = targetCount,
+                                                currentCount = counter,
+                                                onSuccess = {
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        if (strings is FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
+                                                        android.widget.Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp)
+                                    ) {
+                                        Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(if (strings is FrenchStrings) "Enregistrer ce sujet" else "Save Topic", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                        }
 
                         // Suggestions Row
                         Text(

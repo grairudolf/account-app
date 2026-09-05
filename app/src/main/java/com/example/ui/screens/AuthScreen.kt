@@ -248,7 +248,7 @@ fun AuthScreen(
             )
 
             Text(
-                text = if (strings is FrenchStrings) "Le Compte Rendu Numérique" else "Digital Accountability",
+                text = if (strings is FrenchStrings) "Cahier du Compte Rendu Numérique" else "Digital Accountability Notebook",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,

@@ -352,7 +352,7 @@ object QuoteImageSharer {
                 textSize = 19f
                 typeface = bodyTypeface
             }
-            canvas.drawText("Le compte rendu numérique • Digital Accountability", textLeft, height - 82f, brandSubPaint)
+            canvas.drawText("Cahier du Compte Rendu Numérique • Digital Accountability Notebook", textLeft, height - 82f, brandSubPaint)
 
             // Right Tag Badge
             val tagBadgeWidth = 220f
