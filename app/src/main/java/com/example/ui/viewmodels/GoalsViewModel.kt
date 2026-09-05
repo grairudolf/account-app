@@ -121,6 +121,130 @@ class GoalsViewModel(
         }
     }
 
+    fun quickIncrementGoal(goal: GoalEntity, amount: Double = 1.0, onComplete: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val today = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                val entryId = UUID.randomUUID().toString()
+                val entry = when (goal.domainId) {
+                    "bible_reading" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        chaptersCount = amount.toInt().coerceAtLeast(1),
+                        pagesRead = (amount * 3).toInt(),
+                        durationSeconds = (amount * 300).toLong(),
+                        notes = "Quick step for goal: ${goal.title}"
+                    )
+                    "prayer_alone", "prayer_with_others" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        durationSeconds = if (goal.unit.contains("hour", ignoreCase = true) || goal.unit.contains("heure", ignoreCase = true)) 3600L else if (goal.unit.contains("15")) 900L else 1800L,
+                        prayerTopicsCount = 1,
+                        notes = "Quick prayer session logged for goal: ${goal.title}"
+                    )
+                    "ddewg" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        durationSeconds = 1800L,
+                        notes = "Daily encounter with God completed for goal: ${goal.title}"
+                    )
+                    "fasting" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        fastingDaysCount = 1,
+                        fastingType = if (goal.fastingType.isNotBlank()) goal.fastingType else "COMPLETE",
+                        notes = "Fasting day logged for goal: ${goal.title}"
+                    )
+                    "christian_lit" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        pagesRead = if (goal.unit.contains("book", ignoreCase = true) || goal.unit.contains("livre", ignoreCase = true)) 50 else amount.toInt().coerceAtLeast(1),
+                        durationSeconds = 1800L,
+                        notes = "Christian literature reading for goal: ${goal.title}"
+                    )
+                    "christian_lit_mem" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        pagesMemorized = amount.toInt().coerceAtLeast(1),
+                        litMemPassage = goal.title,
+                        notes = "Literature memorization for goal: ${goal.title}"
+                    )
+                    "bible_mem" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        bibleMemVerse = "Memory verse for ${goal.title}",
+                        notes = "Scripture memorized for goal: ${goal.title}"
+                    )
+                    "soul_winning" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        convertedCount = if (goal.unit.contains("convert", ignoreCase = true) || goal.title.contains("convert", ignoreCase = true) || goal.title.contains("won", ignoreCase = true) || goal.title.contains("gagn", ignoreCase = true)) 1 else 0,
+                        preachedToCount = 1,
+                        notes = "Soul winning logged for goal: ${goal.title}"
+                    )
+                    "proclamation_importunity" -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        proclamationCount = (if (amount > 1) amount else 50.0).toInt(),
+                        proclamationTopic = goal.title,
+                        notes = "Proclamations made for goal: ${goal.title}"
+                    )
+                    else -> com.example.data.local.entities.AccountabilityEntryEntity(
+                        id = entryId,
+                        userId = goal.userId,
+                        domainId = goal.domainId,
+                        dateIso = today,
+                        timestampMs = System.currentTimeMillis(),
+                        timezoneId = java.util.TimeZone.getDefault().id,
+                        durationSeconds = 600L,
+                        notes = "Spiritual practice logged for goal: ${goal.title}"
+                    )
+                }
+                accountabilityRepository.saveEntry(entry)
+                onComplete(true)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false)
+            }
+        }
+    }
+
     fun deleteGoal(id: String, context: android.content.Context? = null) {
         viewModelScope.launch {
             accountabilityRepository.deleteGoal(id)

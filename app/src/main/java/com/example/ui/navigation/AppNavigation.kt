@@ -389,6 +389,12 @@ fun MainApp() {
                                     onDeleteGoal = { goalsViewModel.deleteGoal(it, context) },
                                     onToggleReminder = { goal, enabled ->
                                         goalsViewModel.toggleGoalReminder(goal, enabled, goal.reminderTimeIso, context)
+                                    },
+                                    onQuickIncrementGoal = { goal ->
+                                        goalsViewModel.quickIncrementGoal(goal)
+                                    },
+                                    onNavigateToDomain = { domainId ->
+                                        navController.navigate(NavRoutes.domainDetail(domainId))
                                     }
                                 )
                             }
