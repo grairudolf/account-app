@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -21,12 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -38,6 +39,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.WindowCompat
 import com.example.core.localization.AppStrings
 import com.example.core.localization.EnglishStrings
 import com.example.core.localization.FrenchStrings
@@ -45,24 +49,18 @@ import com.example.core.util.HapticHelper
 import com.example.data.local.entities.ProclamationTopicEntity
 import com.example.ui.components.AppDatePickerDialog
 import com.example.ui.components.AppTimePickerDialog
-import androidx.compose.material3.ripple
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import android.app.Activity
-import androidx.core.view.WindowCompat
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.ProclamationViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProclamationScreen(
     viewModel: ProclamationViewModel,
     strings: AppStrings = EnglishStrings,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToDomain: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val topics by viewModel.topicsFlow.collectAsState()
@@ -75,20 +73,19 @@ fun ProclamationScreen(
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val isTimerRunning by viewModel.isTimerRunning.collectAsState()
     val notes by viewModel.notes.collectAsState()
-    val reflection by viewModel.reflection.collectAsState()
 
     var showEditCounterDialog by remember { mutableStateOf(false) }
     var topicToEdit by remember { mutableStateOf<ProclamationTopicEntity?>(null) }
     var topicToDelete by remember { mutableStateOf<ProclamationTopicEntity?>(null) }
-    var showTargetDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var showSaveConfirmDialog by remember { mutableStateOf(false) }
-    var showAddTopicDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var resetTopicAcrossApp by remember { mutableStateOf(false) }
     var isFullscreenCounterOpen by remember { mutableStateOf(false) }
+    var isManualRecordingExpanded by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
+    val activeSavedTopic = selectedTopic ?: topics.find { it.topic.trim().equals(topicText.trim(), ignoreCase = true) }
 
     Scaffold(
         topBar = {
@@ -116,8 +113,25 @@ fun ProclamationScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showInfoDialog = true }, modifier = Modifier.testTag("proclamation_info_button")) {
-                        Icon(Icons.Default.Info, contentDescription = "Spiritual Guidelines")
+                    // Direct quick link to Domain Details
+                    IconButton(
+                        onClick = { onNavigateToDomain("proclamation_importunity") },
+                        modifier = Modifier.testTag("proclamation_domain_link_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = "Domain Details",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = { showInfoDialog = true },
+                        modifier = Modifier.testTag("proclamation_info_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Spiritual Guidelines"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -132,19 +146,23 @@ fun ProclamationScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 40.dp)
         ) {
-            // Scriptural Motto Card
+            // Scriptural Motto & Domain Header Card
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToDomain("proclamation_importunity") },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                     )
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -163,25 +181,30 @@ fun ProclamationScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "\"Men ought always to pray, and not to faint.\"",
+                                text = strings.proclamationMottoVerse,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Luke 18:1 • Proclaim until total victory is obtained",
+                                text = strings.proclamationMottoRef,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Open Domain",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
 
-            // 1. Enter Prayer Topic / Proclamation
+            // Proclamation Topic Input & Fast Switch
             item {
-                val activeTopic = selectedTopic ?: topics.find { it.topic.trim().equals(topicText.trim(), ignoreCase = true) }
-
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -202,56 +225,81 @@ fun ProclamationScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (activeTopic != null) {
+
+                            if (activeSavedTopic != null) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Bookmark,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Text(
+                                                text = "${activeSavedTopic.cumulativeCount} / ${activeSavedTopic.targetCount}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     IconButton(
-                                        onClick = { topicToEdit = activeTopic },
-                                        modifier = Modifier.size(32.dp)
+                                        onClick = { topicToEdit = activeSavedTopic },
+                                        modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit current topic",
+                                            contentDescription = "Edit Topic",
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                     IconButton(
-                                        onClick = { topicToDelete = activeTopic },
-                                        modifier = Modifier.size(32.dp)
+                                        onClick = { topicToDelete = activeSavedTopic },
+                                        modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete current topic",
+                                            contentDescription = "Delete Topic",
                                             tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(4.dp))
                                 }
+                            } else if (topicText.isNotBlank()) {
                                 TextButton(
                                     onClick = {
-                                        if (topicText.isNotBlank()) {
-                                            viewModel.savePrayerTopic(
-                                                topicText = topicText,
-                                                targetCount = targetCount,
-                                                currentCount = counter,
-                                                onSuccess = {
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            )
-                                        } else {
-                                            showAddTopicDialog = true
-                                        }
+                                        viewModel.savePrayerTopic(
+                                            topicText = topicText,
+                                            targetCount = targetCount,
+                                            currentCount = counter,
+                                            onSuccess = {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    if (strings is FrenchStrings) "Sujet enregistré" else "Topic saved",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        )
                                     },
-                                    modifier = Modifier.testTag("save_prayer_topic_button")
+                                    modifier = Modifier.testTag("save_prayer_topic_button"),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
                                     Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(if (strings is com.example.core.localization.FrenchStrings) "Enregistrer" else "Save Topic", style = MaterialTheme.typography.labelMedium)
+                                    Text(
+                                        text = if (strings is FrenchStrings) "Enregistrer" else "Save Topic",
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
                                 }
                             }
                         }
@@ -280,114 +328,48 @@ fun ProclamationScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        // Active Saved Topic Banner with Direct Edit & Delete Buttons
-                        if (activeTopic != null) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                                modifier = Modifier.fillMaxWidth()
+                        // Clean Saved Topics Filter Carousel (1-tap switch)
+                        if (topics.isNotEmpty()) {
+                            Text(
+                                text = if (strings is FrenchStrings) "Sujets enregistrés :" else "Saved topics:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(vertical = 2.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Bookmark,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text(
-                                                text = if (strings is FrenchStrings) "Sujet enregistré" else "Saved Prayer Topic",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Text(
-                                                text = "${activeTopic.cumulativeCount} / ${activeTopic.targetCount} proclamations",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        OutlinedButton(
-                                            onClick = { topicToEdit = activeTopic },
-                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                            modifier = Modifier.height(32.dp)
-                                        ) {
-                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(if (strings is FrenchStrings) "Modifier" else "Edit", style = MaterialTheme.typography.labelSmall)
-                                        }
-                                        OutlinedButton(
-                                            onClick = { topicToDelete = activeTopic },
-                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                            modifier = Modifier.height(32.dp)
-                                        ) {
-                                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(13.dp), tint = MaterialTheme.colorScheme.error)
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(if (strings is FrenchStrings) "Supprimer" else "Delete", style = MaterialTheme.typography.labelSmall)
-                                        }
-                                    }
-                                }
-                            }
-                        } else if (topicText.isNotBlank()) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = if (strings is FrenchStrings) "Sujet non enregistré" else "Unsaved Topic",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Button(
+                                items(topics) { item ->
+                                    val isSelected = selectedTopic?.id == item.id || topicText.trim().equals(item.topic.trim(), ignoreCase = true)
+                                    FilterChip(
+                                        selected = isSelected,
                                         onClick = {
-                                            viewModel.savePrayerTopic(
-                                                topicText = topicText,
-                                                targetCount = targetCount,
-                                                currentCount = counter,
-                                                onSuccess = {
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (strings is FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
+                                            viewModel.resumeTopicSession(item)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = "${item.topic} (${item.cumulativeCount})",
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         },
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                        modifier = Modifier.height(30.dp)
-                                    ) {
-                                        Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(13.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(if (strings is FrenchStrings) "Enregistrer ce sujet" else "Save Topic", style = MaterialTheme.typography.labelSmall)
-                                    }
+                                        leadingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        } else null,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
                                 }
                             }
                         }
 
-                        // Suggestions Row
+                        // Clean Scriptural Suggestions Carousel
                         Text(
                             text = strings.quickScripturalProclamations,
                             style = MaterialTheme.typography.labelSmall,
@@ -395,19 +377,19 @@ fun ProclamationScreen(
                         )
 
                         val suggestionsList = if (strings is FrenchStrings) listOf(
-                            "Jésus-Christ est Seigneur sur toutes les nations",
-                            "Tout pouvoir m'a été donné dans le ciel et sur la terre",
-                            "Mon Dieu pourvoira à tous mes besoins selon sa richesse",
-                            "L'Éternel est ma lumière et mon salut, de qui aurais-je crainte?",
-                            "Toute arme forgée contre moi sera sans effet",
-                            "Par ses meurtrissures nous sommes guéris",
-                            "L'Éternel combattra pour vous, et vous garderez le silence",
+                            "Jesus-Christ est Seigneur sur toutes les nations",
+                            "Tout pouvoir m'a ete donne dans le ciel et sur la terre",
+                            "Mon Dieu pourvoira a tous mes besoins selon sa richesse",
+                            "L'Eternel est ma lumiere et mon salut, de qui aurais-je crainte?",
+                            "Toute arme forgee contre moi sera sans effet",
+                            "Par ses meurtrissures nous sommes gueris",
+                            "L'Eternel combattra pour vous, et vous garderez le silence",
                             "La moisson est grande, envoie des ouvriers dans ta moisson"
                         ) else viewModel.sampleSuggestions
 
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
+                            contentPadding = PaddingValues(vertical = 2.dp)
                         ) {
                             items(suggestionsList) { suggestion ->
                                 SuggestionChip(
@@ -429,151 +411,11 @@ fun ProclamationScreen(
                                 )
                             }
                         }
-
-                        // Saved Topics Selector Dropdown
-                        if (topics.isNotEmpty()) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            var topicDropdownExpanded by remember { mutableStateOf(false) }
-
-                            Text(
-                                text = strings.yourSavedPrayerTopics,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            ExposedDropdownMenuBox(
-                                expanded = topicDropdownExpanded,
-                                onExpandedChange = { topicDropdownExpanded = !topicDropdownExpanded },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                val selectedTopicTitle = selectedTopic?.let { "${it.topic} (${it.cumulativeCount})" }
-                                    ?: topics.find { it.topic.equals(topicText, ignoreCase = true) }?.let { "${it.topic} (${it.cumulativeCount})" }
-                                    ?: (if (topicText.isNotBlank()) topicText else if (strings is FrenchStrings) "Sélectionner un sujet enregistré..." else "Select saved prayer topic...")
-
-                                OutlinedTextField(
-                                    value = selectedTopicTitle,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(if (strings is FrenchStrings) "Sujet de prière enregistré" else "Saved Prayer Topic") },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Bookmark,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    trailingIcon = {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = topicDropdownExpanded)
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .menuAnchor()
-                                        .testTag("saved_topics_dropdown"),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-                                )
-
-                                ExposedDropdownMenu(
-                                    expanded = topicDropdownExpanded,
-                                    onDismissRequest = { topicDropdownExpanded = false }
-                                ) {
-                                    topics.forEach { item ->
-                                        val isSelected = selectedTopic?.id == item.id || topicText.equals(item.topic, ignoreCase = true)
-                                        DropdownMenuItem(
-                                            text = {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        text = item.topic,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Surface(
-                                                        shape = RoundedCornerShape(6.dp),
-                                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-                                                    ) {
-                                                        Text(
-                                                            text = "${item.cumulativeCount}",
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                        )
-                                                    }
-                                                }
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.PlayCircle,
-                                                    contentDescription = null,
-                                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            },
-                                            trailingIcon = {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    IconButton(
-                                                        onClick = {
-                                                            topicDropdownExpanded = false
-                                                            topicToEdit = item
-                                                        },
-                                                        modifier = Modifier.size(28.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Edit,
-                                                            contentDescription = "Edit topic",
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                    IconButton(
-                                                        onClick = {
-                                                            topicDropdownExpanded = false
-                                                            topicToDelete = item
-                                                        },
-                                                        modifier = Modifier.size(28.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Delete,
-                                                            contentDescription = "Delete topic",
-                                                            tint = MaterialTheme.colorScheme.error,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                            },
-                                            onClick = {
-                                                viewModel.resumeTopicSession(item)
-                                                topicDropdownExpanded = false
-                                            }
-                                        )
-                                    }
-
-                                    HorizontalDivider()
-                                    DropdownMenuItem(
-                                        text = { Text(if (strings is FrenchStrings) "+ Nouveau sujet personnalisé" else "+ Enter Custom Topic", color = MaterialTheme.colorScheme.primary) },
-                                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                        onClick = {
-                                            viewModel.setTopicText("")
-                                            topicDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
 
-            // 2. Interactive Counter & Live Timer Area
+            // Interactive Counter & Live Timer Area
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -590,48 +432,28 @@ fun ProclamationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Resumed Session Status Banner
+                        // Continuing session indicator
                         if (isResumedSession && startingCount > 0) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayCircle,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        val addedInSession = (counter - startingCount).coerceAtLeast(0)
-                                        Column {
-                                            Text(
-                                                text = String.format(strings.continuingSessionFrom, startingCount),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = String.format(strings.addedInTodaySession, addedInSession),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
+                                    val addedInSession = (counter - startingCount).coerceAtLeast(0)
+                                    Text(
+                                        text = String.format(strings.continuingSessionFrom, startingCount) + " (+$addedInSession)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                     TextButton(
                                         onClick = { viewModel.clearResumedSession() },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                                     ) {
                                         Text(strings.startAtZero, style = MaterialTheme.typography.labelSmall)
                                     }
@@ -639,7 +461,7 @@ fun ProclamationScreen(
                             }
                         }
 
-                        // Live Timer Header Bar
+                        // Timer & Fullscreen Bar
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -671,7 +493,6 @@ fun ProclamationScreen(
                                 )
                             }
 
-                            // Header Action Buttons: Fullscreen Counter + Timer Play/Pause
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -721,7 +542,7 @@ fun ProclamationScreen(
                             }
                         }
 
-                        // Giant Circular Tap-to-Proclaim Button & Counter Visualizer
+                        // Central Tap-to-Proclaim Button & Counter Display
                         val interactionSource = remember { MutableInteractionSource() }
                         val isPressed by interactionSource.collectIsPressedAsState()
                         val scale by animateFloatAsState(
@@ -737,10 +558,10 @@ fun ProclamationScreen(
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primary,
-                                tonalElevation = 8.dp,
-                                shadowElevation = 12.dp,
+                                tonalElevation = 6.dp,
+                                shadowElevation = 10.dp,
                                 modifier = Modifier
-                                    .size(220.dp)
+                                    .size(210.dp)
                                     .scale(scale)
                                     .clip(CircleShape)
                                     .clickable(
@@ -765,7 +586,7 @@ fun ProclamationScreen(
                                         .padding(16.dp)
                                 ) {
                                     Text(
-                                        text = topicText.ifBlank { "Proclamation Topic" },
+                                        text = topicText.ifBlank { "Proclamation" },
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
@@ -780,7 +601,7 @@ fun ProclamationScreen(
                                     Text(
                                         text = counter.toString(),
                                         style = MaterialTheme.typography.displayMedium.copy(
-                                            fontSize = 58.sp,
+                                            fontSize = 54.sp,
                                             fontWeight = FontWeight.Black
                                         ),
                                         color = MaterialTheme.colorScheme.onPrimary
@@ -800,7 +621,7 @@ fun ProclamationScreen(
                                                 imageVector = Icons.Default.AddCircle,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(16.dp)
+                                                modifier = Modifier.size(14.dp)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
@@ -814,7 +635,7 @@ fun ProclamationScreen(
                                 }
                             }
 
-                            // Quick Edit Counter Badge
+                            // Quick Edit Counter Button
                             IconButton(
                                 onClick = {
                                     HapticHelper.vibrateClick(context)
@@ -822,8 +643,8 @@ fun ProclamationScreen(
                                 },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(end = 16.dp)
-                                    .size(40.dp)
+                                    .padding(end = 12.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
@@ -831,7 +652,7 @@ fun ProclamationScreen(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = "Edit count",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -847,7 +668,7 @@ fun ProclamationScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "$counter / $targetCount Proclamations",
+                                    text = "$counter / $targetCount ${if (strings is FrenchStrings) "Proclamations" else "Proclamations"}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -870,7 +691,7 @@ fun ProclamationScreen(
                             )
                         }
 
-                        // Quick Increment & Decrement Row
+                        // Quick Increment & Decrement Controls
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -883,14 +704,14 @@ fun ProclamationScreen(
                                     viewModel.decrementCounter()
                                 },
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(42.dp)
                                     .testTag("proclamation_minus_1"),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("-1", fontWeight = FontWeight.Bold)
                             }
 
-                            // +5, +10, +25, +50 Quick Chips
+                            // Quick Increment Buttons
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 listOf(5, 10, 25, 50).forEach { amt ->
                                     FilledTonalButton(
@@ -912,14 +733,14 @@ fun ProclamationScreen(
                                 }
                             }
 
-                            // Reset
+                            // Reset Action
                             IconButton(
                                 onClick = {
                                     HapticHelper.vibrateWarning(context)
                                     showResetDialog = true
                                 },
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(42.dp)
                                     .testTag("proclamation_reset_button")
                             ) {
                                 Icon(Icons.Default.Refresh, contentDescription = "Reset Count")
@@ -929,7 +750,7 @@ fun ProclamationScreen(
                 }
             }
 
-            // 3. Notes & Prophetic Impressions
+            // Session Notes Field
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -949,22 +770,10 @@ fun ProclamationScreen(
                         OutlinedTextField(
                             value = notes,
                             onValueChange = { viewModel.setNotes(it) },
-                            label = { Text(strings.sessionNotesPlaceholder) },
+                            placeholder = { Text(strings.sessionNotesPlaceholder) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("proclamation_notes_input"),
-                            minLines = 2,
-                            maxLines = 4,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        OutlinedTextField(
-                            value = reflection,
-                            onValueChange = { viewModel.setReflection(it) },
-                            label = { Text(strings.propheticBurdensPlaceholder) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("proclamation_reflection_input"),
                             minLines = 2,
                             maxLines = 4,
                             shape = RoundedCornerShape(12.dp)
@@ -973,7 +782,7 @@ fun ProclamationScreen(
                 }
             }
 
-            // 4. Save Session Button
+            // Primary Save Action Button
             item {
                 Button(
                     onClick = {
@@ -987,7 +796,7 @@ fun ProclamationScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp)
+                        .height(52.dp)
                         .testTag("save_proclamation_session_button"),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -1005,41 +814,17 @@ fun ProclamationScreen(
                 }
             }
 
-            // 5. Topics History & Lifetime Stats with Plus Icon to add topic
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // Saved Topics & Progress List
+            if (topics.isNotEmpty()) {
+                item {
                     Text(
                         text = strings.savedPrayerTopicsAndProgress,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
-
-                    IconButton(
-                        onClick = {
-                            viewModel.setTopicText("")
-                            focusManager.clearFocus()
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add new prayer topic",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
                 }
-            }
 
-            if (topics.isNotEmpty()) {
                 items(topics) { topicItem ->
                     TopicHistoryCard(
                         topic = topicItem,
@@ -1052,19 +837,63 @@ fun ProclamationScreen(
                 }
             }
 
-            // 6. Manual / Offline Session Recording (At the very bottom)
+            // Expandable Offline / Manual Session Recording Card
             item {
-                ManualProclamationCard(
-                    initialTopic = topicText,
-                    onSaveManual = { date, startTime, stopTime, topic, count, dur, notes, onSuccess ->
-                        viewModel.saveManualSession(date, startTime, stopTime, topic, count, dur, notes, onSuccess)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isManualRecordingExpanded = !isManualRecordingExpanded },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.EditCalendar,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (strings is FrenchStrings) "Enregistrer une session hors-ligne" else "Record Offline Session",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Icon(
+                                imageVector = if (isManualRecordingExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (isManualRecordingExpanded) {
+                            ManualProclamationContent(
+                                initialTopic = topicText,
+                                strings = strings,
+                                onSaveManual = { date, startTime, stopTime, topic, count, dur, noteText, onSuccess ->
+                                    viewModel.saveManualSession(date, startTime, stopTime, topic, count, dur, noteText, onSuccess)
+                                }
+                            )
+                        }
                     }
-                )
+                }
             }
         }
     }
 
-    // Dialog: Edit Counter Starting Value
+    // Dialog: Edit Counter Starting Value / Target
     if (showEditCounterDialog) {
         var inputVal by remember { mutableStateOf(counter.toString()) }
         var targetVal by remember { mutableStateOf(targetCount.toString()) }
@@ -1082,9 +911,9 @@ fun ProclamationScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = if (strings is FrenchStrings)
-                            "Si vous avez déjà proclamé ou prié avant d'enregistrer, vous pouvez régler votre compteur sur n'importe quel nombre (ex. 100) et choisir de continuer à partir de ce nombre comme base de départ."
+                            "Réglez le compteur et choisissez si cette valeur sert de point de départ pour la session en cours."
                         else
-                            "If you have already proclaimed or prayed before logging, you can set your counter to any number (e.g., 100) and choose whether to continue from this number as your session starting base.",
+                            "Set the counter and choose whether this value acts as your starting baseline for this session.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1124,9 +953,9 @@ fun ProclamationScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = if (strings is FrenchStrings)
-                                "Définir comme point de départ de la session (ne compter que les répétitions supplémentaires pour aujourd'hui)"
+                                "Définir comme point de départ de la session"
                             else
-                                "Set as session starting baseline (only count additional repetitions toward today's log)",
+                                "Set as session starting baseline",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -1171,50 +1000,48 @@ fun ProclamationScreen(
             },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.padding(vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (strings is FrenchStrings) "1. Proclamation de la Foi" else "1. Proclamation of Faith",
+                        text = if (strings is FrenchStrings) "Proclamation de la Foi" else "Proclamation of Faith",
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = if (strings is FrenchStrings)
-                            "Proclamer la parole de Dieu à voix haute et de manière répétée jusqu'à ce que la foi remplisse l'esprit et que l'opposition spirituelle soit brisée (Hébreux 4:14, Apocalypse 12:11)."
+                            "Proclamer la parole de Dieu a voix haute et de maniere repetee jusqu'a ce que la foi remplisse l'esprit et que l'opposition spirituelle soit brisee (Hebreux 4:14, Apocalypse 12:11)."
                         else
                             "Speaking God's word aloud repeatedly until faith fills the spirit and spiritual opposition is broken (Hebrews 4:14, Revelation 12:11).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (strings is FrenchStrings) "2. L'Importunité dans la Prière" else "2. Importunity in Prayer",
+                        text = if (strings is FrenchStrings) "L'Importunite dans la Priere" else "Importunity in Prayer",
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = if (strings is FrenchStrings)
-                            "Prière persistante, fervente et infatigable pour un sujet précis jusqu'à ce que l'exaucement se manifeste (Luc 11:8, Luc 18:1-8)."
+                            "Priere persistante, fervente et infatigable pour un sujet precis jusqu'a ce que l'exaucement se manifeste (Luc 11:8, Luc 18:1-8)."
                         else
-                            "Persistent, shameless, and untiring prayer for a specific topic until the answer comes (Luke 11:8, Luke 18:1-8).",
+                            "Persistent and untiring prayer for a specific topic until the answer comes (Luke 11:8, Luke 18:1-8).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (strings is FrenchStrings) "3. Conseils Pratiques" else "3. Practical Tips",
+                        text = if (strings is FrenchStrings) "Conseils Pratiques" else "Practical Guidance",
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = if (strings is FrenchStrings)
-                            "• Choisissez des sujets bibliques clairs.\n• Utilisez le compteur pour maintenir une répétition focalisée.\n• Que vos prières soient audibles, fermes et remplies du Saint-Esprit."
+                            "• Choisissez des sujets bibliques clairs.\n• Utilisez le compteur pour maintenir une repetition focalisee.\n• Que vos prieres soient audibles, fermes et remplies du Saint-Esprit."
                         else
                             "• Set clear biblical topics.\n• Use the counter to maintain focused repetition.\n• Let your prayers be audible, firm, and filled with the Holy Spirit.",
                         style = MaterialTheme.typography.bodySmall,
@@ -1230,12 +1057,12 @@ fun ProclamationScreen(
         )
     }
 
-    // Dialog: Save Warning if 0
+    // Dialog: Save Empty Warning
     if (showSaveConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showSaveConfirmDialog = false },
-            title = { Text(if (strings is FrenchStrings) "Enregistrer une session vide ?" else "Log Empty Session?") },
-            text = { Text(if (strings is FrenchStrings) "Vous avez actuellement 0 répétition et 0 minute enregistrée. Souhaitez-vous tout de même enregistrer ?" else "You currently have 0 repetitions and 0 minutes recorded. Would you still like to log this session?") },
+            title = { Text(if (strings is FrenchStrings) "Enregistrer une session vide ?" else "Save Empty Session?") },
+            text = { Text(if (strings is FrenchStrings) "Vous avez actuellement 0 répétition. Souhaitez-vous tout de même enregistrer ?" else "You currently have 0 repetitions recorded. Would you still like to save this session?") },
             confirmButton = {
                 Button(onClick = {
                     showSaveConfirmDialog = false
@@ -1252,57 +1079,7 @@ fun ProclamationScreen(
         )
     }
 
-    if (showAddTopicDialog) {
-        var newTopicInput by remember { mutableStateOf("") }
-        var targetInput by remember { mutableStateOf("100") }
-
-        AlertDialog(
-            onDismissRequest = { showAddTopicDialog = false },
-            title = { Text("Save New Prayer Topic") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = newTopicInput,
-                        onValueChange = { newTopicInput = it },
-                        label = { Text("Prayer Topic / Proclamation") },
-                        placeholder = { Text("e.g. Divine Wisdom & Breakthrough") },
-                        singleLine = false,
-                        maxLines = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = targetInput,
-                        onValueChange = { targetInput = it.filter { c -> c.isDigit() } },
-                        label = { Text("Target Proclamations Count") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val target = targetInput.toIntOrNull() ?: 100
-                        viewModel.savePrayerTopic(newTopicInput, target)
-                        showAddTopicDialog = false
-                    },
-                    enabled = newTopicInput.isNotBlank()
-                ) {
-                    Text("Save Topic")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddTopicDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Dialog: Reset Proclamation Count Confirmation
+    // Dialog: Reset Counter Confirmation
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
@@ -1324,9 +1101,9 @@ fun ProclamationScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = if (strings is FrenchStrings)
-                            "Voulez-vous remettre le compteur actif et le chronomètre à 0 pour cette session ?"
+                            "Remettre le compteur actif et le chronomètre à 0 pour cette session ?"
                         else
-                            "Reset the active session counter and chronometer to 0?",
+                            "Reset the active counter and chronometer to 0 for this session?",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -1375,7 +1152,7 @@ fun ProclamationScreen(
                     ),
                     modifier = Modifier.testTag("confirm_reset_counter_button")
                 ) {
-                    Text(if (strings is FrenchStrings) "Réinitialiser à 0" else "Reset to 0")
+                    Text(if (strings is FrenchStrings) "Réinitialiser" else "Reset")
                 }
             },
             dismissButton = {
@@ -1386,7 +1163,7 @@ fun ProclamationScreen(
         )
     }
 
-    // Dialog: Fullscreen Counter
+    // Dialog: Fullscreen Distraction-Free Counter
     if (isFullscreenCounterOpen) {
         FullscreenCounterDialog(
             topic = topicText.ifBlank { selectedTopic?.topic ?: if (strings is FrenchStrings) "Proclamation de Foi" else "Faith Proclamation" },
@@ -1420,7 +1197,7 @@ fun ProclamationScreen(
                 viewModel.editTopic(item, newTitle, newTarget, newCount)
                 android.widget.Toast.makeText(
                     context,
-                    if (strings is FrenchStrings) "Sujet de prière mis à jour !" else "Prayer topic updated!",
+                    if (strings is FrenchStrings) "Sujet mis à jour" else "Topic updated",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
             },
@@ -1428,7 +1205,7 @@ fun ProclamationScreen(
                 viewModel.deleteTopic(item)
                 android.widget.Toast.makeText(
                     context,
-                    if (strings is FrenchStrings) "Sujet supprimé !" else "Prayer topic deleted!",
+                    if (strings is FrenchStrings) "Sujet supprimé" else "Topic deleted",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
             }
@@ -1444,7 +1221,7 @@ fun ProclamationScreen(
                 viewModel.deleteTopic(item)
                 android.widget.Toast.makeText(
                     context,
-                    if (strings is FrenchStrings) "Sujet supprimé !" else "Prayer topic deleted!",
+                    if (strings is FrenchStrings) "Sujet supprimé" else "Topic deleted",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
             }
@@ -1470,7 +1247,7 @@ private fun EditTopicDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text(if (strings is FrenchStrings) "Modifier le sujet de prière" else "Edit Saved Prayer Topic", fontWeight = FontWeight.Bold)
+                Text(if (strings is FrenchStrings) "Modifier le sujet" else "Edit Prayer Topic", fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -1609,20 +1386,18 @@ private fun TopicHistoryCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1632,21 +1407,19 @@ private fun TopicHistoryCard(
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape)
-                            .clickable { onEdit() },
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "${topic.cumulativeCount}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -1654,114 +1427,41 @@ private fun TopicHistoryCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = topic.topic,
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${topic.totalDurationSeconds / 60} min total",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (topic.lastPracticedIso.isNotBlank()) {
-                                Text(
-                                    text = "• ${topic.lastPracticedIso}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        Text(
+                            text = "Target: ${topic.targetCount} • ${topic.totalDurationSeconds / 60} min total",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = onEdit,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .testTag("edit_topic_${topic.id}")
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit topic",
+                            contentDescription = "Edit Topic",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .testTag("delete_topic_${topic.id}")
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete topic",
+                            contentDescription = "Delete Topic",
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                    }
-
-                    Box {
-                        IconButton(
-                            onClick = { menuExpanded = true },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Topic options",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(if (strings is FrenchStrings) "Modifier le sujet" else "Edit Topic") },
-                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onEdit()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(if (strings is FrenchStrings) "Continuer (${topic.cumulativeCount})" else "Continue Session") },
-                                leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onResume()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(if (strings is FrenchStrings) "Nouvelle Session (+0)" else "Start Fresh (+0)") },
-                                leadingIcon = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onStartFresh()
-                                }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text(strings.delete, color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onDelete()
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -1773,38 +1473,25 @@ private fun TopicHistoryCard(
             ) {
                 Button(
                     onClick = onResume,
-                    modifier = Modifier.weight(1.3f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.weight(1.2f),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (strings is FrenchStrings) "Proclamer (${topic.cumulativeCount})" else "Proclaim (${topic.cumulativeCount})",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelMedium
                     )
                 }
 
                 OutlinedButton(
                     onClick = onStartFresh,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.RestartAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Icon(imageVector = Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (strings is FrenchStrings) "Nouveau (+0)" else "New (+0)",
@@ -1817,8 +1504,9 @@ private fun TopicHistoryCard(
 }
 
 @Composable
-private fun ManualProclamationCard(
+private fun ManualProclamationContent(
     initialTopic: String,
+    strings: AppStrings,
     onSaveManual: (dateIso: String, startTime: String, stopTime: String, topic: String, count: Int, durationMins: Long, notes: String, onSuccess: () -> Unit) -> Unit
 ) {
     val context = LocalContext.current
@@ -1840,7 +1528,6 @@ private fun ManualProclamationCard(
     var manualNotes by remember { mutableStateOf("") }
     var isSavingManual by remember { mutableStateOf(false) }
 
-    // Automatic Duration Calculation from start and stop time
     val calculatedDurationMinutes = remember(startTimeText, stopTimeText) {
         try {
             val startParts = startTimeText.split(":").map { it.trim().toInt() }
@@ -1856,227 +1543,148 @@ private fun ManualProclamationCard(
         }
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.EditCalendar,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Record Manual Offline Session",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Text(
-                text = "If you proclaimed or prayed away from your phone, record your past session manually here:",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Date Selector
-            OutlinedTextField(
-                value = manualDateIso,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Session Date") },
-                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showManualDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showManualDatePicker = true },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            // Manual Topic
-            OutlinedTextField(
-                value = manualTopic,
-                onValueChange = { manualTopic = it },
-                label = { Text("Prayer Topic / Proclamation") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            // Start & Stop Time with Auto-calculated Duration
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Time Span",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = startTimeText,
-                            onValueChange = { startTimeText = it },
-                            label = { Text("Start Time", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingIcon = {
-                                Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showStartTimePicker = true }) {
-                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time")
-                                }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("manual_start_time_field"),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = stopTimeText,
-                            onValueChange = { stopTimeText = it },
-                            label = { Text("Stop Time", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingIcon = {
-                                Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showStopTimePicker = true }) {
-                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Stop Time")
-                                }
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("manual_stop_time_field"),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
-                    }
-
-                    val durHours = calculatedDurationMinutes / 60
-                    val durMins = calculatedDurationMinutes % 60
-                    val durDisplay = if (durHours > 0) "${durHours}h ${durMins}m" else "${durMins}m"
-                    Text(
-                        text = "Calculated Duration: $durDisplay (${calculatedDurationMinutes} min)",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Date Selector
+        OutlinedTextField(
+            value = manualDateIso,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Date") },
+            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showManualDatePicker = true }) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Select Date")
                 }
-            }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showManualDatePicker = true },
+            shape = RoundedCornerShape(10.dp),
+            singleLine = true
+        )
 
-            // Proclamations Count
+        // Manual Topic
+        OutlinedTextField(
+            value = manualTopic,
+            onValueChange = { manualTopic = it },
+            label = { Text(if (strings is FrenchStrings) "Sujet de prière" else "Prayer Topic") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            singleLine = true
+        )
+
+        // Time Range
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             OutlinedTextField(
-                value = manualCountStr,
-                onValueChange = { manualCountStr = it.filter { c -> c.isDigit() } },
-                label = { Text("Proclamations Count") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                value = startTimeText,
+                onValueChange = { startTimeText = it },
+                label = { Text("Start") },
+                trailingIcon = {
+                    IconButton(onClick = { showStartTimePicker = true }) {
+                        Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time")
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
                 singleLine = true
             )
 
             OutlinedTextField(
-                value = manualNotes,
-                onValueChange = { manualNotes = it },
-                label = { Text("Notes / Impressions (Optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                maxLines = 2
-            )
-
-            Button(
-                onClick = {
-                    isSavingManual = true
-                    val count = manualCountStr.toIntOrNull() ?: 100
-                    onSaveManual(
-                        manualDateIso,
-                        startTimeText,
-                        stopTimeText,
-                        manualTopic,
-                        count,
-                        calculatedDurationMinutes,
-                        manualNotes
-                    ) {
-                        isSavingManual = false
-                        manualNotes = ""
-                        HapticHelper.vibrateSuccess(context)
+                value = stopTimeText,
+                onValueChange = { stopTimeText = it },
+                label = { Text("Stop") },
+                trailingIcon = {
+                    IconButton(onClick = { showStopTimePicker = true }) {
+                        Icon(Icons.Default.AccessTime, contentDescription = "Pick Stop Time")
                     }
                 },
-                enabled = !isSavingManual && manualTopic.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
-                )
-            ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Log Manual Session", fontWeight = FontWeight.Bold)
-            }
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                singleLine = true
+            )
+        }
 
-            if (showManualDatePicker) {
-                AppDatePickerDialog(
-                    initialDateIso = manualDateIso,
-                    onDismiss = { showManualDatePicker = false },
-                    onDateSelected = { selDate ->
-                        manualDateIso = selDate
-                        showManualDatePicker = false
-                    }
-                )
-            }
+        // Count & Notes
+        OutlinedTextField(
+            value = manualCountStr,
+            onValueChange = { manualCountStr = it.filter { c -> c.isDigit() } },
+            label = { Text(if (strings is FrenchStrings) "Nombre de proclamations" else "Proclamations Count") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            singleLine = true
+        )
 
-            if (showStartTimePicker) {
-                AppTimePickerDialog(
-                    initialTime = startTimeText,
-                    onTimeSelected = {
-                        startTimeText = it
-                        showStartTimePicker = false
-                    },
-                    onDismiss = { showStartTimePicker = false }
-                )
-            }
+        OutlinedTextField(
+            value = manualNotes,
+            onValueChange = { manualNotes = it },
+            label = { Text(if (strings is FrenchStrings) "Notes (optionnel)" else "Notes (Optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            maxLines = 2
+        )
 
-            if (showStopTimePicker) {
-                AppTimePickerDialog(
-                    initialTime = stopTimeText,
-                    onTimeSelected = {
-                        stopTimeText = it
-                        showStopTimePicker = false
-                    },
-                    onDismiss = { showStopTimePicker = false }
-                )
-            }
+        Button(
+            onClick = {
+                isSavingManual = true
+                val count = manualCountStr.toIntOrNull() ?: 100
+                onSaveManual(
+                    manualDateIso,
+                    startTimeText,
+                    stopTimeText,
+                    manualTopic,
+                    count,
+                    calculatedDurationMinutes,
+                    manualNotes
+                ) {
+                    isSavingManual = false
+                    manualNotes = ""
+                    HapticHelper.vibrateSuccess(context)
+                }
+            },
+            enabled = !isSavingManual && manualTopic.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(if (strings is FrenchStrings) "Enregistrer la session manuelle" else "Log Manual Session")
+        }
+
+        if (showManualDatePicker) {
+            AppDatePickerDialog(
+                initialDateIso = manualDateIso,
+                onDismiss = { showManualDatePicker = false },
+                onDateSelected = { selDate ->
+                    manualDateIso = selDate
+                    showManualDatePicker = false
+                }
+            )
+        }
+
+        if (showStartTimePicker) {
+            AppTimePickerDialog(
+                initialTime = startTimeText,
+                onTimeSelected = {
+                    startTimeText = it
+                    showStartTimePicker = false
+                },
+                onDismiss = { showStartTimePicker = false }
+            )
+        }
+
+        if (showStopTimePicker) {
+            AppTimePickerDialog(
+                initialTime = stopTimeText,
+                onTimeSelected = {
+                    stopTimeText = it
+                    showStopTimePicker = false
+                },
+                onDismiss = { showStopTimePicker = false }
+            )
         }
     }
 }
@@ -2093,7 +1701,6 @@ private fun FullscreenCounterDialog(
     onDismiss: () -> Unit
 ) {
     val isDark = isAppInDarkTheme()
-    // Light theme: dark blue (#14214C / PrimaryBlue) with white text; Dark theme: charcoal dark (#141518) with yellow text
     val backgroundColor = if (isDark) Color(0xFF141518) else PrimaryBlue
     val primaryTextColor = if (isDark) Color(0xFFFFD54F) else Color(0xFFFFFFFF)
     val secondaryTextColor = if (isDark) Color(0xFFFFE082) else Color(0xFFE2E8F0)
@@ -2112,7 +1719,6 @@ private fun FullscreenCounterDialog(
         DisposableEffect(isDark) {
             val window = activity?.window
             val insetsController = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-            // Dialog has a dark background in both light and dark modes, so status bar icons should be light (white)
             insetsController?.isAppearanceLightStatusBars = false
             onDispose {
                 insetsController?.isAppearanceLightStatusBars = !isDark
@@ -2132,7 +1738,7 @@ private fun FullscreenCounterDialog(
                 .systemBarsPadding()
                 .padding(24.dp)
         ) {
-            // Top Bar: Prayer Topic + Close/Minimize Button
+            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -471,7 +471,8 @@ fun MainApp() {
                         ProclamationScreen(
                             viewModel = proclamationViewModel,
                             strings = strings,
-                            onNavigateBack = { navController.popBackStack() }
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToDomain = { id -> navController.navigate(NavRoutes.domainDetail(id)) }
                         )
                     } else {
                         val entryViewModel: EntryViewModel = viewModel(factory = factory)
@@ -504,7 +505,8 @@ fun MainApp() {
                     ProclamationScreen(
                         viewModel = proclamationViewModel,
                         strings = strings,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToDomain = { id -> navController.navigate(NavRoutes.domainDetail(id)) }
                     )
                 }
 
