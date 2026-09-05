@@ -21,7 +21,7 @@ class GoalsViewModel(
         accountabilityRepository.allEntriesFlow,
         _selectedFrequency
     ) { goals, entries, freq ->
-        val filteredGoals = if (freq == "ALL") goals else goals.filter { it.frequency == freq }
+        val filteredGoals = if (freq == "ALL") goals else goals.filter { it.frequency.equals(freq, ignoreCase = true) }
         filteredGoals.map { goal ->
             val progress = accountabilityRepository.calculateGoalProgress(goal, entries)
             val pct = if (goal.targetValue > 0) {

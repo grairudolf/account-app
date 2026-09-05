@@ -57,7 +57,7 @@ object QuoteImageSharer {
         try {
             val cleanQuote = quoteText.trim().trim('“', '”', '"', '\'').trim()
             val width = 1080
-            val height = 1080
+            val height = 1350
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
@@ -100,7 +100,7 @@ object QuoteImageSharer {
                 canvas.drawBitmap(bgBitmap, srcRect, dstRect, paint)
             } else {
                 // Fallback royal navy
-                canvas.drawColor(Color.parseColor("#14214C"))
+                canvas.drawColor(Color.parseColor("#0A1128"))
             }
 
             // 2. Uplifting, Luminous Scrim Gradient (Keeps image bright and joyful while aiding contrast)
@@ -108,52 +108,60 @@ object QuoteImageSharer {
                 shader = LinearGradient(
                     0f, 0f, 0f, height.toFloat(),
                     intArrayOf(
-                        Color.argb(75, 10, 20, 45),   // Soft top scrim (~30%)
-                        Color.argb(35, 10, 20, 45),   // Luminous center (~14%)
-                        Color.argb(130, 7, 11, 30)    // Soft bottom gradient (~50%)
+                        Color.argb(90, 8, 14, 34),    // Soft top scrim (~35%)
+                        Color.argb(45, 8, 14, 34),    // Luminous center (~18%)
+                        Color.argb(185, 5, 10, 26)    // Deep bottom navy gradient (~72%)
                     ),
-                    floatArrayOf(0f, 0.45f, 1f),
+                    floatArrayOf(0f, 0.42f, 1f),
                     Shader.TileMode.CLAMP
                 )
             }
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), gradientPaint)
 
-            // 3. Subtle Outer Gold Accent Border
+            // 3. Subtle Outer Gold Accent Double Border
             val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#E0C068")
-                alpha = 80
+                alpha = 95
                 style = Paint.Style.STROKE
                 strokeWidth = 3f
             }
-            canvas.drawRoundRect(30f, 30f, width - 30f, height - 30f, 28f, 28f, borderPaint)
+            canvas.drawRoundRect(28f, 28f, width - 28f, height - 28f, 28f, 28f, borderPaint)
+
+            val innerBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#FFDF00")
+                alpha = 45
+                style = Paint.Style.STROKE
+                strokeWidth = 1.5f
+            }
+            canvas.drawRoundRect(36f, 36f, width - 36f, height - 36f, 22f, 22f, innerBorderPaint)
 
             // 4. PROMINENT 3B PROPHETIC MESSAGES HEADER HIGHLIGHT
             // 4a. Main Glowing Gold Ribbon / Badge
-            val badgeWidth = 720f
-            val badgeHeight = 62f
+            val badgeWidth = 760f
+            val badgeHeight = 64f
             val badgeLeft = (width - badgeWidth) / 2f
-            val badgeTop = 60f
+            val badgeTop = 64f
             val badgeRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
 
             val badgeBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#101A33")
-                alpha = 230
+                color = Color.parseColor("#091124")
+                alpha = 245
                 style = Paint.Style.FILL
             }
-            canvas.drawRoundRect(badgeRect, 31f, 31f, badgeBgPaint)
+            canvas.drawRoundRect(badgeRect, 32f, 32f, badgeBgPaint)
 
             val badgeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#FFD700")
+                color = Color.parseColor("#F59E0B")
                 style = Paint.Style.STROKE
-                strokeWidth = 3f
+                strokeWidth = 2.5f
             }
-            canvas.drawRoundRect(badgeRect, 31f, 31f, badgeStrokePaint)
+            canvas.drawRoundRect(badgeRect, 32f, 32f, badgeStrokePaint)
 
             val badgeTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#FFDF00")
-                textSize = 25f
+                textSize = 24f
                 typeface = montserratBold
-                letterSpacing = 0.10f
+                letterSpacing = 0.12f
                 textAlign = Paint.Align.CENTER
             }
             val formattedTitle = if (title.contains("3B", ignoreCase = true)) {
@@ -162,142 +170,157 @@ object QuoteImageSharer {
                 "✦ THE 3B PROPHETIC MESSAGES ✦"
             }
             val displayHeader = if (formattedTitle.startsWith("✦")) formattedTitle else "✦  $formattedTitle  ✦"
-            canvas.drawText(displayHeader, width / 2f, badgeTop + 41f, badgeTextPaint)
+            canvas.drawText(displayHeader, width / 2f, badgeTop + 42f, badgeTextPaint)
 
-            // 4b. Prophecy Specific Source Sub-Pill
-            val pillWidth = 540f
-            val pillHeight = 46f
-            val pillLeft = (width - pillWidth) / 2f
-            val pillTop = badgeTop + badgeHeight + 16f
-            val pillRect = RectF(pillLeft, pillTop, pillLeft + pillWidth, pillTop + pillHeight)
+            // 4b. Unified Secondary Pill: Source + Theme Tag (Clean and organized)
+            val subPillText = if (themeTag.isNotBlank() && !themeTag.equals(prophecySource, ignoreCase = true)) {
+                "${prophecySource.uppercase()}  •  ${themeTag.uppercase()}"
+            } else {
+                prophecySource.uppercase()
+            }
+            val subPillWidth = 640f
+            val subPillHeight = 44f
+            val subPillLeft = (width - subPillWidth) / 2f
+            val subPillTop = badgeTop + badgeHeight + 14f
+            val subPillRect = RectF(subPillLeft, subPillTop, subPillLeft + subPillWidth, subPillTop + subPillHeight)
 
-            val pillBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            val subPillBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#1E293B")
-                alpha = 210
+                alpha = 230
                 style = Paint.Style.FILL
             }
-            canvas.drawRoundRect(pillRect, 23f, 23f, pillBgPaint)
+            canvas.drawRoundRect(subPillRect, 22f, 22f, subPillBgPaint)
 
-            val pillStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            val subPillStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#94A3B8")
-                alpha = 100
+                alpha = 130
                 style = Paint.Style.STROKE
                 strokeWidth = 1.5f
             }
-            canvas.drawRoundRect(pillRect, 23f, 23f, pillStrokePaint)
+            canvas.drawRoundRect(subPillRect, 22f, 22f, subPillStrokePaint)
 
-            val pillTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = 21f
+            val subPillTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#E2E8F0")
+                textSize = 19f
                 typeface = montserratSemiBold
                 letterSpacing = 0.06f
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText(prophecySource.uppercase(), width / 2f, pillTop + 31f, pillTextPaint)
-
-            // 4c. Theme Tag (Freedom from Sin, Steadfast Walk, etc.)
-            val themeTagPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#FBBF24")
-                textSize = 19f
-                typeface = montserratMedium
-                letterSpacing = 0.08f
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawText("•  ${themeTag.uppercase()}  •", width / 2f, pillTop + pillHeight + 28f, themeTagPaint)
+            canvas.drawText(subPillText, width / 2f, subPillTop + 29f, subPillTextPaint)
 
             // 5. Translucent Frosted Glass Card for Quote Readability
-            val cardLeft = 65f
-            val cardTop = pillTop + pillHeight + 46f
-            val cardRight = width - 65f
-            val cardBottom = height - 170f
+            val cardLeft = 60f
+            val cardTop = subPillTop + subPillHeight + 24f
+            val cardRight = width - 60f
+            val cardBottom = height - 175f
             val cardRect = RectF(cardLeft, cardTop, cardRight, cardBottom)
 
             val cardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#091124")
-                alpha = 185
+                color = Color.parseColor("#070F22")
+                alpha = 215
                 style = Paint.Style.FILL
             }
-            canvas.drawRoundRect(cardRect, 32f, 32f, cardBgPaint)
+            canvas.drawRoundRect(cardRect, 36f, 36f, cardBgPaint)
 
             val cardBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#E0C068")
-                alpha = 110
+                alpha = 140
                 style = Paint.Style.STROKE
                 strokeWidth = 2.5f
             }
-            canvas.drawRoundRect(cardRect, 32f, 32f, cardBorderPaint)
+            canvas.drawRoundRect(cardRect, 36f, 36f, cardBorderPaint)
 
-            // Decorative Quote Mark
-            val quoteMarkPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            // Watermark Decorative Quote Marks (Faint in background, does not collide with text)
+            val quoteWatermarkPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#FFD700")
-                alpha = 140
-                textSize = 110f
+                alpha = 25
+                textSize = 150f
                 typeface = montserratBold
             }
-            canvas.drawText("“", cardLeft + 35f, cardTop + 85f, quoteMarkPaint)
+            canvas.drawText("“", cardLeft + 36f, cardTop + 140f, quoteWatermarkPaint)
+            canvas.drawText("”", cardRight - 100f, cardBottom - 110f, quoteWatermarkPaint)
 
-            // 6. Main Quote Body Text (Centered inside Card with subtle drop shadow)
-            val quoteBodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = if (cleanQuote.length > 200) 37f else if (cleanQuote.length > 130) 43f else 49f
-                typeface = montserratMedium
-                letterSpacing = 0.015f
-                setShadowLayer(8f, 0f, 2f, Color.parseColor("#80000000"))
+            // 6. Main Quote Body Text (Adaptive sizing based on length)
+            val quoteFontSize = when {
+                cleanQuote.length > 240 -> 32f
+                cleanQuote.length > 150 -> 36f
+                cleanQuote.length > 90 -> 40f
+                else -> 44f
             }
 
-            val textPaddingHorizontal = 50f
+            val quoteBodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = quoteFontSize
+                typeface = montserratMedium
+                letterSpacing = 0.015f
+                setShadowLayer(8f, 0f, 2f, Color.parseColor("#A0000000"))
+            }
+
+            val textPaddingHorizontal = 56f
             val quoteTextWidth = (cardRight - cardLeft - (textPaddingHorizontal * 2)).toInt()
             val staticLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 StaticLayout.Builder.obtain(cleanQuote, 0, cleanQuote.length, quoteBodyPaint, quoteTextWidth)
                     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                    .setLineSpacing(14f, 1.20f)
+                    .setLineSpacing(14f, 1.26f)
                     .setIncludePad(true)
                     .build()
             } else {
                 @Suppress("DEPRECATION")
-                StaticLayout(cleanQuote, quoteBodyPaint, quoteTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.20f, 14f, true)
+                StaticLayout(cleanQuote, quoteBodyPaint, quoteTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.26f, 14f, true)
             }
 
-            val cardAvailableHeight = cardBottom - cardTop - 150f
-            val textY = cardTop + 75f + ((cardAvailableHeight - staticLayout.height) / 2f).coerceAtLeast(0f)
+            val cardAvailableHeight = cardBottom - cardTop - 160f
+            val textY = cardTop + 45f + ((cardAvailableHeight - staticLayout.height) / 2f).coerceAtLeast(0f)
 
             canvas.save()
             canvas.translate(cardLeft + textPaddingHorizontal, textY)
             staticLayout.draw(canvas)
             canvas.restore()
 
-            // 7. Divider Accent Line inside card
+            // 7. Divider Accent Line inside card with Diamond Glyph
             val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#D4AF37")
-                alpha = 90
+                alpha = 110
                 strokeWidth = 2f
             }
-            canvas.drawLine(cardLeft + 50f, cardBottom - 65f, cardRight - 50f, cardBottom - 65f, dividerPaint)
+            val dividerY = cardBottom - 96f
+            canvas.drawLine(cardLeft + 60f, dividerY, width / 2f - 24f, dividerY, dividerPaint)
+            canvas.drawLine(width / 2f + 24f, dividerY, cardRight - 60f, dividerY, dividerPaint)
 
-            // Citation: Author & Book
+            val diamondPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#FFDF00")
+                textSize = 18f
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("◆", width / 2f, dividerY + 6f, diamondPaint)
+
+            // Citation: Author on top line, Book on second line
             val authorPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#FFDF00")
-                textSize = 21f
-                typeface = montserratSemiBold
+                textSize = 23f
+                typeface = montserratBold
                 letterSpacing = 0.04f
                 textAlign = Paint.Align.CENTER
             }
             val citationPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#BAC5D6")
-                textSize = 18f
+                color = Color.parseColor("#CBD5E1")
+                textSize = 19f
                 typeface = bodyTypeface
+                letterSpacing = 0.02f
                 textAlign = Paint.Align.CENTER
             }
-            val citationY = cardBottom - 38f
-            canvas.drawText("— $author", width / 2f, citationY, authorPaint)
-            canvas.drawText("($bookCitation)", width / 2f, cardBottom - 14f, citationPaint)
+            canvas.drawText("— $author", width / 2f, cardBottom - 58f, authorPaint)
+            if (bookCitation.isNotBlank()) {
+                val formattedBook = if (bookCitation.startsWith("(")) bookCitation else "📖 $bookCitation"
+                canvas.drawText(formattedBook, width / 2f, cardBottom - 26f, citationPaint)
+            }
 
             // 8. Official App Branding (Bottom Bar) with App Logo
             var drawnLogo = false
             try {
                 val logoBmp = BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
                 if (logoBmp != null) {
-                    val logoRect = RectF(65f, height - 135f, 129f, height - 71f)
+                    val logoRect = RectF(65f, height - 142f, 137f, height - 70f)
                     canvas.drawBitmap(logoBmp, null, logoRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
                     drawnLogo = true
                 }
@@ -309,10 +332,10 @@ object QuoteImageSharer {
                 val brandAccentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     color = Color.parseColor("#FFD700")
                 }
-                val crossCenterX = 90f
-                val crossCenterY = height - 100f
-                canvas.drawRoundRect(RectF(crossCenterX - 4f, crossCenterY - 22f, crossCenterX + 4f, crossCenterY + 22f), 4f, 4f, brandAccentPaint)
-                canvas.drawRoundRect(RectF(crossCenterX - 16f, crossCenterY - 11f, crossCenterX + 16f, crossCenterY - 3f), 4f, 4f, brandAccentPaint)
+                val crossCenterX = 95f
+                val crossCenterY = height - 106f
+                canvas.drawRoundRect(RectF(crossCenterX - 4f, crossCenterY - 24f, crossCenterX + 4f, crossCenterY + 24f), 4f, 4f, brandAccentPaint)
+                canvas.drawRoundRect(RectF(crossCenterX - 18f, crossCenterY - 12f, crossCenterX + 18f, crossCenterY - 4f), 4f, 4f, brandAccentPaint)
             }
 
             val brandTitlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -321,15 +344,41 @@ object QuoteImageSharer {
                 typeface = montserratBold
                 letterSpacing = 0.04f
             }
-            val textLeft = if (drawnLogo) 145f else 130f
-            canvas.drawText("CMFI Accap", textLeft, height - 105f, brandTitlePaint)
+            val textLeft = if (drawnLogo) 155f else 138f
+            canvas.drawText("CMFI Accap", textLeft, height - 112f, brandTitlePaint)
 
             val brandSubPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#CBD5E1")
+                color = Color.parseColor("#94A3B8")
                 textSize = 19f
                 typeface = bodyTypeface
             }
-            canvas.drawText("Digital Account Book • Overcomers Movement", textLeft, height - 78f, brandSubPaint)
+            canvas.drawText("Le compte rendu numérique • Digital Accountability", textLeft, height - 82f, brandSubPaint)
+
+            // Right Tag Badge
+            val tagBadgeWidth = 220f
+            val tagBadgeHeight = 36f
+            val tagBadgeRect = RectF(width - 60f - tagBadgeWidth, height - 122f, width - 60f, height - 86f)
+            val tagBadgeBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#1E293B")
+                alpha = 200
+                style = Paint.Style.FILL
+            }
+            canvas.drawRoundRect(tagBadgeRect, 18f, 18f, tagBadgeBgPaint)
+            val tagBadgeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#E0C068")
+                alpha = 100
+                style = Paint.Style.STROKE
+                strokeWidth = 1.5f
+            }
+            canvas.drawRoundRect(tagBadgeRect, 18f, 18f, tagBadgeStrokePaint)
+            val tagBadgeTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#FDE047")
+                textSize = 14f
+                typeface = montserratSemiBold
+                letterSpacing = 0.05f
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("✦ SPIRITUAL LIFE", tagBadgeRect.centerX(), tagBadgeRect.centerY() + 5f, tagBadgeTextPaint)
 
             // 9. Save Bitmap to File and Share
             val shareDir = File(context.cacheDir, "shared_quotes").apply { mkdirs() }

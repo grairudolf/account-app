@@ -110,9 +110,10 @@ class StatisticsViewModel(
             else -> null
         }
 
+        val todayIso = today.toString()
         val entries = if (cutoffDate != null) {
             val cutoffIso = cutoffDate.toString()
-            rawEntries.filter { it.dateIso >= cutoffIso }
+            rawEntries.filter { it.dateIso in cutoffIso..todayIso }
         } else {
             rawEntries
         }
@@ -124,7 +125,6 @@ class StatisticsViewModel(
         val totalPrayerSecs = entries.filter { it.domainId.startsWith("prayer") || it.domainId == "ddewg" }.sumOf { it.durationSeconds }
         val totalFasting = entries.filter { it.domainId == "fasting" }.sumOf { it.fastingDaysCount }
 
-        val todayIso = today.toString()
         val todayEntries = rawEntries.filter { it.dateIso == todayIso }
 
         val communionDomains = listOf("ddewg", "prayer_alone", "prayer_with_others", "bible_reading", "christian_lit", "christian_lit_mem", "bible_mem", "proclamation_importunity", "retreats")

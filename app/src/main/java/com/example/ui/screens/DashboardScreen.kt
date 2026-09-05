@@ -771,29 +771,31 @@ fun DashboardScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF1E293B).copy(alpha = 0.85f),
-                                border = BorderStroke(1.dp, Color(0xFF94A3B8).copy(alpha = 0.4f))
+                                color = Color(0xFF0F172A).copy(alpha = 0.90f),
+                                border = BorderStroke(1.dp, Color(0xFF94A3B8).copy(alpha = 0.5f))
                             ) {
                                 Text(
                                     text = currentQuote.getProphecySource(isFrench),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                    maxLines = 1
                                 )
                             }
 
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = BrandMutedGold.copy(alpha = 0.35f),
-                                border = BorderStroke(1.dp, BrandWarmGold.copy(alpha = 0.6f))
+                                color = BrandDarkNavy.copy(alpha = 0.90f),
+                                border = BorderStroke(1.dp, BrandWarmGold.copy(alpha = 0.7f))
                             ) {
                                 Text(
                                     text = currentQuote.getThemeTag(isFrench),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = BrandBrightYellow,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                    maxLines = 1
                                 )
                             }
                         }
@@ -808,27 +810,47 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Medium
                             ),
                             color = Color.White,
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
 
-                        // Citation Divider & Book Reference
-                        Row(
+                        // Subtle Divider Line
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            thickness = 0.8.dp,
+                            color = BrandWarmGold.copy(alpha = 0.35f)
+                        )
+
+                        // Author & Book Citation on Distinct Lines (Eliminates Text Collision)
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
                                 text = "— ${currentQuote.getAuthor(isFrench)}",
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = BrandWarmGold
+                                fontWeight = FontWeight.Bold,
+                                color = BrandBrightYellow
                             )
-                            Text(
-                                text = currentQuote.getBookCitation(isFrench),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextMuted,
-                                maxLines = 1
-                            )
+                            val bookCit = currentQuote.getBookCitation(isFrench)
+                            if (bookCit.isNotBlank()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MenuBook,
+                                        contentDescription = null,
+                                        tint = Color(0xFFCBD5E1),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = bookCit,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFFCBD5E1),
+                                        maxLines = 2
+                                    )
+                                }
+                            }
                         }
                     }
                 }

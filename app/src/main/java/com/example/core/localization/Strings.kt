@@ -180,6 +180,7 @@ interface AppStrings {
     val daily: String
     val weekly: String
     val monthly: String
+    val yearly: String
     val targetReached: String
     val noGoalsYet: String
     val noGoalsFound: String
@@ -522,6 +523,13 @@ interface AppStrings {
     val unitConverts: String
     val unitPercentage: String
     val unitAmount: String
+    val unitTimesBible: String
+    val unitBooks: String
+    val unitVerses: String
+    val unitRetreats15Min: String
+    val unitThanksgivingTopics: String
+    val unitRequestTopics: String
+    val unitRepetitions: String
 
     // Calendar & Day Localization
     val dayMon: String
@@ -913,7 +921,7 @@ object EnglishStrings : AppStrings {
     override val prayerAloneTitle = "Prayer Alone"
     override val prayerAloneDesc = "Personal secret place prayer, thanksgiving, and intercession."
     override val prayerWithOthersTitle = "Prayer With Others"
-    override val prayerWithOthersDesc = "Corporate prayer, family altar, cell group, and church prayer."
+    override val prayerWithOthersDesc = "Corporate prayer, prayer sieges, prayer crusades, prayer nights, and prayer chains."
     override val fastingTitle = "Fasting"
     override val fastingDesc = "Abstaining from food or drink for spiritual devotion."
     override val givingTitle = "Giving to God"
@@ -1011,6 +1019,7 @@ object EnglishStrings : AppStrings {
     override val daily = "Daily"
     override val weekly = "Weekly"
     override val monthly = "Monthly"
+    override val yearly = "Yearly"
     override val targetReached = "Goal Reached!"
     override val noGoalsYet = "No goals established yet. Create a goal to track consistency."
     override val noGoalsFound = "No goals matching the selected filter."
@@ -1285,7 +1294,7 @@ object EnglishStrings : AppStrings {
     override val prayerTypeHouseChurch = "House Church"
     override val prayerTypePraiseAndAdoration = "Praise and Adoration"
     override val prayerTypePrayerChain = "Prayer Chain"
-    override val prayerTypeCellGroup = "Cell Group / House Fellowship"
+    override val prayerTypeCellGroup = "Cell Group / House Church"
     override val prayerTypeFamilyAltar = "Family Altar"
     override val prayerTypeCorporateAssembly = "Corporate Assembly"
     override val prayerTypeIntercessoryChain = "Intercessory Chain"
@@ -1367,6 +1376,13 @@ object EnglishStrings : AppStrings {
     override val unitConverts = "Converts Won"
     override val unitPercentage = "Percentage (%)"
     override val unitAmount = "Amount ($)"
+    override val unitTimesBible = "Times through Bible"
+    override val unitBooks = "Books"
+    override val unitVerses = "Verses"
+    override val unitRetreats15Min = "15-Min Retreats"
+    override val unitThanksgivingTopics = "Thanksgiving Topics"
+    override val unitRequestTopics = "Request Topics"
+    override val unitRepetitions = "Repetitions"
 
     // Calendar & Day Localization
     override val dayMon = "Mon"
@@ -1520,7 +1536,7 @@ object FrenchStrings : AppStrings {
     override val prayerAloneTitle = "Prière Seul"
     override val prayerAloneDesc = "Prière personnelle dans le lieu secret, actions de grâces et intercession."
     override val prayerWithOthersTitle = "Prière Avec les Autres"
-    override val prayerWithOthersDesc = "Prière corporative, autel familial, cellule de prière et prière d'église."
+    override val prayerWithOthersDesc = "Prière corporative, sièges de prière, croisades de prière, nuits de prière et chaînes de prière."
     override val fastingTitle = "Jeûne"
     override val fastingDesc = "Abstinence de nourriture ou de boisson pour la dévotion spirituelle."
     override val givingTitle = "Offrandes et Libéralités"
@@ -1618,6 +1634,7 @@ object FrenchStrings : AppStrings {
     override val daily = "Quotidien"
     override val weekly = "Hebdomadaire"
     override val monthly = "Mensuel"
+    override val yearly = "Annuel"
     override val targetReached = "Objectif Atteint !"
     override val noGoalsYet = "Aucun objectif défini. Créez un objectif pour suivre votre régularité."
     override val noGoalsFound = "Aucun objectif ne correspond au filtre."
@@ -1892,7 +1909,7 @@ object FrenchStrings : AppStrings {
     override val prayerTypeHouseChurch = "Église de Maison"
     override val prayerTypePraiseAndAdoration = "Louange et Adoration"
     override val prayerTypePrayerChain = "Chaîne de Prière"
-    override val prayerTypeCellGroup = "Groupe de Maison / Cellule"
+    override val prayerTypeCellGroup = "Groupe de maison / Cellule"
     override val prayerTypeFamilyAltar = "Autel Familial"
     override val prayerTypeCorporateAssembly = "Assemblée Générale"
     override val prayerTypeIntercessoryChain = "Chaîne d'Intercession"
@@ -1974,6 +1991,13 @@ object FrenchStrings : AppStrings {
     override val unitConverts = "Âmes Converties"
     override val unitPercentage = "Pourcentage (%)"
     override val unitAmount = "Montant ($)"
+    override val unitTimesBible = "Fois toute la Bible"
+    override val unitBooks = "Livres"
+    override val unitVerses = "Versets"
+    override val unitRetreats15Min = "Retraites de 15 Min"
+    override val unitThanksgivingTopics = "Sujets d'Action de Grâce"
+    override val unitRequestTopics = "Sujets de Requête"
+    override val unitRepetitions = "Répétitions"
 
     // Calendar & Day Localization
     override val dayMon = "Lun"

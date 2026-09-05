@@ -619,7 +619,11 @@ fun StatisticsScreen(
                                 Text(text = strings.bibleReading, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
-                                        Text(strings.totalBibleChapters, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            text = if (selectedTimeRange == "ALL_TIME") strings.totalBibleChapters else if (isFrench) "Chapitres Lus ($currentRangeLabel)" else "Chapters Read ($currentRangeLabel)",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                         Text("${uiState.bibleStats.totalChaptersRead}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                     }
                                     Column {

@@ -26,11 +26,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
+import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
 import com.example.data.local.entities.AccountabilityEntryEntity
 import com.example.data.local.entities.DiscipleEntity
 import com.example.data.local.entities.TimerSessionEntity
 import com.example.data.local.BibleMetadata
+import com.example.ui.components.FastingCalendarPicker
 import com.example.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -232,20 +234,14 @@ fun DomainDetailScreen(
         }
     }
 
-    // Fasting (Auto-calculated from Start Date & End Date)
+    // Fasting (Auto-calculated from Calendar Day Picker & Selection)
+    var selectedFastingDates by remember { mutableStateOf(setOf(LocalDate.now())) }
     var fastingStartDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var fastingEndDateIso by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
     var showFastingStartDatePicker by remember { mutableStateOf(false) }
     var showFastingEndDatePicker by remember { mutableStateOf(false) }
-    val calculatedFastingDays = remember(fastingStartDateIso, fastingEndDateIso) {
-        try {
-            val s = LocalDate.parse(fastingStartDateIso)
-            val e = LocalDate.parse(fastingEndDateIso)
-            val d = ChronoUnit.DAYS.between(s, e) + 1
-            if (d >= 1) d.toInt() else 1
-        } catch (ex: Exception) {
-            1
-        }
+    val calculatedFastingDays = remember(selectedFastingDates, fastingStartDateIso, fastingEndDateIso) {
+        if (selectedFastingDates.isNotEmpty()) selectedFastingDates.size else 1
     }
     var selectedFastingType by remember { mutableStateOf("Complete Fast") }
     var fastingPurpose by remember { mutableStateOf("") }
@@ -662,15 +658,14 @@ fun DomainDetailScreen(
                                 "prayer_alone" -> {
                                     Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     val aloneTypes = listOf(
-                                        "Intercession" to strings.prayerTypeIntercession,
-                                        "Request" to strings.prayerTypeRequest,
                                         "Personal Supplication" to strings.prayerTypePersonalSupplication,
+                                        "Request" to strings.prayerTypeRequest,
                                         "Thanksgiving" to strings.prayerTypeThanksgiving,
-                                        "Bertoua Message" to strings.prayerTypeBertouaMessage,
+                                        "15-Minute Retreat" to strings.prayerType15MinRetreat,
+                                        "Intercession" to strings.prayerTypeIntercession,
                                         "Spiritual Warfare" to strings.prayerTypeSpiritualWarfare,
                                         "Praise & Adoration" to strings.prayerTypePraise,
                                         "Prayer Walk" to strings.prayerTypePrayerWalk,
-                                        "15-Minute Retreat" to strings.prayerType15MinRetreat,
                                         "Custom" to strings.prayerTypeCustom
                                     )
 
@@ -839,11 +834,15 @@ fun DomainDetailScreen(
                                 "prayer_with_others" -> {
                                     Text(strings.typeOfPrayerFocus, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     val groupTypes = listOf(
+                                        "Cell Group" to strings.prayerTypeCellGroup,
+                                        "Family Altar" to strings.prayerTypeFamilyAltar,
                                         "Prayer Night" to strings.prayerTypePrayerNight,
                                         "Prayer Siege" to strings.prayerTypePrayerSiege,
                                         "Prayer Crusade" to strings.prayerTypePrayerCrusade,
-                                        "Morning Devotion" to strings.prayerTypeMorningDevotion,
                                         "House Church" to strings.prayerTypeHouseChurch,
+                                        "Morning Devotion" to strings.prayerTypeMorningDevotion,
+                                        "Corporate Assembly" to strings.prayerTypeCorporateAssembly,
+                                        "Intercessory Chain" to strings.prayerTypeIntercessoryChain,
                                         "Intercession" to strings.prayerTypeIntercession,
                                         "Praise and Adoration" to strings.prayerTypePraiseAndAdoration,
                                         "Prayer Chain" to strings.prayerTypePrayerChain,
@@ -1108,181 +1107,26 @@ fun DomainDetailScreen(
                                 }
 
                                 "fasting" -> {
-                                    Text(strings.typeOfFast, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        listOf("Complete Fast", "Partial Fast").forEach { type ->
-                                            FilterChip(
-                                                selected = selectedFastingType == type,
-                                                onClick = { selectedFastingType = type },
-                                                label = { Text(strings.getFastingTypeDisplayName(type), fontWeight = FontWeight.SemiBold) },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(20.dp),
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    // Fasting Start Date & End Date (Auto-calculates number of days)
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text(
-                                            text = strings.dateRangePeriod,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            // Start Date
-                                            Surface(
-                                                shape = RoundedCornerShape(12.dp),
-                                                color = MaterialTheme.colorScheme.primaryContainer,
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .clickable { showFastingStartDatePicker = true }
-                                                        .padding(10.dp)
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Text(
-                                                            text = strings.startDateLabel,
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                        )
-                                                        Icon(
-                                                            Icons.Default.CalendarMonth,
-                                                            contentDescription = "Pick Date",
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                val cur = LocalDate.parse(fastingStartDateIso)
-                                                                fastingStartDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                                            },
-                                                            modifier = Modifier.size(24.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                        }
-                                                        Text(
-                                                            text = fastingStartDateIso,
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                        IconButton(
-                                                            onClick = {
-                                                                val cur = LocalDate.parse(fastingStartDateIso)
-                                                                fastingStartDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                                            },
-                                                            modifier = Modifier.size(24.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                        }
-                                                    }
-                                                }
+                                    FastingCalendarPicker(
+                                        strings = strings,
+                                        selectedDates = selectedFastingDates,
+                                        onDatesChanged = { dates ->
+                                            selectedFastingDates = dates
+                                            if (dates.isNotEmpty()) {
+                                                val sorted = dates.sorted()
+                                                fastingStartDateIso = sorted.first().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                                fastingEndDateIso = sorted.last().format(DateTimeFormatter.ISO_LOCAL_DATE)
                                             }
-
-                                            // End Date
-                                            Surface(
-                                                shape = RoundedCornerShape(12.dp),
-                                                color = MaterialTheme.colorScheme.primaryContainer,
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .clickable { showFastingEndDatePicker = true }
-                                                        .padding(10.dp)
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Text(
-                                                            text = strings.endDateLabel,
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                        )
-                                                        Icon(
-                                                            Icons.Default.CalendarMonth,
-                                                            contentDescription = "Pick Date",
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                val cur = LocalDate.parse(fastingEndDateIso)
-                                                                fastingEndDateIso = cur.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                                            },
-                                                            modifier = Modifier.size(24.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                        }
-                                                        Text(
-                                                            text = fastingEndDateIso,
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                        IconButton(
-                                                            onClick = {
-                                                                val cur = LocalDate.parse(fastingEndDateIso)
-                                                                fastingEndDateIso = cur.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                                            },
-                                                            modifier = Modifier.size(24.dp)
-                                                        ) {
-                                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Auto-calculated days badge
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = MaterialTheme.colorScheme.surfaceVariant,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                Text(
-                                                    text = String.format(strings.calculatedDaysFormat, calculatedFastingDays),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
+                                        },
+                                        fastingType = selectedFastingType,
+                                        onFastingTypeChanged = { selectedFastingType = it }
+                                    )
 
                                     OutlinedTextField(
                                         value = fastingPurpose,
                                         onValueChange = { fastingPurpose = it },
                                         label = { Text(strings.purpose) },
+                                        placeholder = { Text(if (strings is FrenchStrings) "ex. Percée spirituelle, intercession..." else "e.g. Spiritual breakthrough, intercession...") },
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
@@ -2008,7 +1852,30 @@ fun DomainDetailScreen(
                                         }
                                     }
 
-                                    onSaveEntry(entry)
+                                    if (domainId == "fasting" && selectedFastingDates.size > 1) {
+                                        selectedFastingDates.forEach { fDate ->
+                                            val fDateIso = fDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                                            onSaveEntry(
+                                                AccountabilityEntryEntity(
+                                                    id = UUID.randomUUID().toString(),
+                                                    userId = userId,
+                                                    domainId = domainId,
+                                                    dateIso = fDateIso,
+                                                    timestampMs = System.currentTimeMillis(),
+                                                    timezoneId = java.time.ZoneId.systemDefault().id,
+                                                    durationSeconds = 0L,
+                                                    fastingDaysCount = 1,
+                                                    fastingType = selectedFastingType,
+                                                    fastingStartDateIso = fastingStartDateIso,
+                                                    fastingEndDateIso = fastingEndDateIso,
+                                                    fastingPurpose = fastingPurpose,
+                                                    notes = if (fastingPurpose.isNotBlank()) "$fastingPurpose\n$notes" else notes
+                                                )
+                                            )
+                                        }
+                                    } else {
+                                        onSaveEntry(entry)
+                                    }
                                     HapticHelper.vibrateSuccess(context)
                                     isSaved = true
                                 },

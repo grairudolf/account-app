@@ -193,8 +193,9 @@ class AccountabilityRepository(
                 val cleanTopic = entryToSave.proclamationTopic.trim()
                 val existing = proclamationTopicDao.findTopicByName(entryToSave.userId, cleanTopic)
                 val updatedTopic = if (existing != null) {
+                    val newCount = maxOf(existing.cumulativeCount + entryToSave.proclamationCount, entryToSave.proclamationCount)
                     existing.copy(
-                        cumulativeCount = existing.cumulativeCount + entryToSave.proclamationCount,
+                        cumulativeCount = newCount,
                         targetCount = if (entryToSave.proclamationTarget > 0) entryToSave.proclamationTarget else existing.targetCount,
                         totalDurationSeconds = existing.totalDurationSeconds + entryToSave.durationSeconds,
                         lastPracticedIso = entryToSave.dateIso,
@@ -372,7 +373,11 @@ class AccountabilityRepository(
 
     fun calculateBibleStats(entries: List<AccountabilityEntryEntity>): BibleStats {
         val bibleEntries = entries.filter { it.domainId == "bible_reading" }
-        val totalChapters = bibleEntries.sumOf { it.chaptersCount }
+        val totalChapters = bibleEntries.sumOf { 
+            if (it.chaptersCount > 0) it.chaptersCount 
+            else if (it.endChapter >= it.startChapter && it.startChapter > 0) it.endChapter - it.startChapter + 1 
+            else 1 
+        }
         val completionPercentage = (totalChapters.toFloat() / BibleMetadata.TOTAL_BIBLE_CHAPTERS) * 100f
         val biblesReadCount = totalChapters.toFloat() / BibleMetadata.TOTAL_BIBLE_CHAPTERS
 
@@ -498,19 +503,59 @@ class AccountabilityRepository(
                     } catch (e: Exception) { false }
                 }
             }
+            "YEARLY", "ANNUAL" -> {
+                val currentYear = now.year
+                domainEntries.filter {
+                    try {
+                        val date = LocalDate.parse(it.dateIso)
+                        date.year == currentYear
+                    } catch (e: Exception) { false }
+                }
+            }
             else -> domainEntries
         }
 
         val u = goal.unit.lowercase()
+        val tTitle = goal.title.lowercase()
 
         return when (goal.domainId) {
             "bible_reading" -> {
-                if (u.contains("hour") || u.contains("heure")) {
+                if (u.contains("times") || u.contains("whole") || u.contains("fois") || tTitle.contains("whole bible") || tTitle.contains("toute la bible") || tTitle.contains("finish")) {
+                    val chCount = relevantEntries.sumOf {
+                        if (it.chaptersCount > 0) it.chaptersCount
+                        else if (it.endChapter >= it.startChapter && it.startChapter > 0) it.endChapter - it.startChapter + 1
+                        else 1
+                    }
+                    chCount.toDouble() / com.example.data.local.BibleMetadata.TOTAL_BIBLE_CHAPTERS.toDouble()
+                } else if (u.contains("%") || u.contains("pourcent")) {
+                    val chCount = relevantEntries.sumOf {
+                        if (it.chaptersCount > 0) it.chaptersCount
+                        else if (it.endChapter >= it.startChapter && it.startChapter > 0) it.endChapter - it.startChapter + 1
+                        else 1
+                    }
+                    ((chCount.toDouble() / com.example.data.local.BibleMetadata.TOTAL_BIBLE_CHAPTERS.toDouble()) * 100.0).coerceAtMost(100.0)
+                } else if (u.contains("page")) {
+                    relevantEntries.sumOf {
+                        if (it.pagesRead > 0) it.pagesRead
+                        else {
+                            val chs = if (it.chaptersCount > 0) it.chaptersCount
+                            else if (it.endChapter >= it.startChapter && it.startChapter > 0) it.endChapter - it.startChapter + 1
+                            else 1
+                            chs * 3 // Standard average 3 pages per chapter in study Bibles
+                        }
+                    }.toDouble()
+                } else if (u.contains("day") || u.contains("jour")) {
+                    relevantEntries.map { it.dateIso }.distinct().size.toDouble()
+                } else if (u.contains("hour") || u.contains("heure")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
                 } else if (u.contains("min")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
                 } else {
-                    relevantEntries.sumOf { it.chaptersCount }.toDouble()
+                    relevantEntries.sumOf {
+                        if (it.chaptersCount > 0) it.chaptersCount
+                        else if (it.endChapter >= it.startChapter && it.startChapter > 0) it.endChapter - it.startChapter + 1
+                        else 1
+                    }.toDouble()
                 }
             }
             "retreats" -> {
@@ -529,19 +574,28 @@ class AccountabilityRepository(
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
                 } else if (u.contains("min")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else if (u.contains("day") || u.contains("jour")) {
+                    relevantEntries.map { it.dateIso }.distinct().size.toDouble()
                 } else {
-                    // Count number of DDEWG occurrences (e.g., 7 DDEWG per week)
+                    // Count number of DDEWG encounter days/sessions
                     relevantEntries.size.toDouble()
                 }
             }
-            "prayer_alone", "prayer_with_others" -> {
-                val tTitle = goal.title.lowercase()
-                if (u.contains("thanksgiving") || u.contains("remerciement") || tTitle.contains("thanksgiving") || tTitle.contains("action de grâce")) {
-                    relevantEntries.filter { it.prayerType.contains("Thanksgiving", ignoreCase = true) || it.notes.contains("thanksgiving", ignoreCase = true) }
+            "prayer_alone" -> {
+                if (u.contains("15") || tTitle.contains("15")) {
+                    relevantEntries.count {
+                        it.prayerType.contains("15", ignoreCase = true) ||
+                        it.notes.contains("15", ignoreCase = true) ||
+                        (it.durationSeconds in 800..1200)
+                    }.toDouble()
+                } else if (u.contains("thanksgiving") || u.contains("remerciement") || tTitle.contains("thanksgiving") || tTitle.contains("action de grâce")) {
+                    relevantEntries.filter { it.prayerType.contains("Thanksgiving", ignoreCase = true) || it.notes.contains("thanksgiving", ignoreCase = true) || it.prayerType.contains("Action de gr", ignoreCase = true) }
                         .sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
                 } else if (u.contains("request") || u.contains("requête") || tTitle.contains("request") || tTitle.contains("requête")) {
-                    relevantEntries.filter { it.prayerType.contains("Request", ignoreCase = true) || it.notes.contains("request", ignoreCase = true) }
+                    relevantEntries.filter { it.prayerType.contains("Request", ignoreCase = true) || it.notes.contains("request", ignoreCase = true) || it.prayerType.contains("Requête", ignoreCase = true) }
                         .sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
+                } else if (u.contains("night") || u.contains("vigil") || u.contains("nuit") || tTitle.contains("night", ignoreCase = true) || tTitle.contains("vigil", ignoreCase = true)) {
+                    relevantEntries.count { it.prayerType.contains("Night", ignoreCase = true) || it.prayerType.contains("Nuit", ignoreCase = true) || it.notes.contains("night", ignoreCase = true) || it.notes.contains("vigil", ignoreCase = true) }.toDouble()
                 } else if (u.contains("topic") || u.contains("sujet")) {
                     relevantEntries.sumOf { if (it.prayerTopicsCount > 0) it.prayerTopicsCount else 1 }.toDouble()
                 } else if (u.contains("hour") || u.contains("heure")) {
@@ -549,7 +603,16 @@ class AccountabilityRepository(
                 } else if (u.contains("session") || u.contains("time") || u.contains("fois")) {
                     relevantEntries.size.toDouble()
                 } else {
-                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // in minutes
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0 // default minutes
+                }
+            }
+            "prayer_with_others" -> {
+                if (u.contains("session") || u.contains("séance") || u.contains("time") || u.contains("fois")) {
+                    relevantEntries.size.toDouble()
+                } else if (u.contains("min")) {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
+                } else {
+                    relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0 // default hours
                 }
             }
             "proclamation_importunity" -> {
@@ -561,15 +624,31 @@ class AccountabilityRepository(
                     relevantEntries.sumOf { it.proclamationCount }.toDouble()
                 }
             }
-            "christian_lit", "christian_lit_mem" -> {
-                if (u.contains("book") || u.contains("livre")) {
-                    relevantEntries.map { it.bookTitle }.filter { it.isNotBlank() }.distinct().size.toDouble()
+            "christian_lit" -> {
+                if (u.contains("book") || u.contains("livre") || tTitle.contains("book") || tTitle.contains("livre")) {
+                    relevantEntries.map { it.bookTitle.trim().lowercase() }.filter { it.isNotBlank() }.distinct().size.toDouble()
                 } else if (u.contains("hour") || u.contains("heure")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 3600.0
                 } else if (u.contains("min")) {
                     relevantEntries.sumOf { it.durationSeconds }.toDouble() / 60.0
                 } else {
                     relevantEntries.sumOf { it.pagesRead }.toDouble()
+                }
+            }
+            "christian_lit_mem" -> {
+                if (u.contains("quote") || u.contains("extrait") || u.contains("citation") || tTitle.contains("quote") || tTitle.contains("citation")) {
+                    relevantEntries.count { it.litMemPassage.isNotBlank() || it.notes.isNotBlank() }.toDouble()
+                } else {
+                    relevantEntries.sumOf { if (it.pagesMemorized > 0) it.pagesMemorized else it.pagesRead }.toDouble()
+                }
+            }
+            "bible_mem" -> {
+                if (u.contains("verse") || u.contains("verset")) {
+                    relevantEntries.count { it.bibleMemVerse.isNotBlank() || it.notes.isNotBlank() || it.bibleMemChapter > 0 }.coerceAtLeast(relevantEntries.size).toDouble()
+                } else if (u.contains("chapter") || u.contains("chapitre")) {
+                    relevantEntries.count { it.bibleMemChapter > 0 || it.chaptersCount > 0 }.toDouble()
+                } else {
+                    relevantEntries.size.toDouble()
                 }
             }
             "fasting" -> {
@@ -585,9 +664,9 @@ class AccountabilityRepository(
                 }
             }
             "soul_winning" -> {
-                if (u.contains("convert") || u.contains("âme")) {
+                if (u.contains("convert") || u.contains("âme") || u.contains("soul") || tTitle.contains("convert") || tTitle.contains("âme")) {
                     relevantEntries.sumOf { it.convertedCount }.toDouble()
-                } else if (u.contains("baptis")) {
+                } else if (u.contains("baptis") || tTitle.contains("baptis")) {
                     relevantEntries.sumOf { it.waterBaptizedCount }.toDouble()
                 } else {
                     relevantEntries.sumOf { it.preachedToCount }.toDouble()

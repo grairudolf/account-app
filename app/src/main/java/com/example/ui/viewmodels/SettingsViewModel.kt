@@ -23,7 +23,11 @@ class SettingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val currentLanguage: StateFlow<AppLanguage> = userRepository.currentLanguageFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppLanguage.ENGLISH)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            if (java.util.Locale.getDefault().language.lowercase().startsWith("fr")) AppLanguage.FRENCH else AppLanguage.ENGLISH
+        )
 
     val currentTheme: StateFlow<ThemeMode> = userRepository.currentThemeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.LIGHT)

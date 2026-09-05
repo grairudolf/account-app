@@ -78,6 +78,8 @@ fun ProclamationScreen(
     val reflection by viewModel.reflection.collectAsState()
 
     var showEditCounterDialog by remember { mutableStateOf(false) }
+    var topicToEdit by remember { mutableStateOf<ProclamationTopicEntity?>(null) }
+    var topicToDelete by remember { mutableStateOf<ProclamationTopicEntity?>(null) }
     var showTargetDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var showSaveConfirmDialog by remember { mutableStateOf(false) }
@@ -198,31 +200,57 @@ fun ProclamationScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            TextButton(
-                                onClick = {
-                                    if (topicText.isNotBlank()) {
-                                        viewModel.savePrayerTopic(
-                                            topicText = topicText,
-                                            targetCount = targetCount,
-                                            currentCount = counter,
-                                            onSuccess = {
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                                onNavigateBack()
-                                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (selectedTopic != null) {
+                                    IconButton(
+                                        onClick = { topicToEdit = selectedTopic },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit current topic",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
                                         )
-                                    } else {
-                                        showAddTopicDialog = true
                                     }
-                                },
-                                modifier = Modifier.testTag("save_prayer_topic_button")
-                            ) {
-                                Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (strings is com.example.core.localization.FrenchStrings) "Enregistrer" else "Save Topic", style = MaterialTheme.typography.labelMedium)
+                                    IconButton(
+                                        onClick = { topicToDelete = selectedTopic },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete current topic",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                }
+                                TextButton(
+                                    onClick = {
+                                        if (topicText.isNotBlank()) {
+                                            viewModel.savePrayerTopic(
+                                                topicText = topicText,
+                                                targetCount = targetCount,
+                                                currentCount = counter,
+                                                onSuccess = {
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        if (strings is com.example.core.localization.FrenchStrings) "Sujet de prière enregistré !" else "Prayer topic saved!",
+                                                        android.widget.Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
+                                        } else {
+                                            showAddTopicDialog = true
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("save_prayer_topic_button")
+                                ) {
+                                    Icon(Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(if (strings is com.example.core.localization.FrenchStrings) "Enregistrer" else "Save Topic", style = MaterialTheme.typography.labelMedium)
+                                }
                             }
                         }
 
@@ -380,6 +408,38 @@ fun ProclamationScreen(
                                                     tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier = Modifier.size(18.dp)
                                                 )
+                                            },
+                                            trailingIcon = {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            topicDropdownExpanded = false
+                                                            topicToEdit = item
+                                                        },
+                                                        modifier = Modifier.size(28.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Edit,
+                                                            contentDescription = "Edit topic",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                    IconButton(
+                                                        onClick = {
+                                                            topicDropdownExpanded = false
+                                                            topicToDelete = item
+                                                        },
+                                                        modifier = Modifier.size(28.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Delete,
+                                                            contentDescription = "Delete topic",
+                                                            tint = MaterialTheme.colorScheme.error,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
                                             },
                                             onClick = {
                                                 viewModel.resumeTopicSession(item)
@@ -877,8 +937,8 @@ fun ProclamationScreen(
                         strings = strings,
                         onResume = { viewModel.resumeTopicSession(topicItem) },
                         onStartFresh = { viewModel.startNewSessionForTopic(topicItem) },
-                        onEditCount = { newCount -> viewModel.updateTopicCount(topicItem, newCount) },
-                        onDelete = { viewModel.deleteTopic(topicItem) }
+                        onEdit = { topicToEdit = topicItem },
+                        onDelete = { topicToDelete = topicItem }
                     )
                 }
             }
@@ -1241,6 +1301,194 @@ fun ProclamationScreen(
             onDismiss = { isFullscreenCounterOpen = false }
         )
     }
+
+    topicToEdit?.let { item ->
+        EditTopicDialog(
+            topic = item,
+            strings = strings,
+            onDismiss = { topicToEdit = null },
+            onSave = { newTitle, newTarget, newCount ->
+                viewModel.editTopic(item, newTitle, newTarget, newCount)
+                android.widget.Toast.makeText(
+                    context,
+                    if (strings is FrenchStrings) "Sujet de prière mis à jour !" else "Prayer topic updated!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            },
+            onDelete = {
+                viewModel.deleteTopic(item)
+                android.widget.Toast.makeText(
+                    context,
+                    if (strings is FrenchStrings) "Sujet supprimé !" else "Prayer topic deleted!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
+    }
+
+    topicToDelete?.let { item ->
+        DeleteConfirmDialog(
+            topic = item,
+            strings = strings,
+            onDismiss = { topicToDelete = null },
+            onConfirmDelete = {
+                viewModel.deleteTopic(item)
+                android.widget.Toast.makeText(
+                    context,
+                    if (strings is FrenchStrings) "Sujet supprimé !" else "Prayer topic deleted!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
+    }
+}
+
+@Composable
+private fun EditTopicDialog(
+    topic: ProclamationTopicEntity,
+    strings: AppStrings,
+    onDismiss: () -> Unit,
+    onSave: (newTitle: String, newTarget: Int, newCount: Int) -> Unit,
+    onDelete: () -> Unit
+) {
+    var topicTitle by remember { mutableStateOf(topic.topic) }
+    var cumulativeCountText by remember { mutableStateOf(topic.cumulativeCount.toString()) }
+    var targetCountText by remember { mutableStateOf(topic.targetCount.toString()) }
+    var showConfirmDelete by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(if (strings is FrenchStrings) "Modifier le sujet de prière" else "Edit Saved Prayer Topic", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = topicTitle,
+                    onValueChange = { topicTitle = it },
+                    label = { Text(if (strings is FrenchStrings) "Sujet / Proclamation" else "Prayer Topic / Proclamation") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = cumulativeCountText,
+                        onValueChange = { cumulativeCountText = it.filter { c -> c.isDigit() } },
+                        label = { Text(if (strings is FrenchStrings) "Total Actuel" else "Current Count") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = targetCountText,
+                        onValueChange = { targetCountText = it.filter { c -> c.isDigit() } },
+                        label = { Text(if (strings is FrenchStrings) "Objectif" else "Target Count") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+
+                TextButton(
+                    onClick = { showConfirmDelete = true },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (strings is FrenchStrings) "Supprimer ce sujet" else "Delete Topic")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val count = cumulativeCountText.toIntOrNull() ?: topic.cumulativeCount
+                    val target = targetCountText.toIntOrNull() ?: topic.targetCount
+                    onSave(topicTitle.trim(), target, count)
+                    onDismiss()
+                }
+            ) {
+                Text(strings.save)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancelTimer)
+            }
+        }
+    )
+
+    if (showConfirmDelete) {
+        DeleteConfirmDialog(
+            topic = topic,
+            strings = strings,
+            onDismiss = { showConfirmDelete = false },
+            onConfirmDelete = {
+                showConfirmDelete = false
+                onDelete()
+                onDismiss()
+            }
+        )
+    }
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    topic: ProclamationTopicEntity,
+    strings: AppStrings,
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = if (strings is FrenchStrings) "Supprimer ce sujet ?" else "Delete Saved Topic?",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = if (strings is FrenchStrings)
+                    "Êtes-vous sûr de vouloir supprimer '${topic.topic}' des sujets enregistrés ?"
+                else
+                    "Are you sure you want to delete '${topic.topic}' from your saved prayer topics?",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirmDelete()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                modifier = Modifier.testTag("confirm_delete_topic_${topic.id}")
+            ) {
+                Text(strings.delete)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancelTimer)
+            }
+        }
+    )
 }
 
 @Composable
@@ -1249,13 +1497,10 @@ private fun TopicHistoryCard(
     strings: AppStrings,
     onResume: () -> Unit,
     onStartFresh: () -> Unit,
-    onEditCount: (Int) -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var editVal by remember { mutableStateOf(topic.cumulativeCount.toString()) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1286,7 +1531,7 @@ private fun TopicHistoryCard(
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer)
                             .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape)
-                            .clickable { showEditDialog = true },
+                            .clickable { onEdit() },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -1331,16 +1576,30 @@ private fun TopicHistoryCard(
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     IconButton(
-                        onClick = { showDeleteDialog = true },
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .testTag("edit_topic_${topic.id}")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit topic",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
                         modifier = Modifier
                             .size(36.dp)
                             .testTag("delete_topic_${topic.id}")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Default.Delete,
                             contentDescription = "Delete topic",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -1361,11 +1620,11 @@ private fun TopicHistoryCard(
                             onDismissRequest = { menuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit Number / Count") },
+                                text = { Text(if (strings is FrenchStrings) "Modifier le sujet" else "Edit Topic") },
                                 leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
-                                    showEditDialog = true
+                                    onEdit()
                                 }
                             )
                             DropdownMenuItem(
@@ -1390,7 +1649,7 @@ private fun TopicHistoryCard(
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     menuExpanded = false
-                                    showDeleteDialog = true
+                                    onDelete()
                                 }
                             )
                         }
@@ -1445,91 +1704,6 @@ private fun TopicHistoryCard(
                 }
             }
         }
-    }
-
-    if (showEditDialog) {
-        AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text("Edit Topic Number / Count", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Set cumulative proclamations for '${topic.topic}':",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = editVal,
-                        onValueChange = { editVal = it.filter { c -> c.isDigit() } },
-                        label = { Text("Cumulative Count") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val count = editVal.toIntOrNull() ?: topic.cumulativeCount
-                    onEditCount(count)
-                    showEditDialog = false
-                }) {
-                    Text(strings.save)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            title = {
-                Text(
-                    text = if (strings is FrenchStrings) "Supprimer ce sujet ?" else "Delete Saved Topic?",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = if (strings is FrenchStrings)
-                        "Êtes-vous sûr de vouloir supprimer '${topic.topic}' des sujets enregistrés ?"
-                    else
-                        "Are you sure you want to delete '${topic.topic}' from your saved prayer topics?",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
-                    modifier = Modifier.testTag("confirm_delete_topic_${topic.id}")
-                ) {
-                    Text(strings.delete)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
     }
 }
 

@@ -64,6 +64,11 @@ class ProclamationViewModel(
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
             accountabilityRepository.reconcileProclamationTopics(user.id)
+            val allTopics = accountabilityRepository.getProclamationTopics(user.id)
+            if (allTopics.isNotEmpty() && _selectedTopic.value == null) {
+                val latest = allTopics.maxByOrNull { it.updatedAtMs } ?: allTopics.first()
+                selectTopic(latest, resumeCount = true)
+            }
         }
     }
 
@@ -148,6 +153,17 @@ class ProclamationViewModel(
         if (asStartingPoint) {
             _startingCount.value = safeVal
             _isResumedSession.value = safeVal > 0
+            val cur = _selectedTopic.value
+            if (cur != null && safeVal > cur.cumulativeCount) {
+                viewModelScope.launch {
+                    val updated = cur.copy(
+                        cumulativeCount = safeVal,
+                        updatedAtMs = System.currentTimeMillis()
+                    )
+                    accountabilityRepository.saveProclamationTopic(updated)
+                    _selectedTopic.value = updated
+                }
+            }
         }
     }
 
@@ -156,6 +172,17 @@ class ProclamationViewModel(
         _startingCount.value = safeVal
         _counter.value = safeVal
         _isResumedSession.value = safeVal > 0
+        val cur = _selectedTopic.value
+        if (cur != null && safeVal > cur.cumulativeCount) {
+            viewModelScope.launch {
+                val updated = cur.copy(
+                    cumulativeCount = safeVal,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+                accountabilityRepository.saveProclamationTopic(updated)
+                _selectedTopic.value = updated
+            }
+        }
     }
 
     fun setTargetCount(target: Int) {
@@ -222,25 +249,61 @@ class ProclamationViewModel(
             val starting = _startingCount.value
             val isResumed = _isResumedSession.value
 
-            // Number of proclamations made in this specific session
-            val sessionProclamations = if (isResumed && currentTotal >= starting) {
+            val existing = _selectedTopic.value 
+                ?: accountabilityRepository.getProclamationTopics(user.id).find { it.topic.trim().equals(finalTopic, ignoreCase = true) }
+
+            val previousCumulative = existing?.cumulativeCount ?: 0
+
+            // Repetitions proclaimed in this active session
+            val sessionDelta = if (isResumed && currentTotal >= starting && starting > 0) {
                 currentTotal - starting
             } else {
                 currentTotal
             }
 
-            val proclamationsToLog = if (sessionProclamations > 0) sessionProclamations else currentTotal.coerceAtLeast(1)
+            // Offset if user stepped up their starting point beyond previous cumulative
+            val offlineDelta = if (starting > previousCumulative) (starting - previousCumulative) else 0
+            val effectiveProclamations = (sessionDelta + offlineDelta).coerceAtLeast(1)
+
+            // Guaranteed new cumulative count: MUST be at least currentTotal
+            val newCumulativeCount = maxOf(previousCumulative + sessionDelta + offlineDelta, currentTotal, previousCumulative + effectiveProclamations)
+
             val duration = _elapsedSeconds.value
             val todayIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
             val sessionNote = if (isResumed && starting > 0) {
-                if (_notes.value.isNotBlank()) "${_notes.value} (Continued session from $starting to $currentTotal, +$sessionProclamations new)"
-                else "Continued session from $starting to $currentTotal (+$sessionProclamations new)"
+                if (_notes.value.isNotBlank()) "${_notes.value} (Continued session from $starting to $currentTotal, +$sessionDelta new)"
+                else "Continued session from $starting to $currentTotal (+$sessionDelta new)"
             } else {
                 _notes.value
             }
 
-            // 1. Create a distinct AccountabilityEntryEntity for this session so it logs in Statistics and Reports
+            // 1. Explicitly persist the topic with its accurate new cumulative count
+            val topicToSave = if (existing != null) {
+                existing.copy(
+                    topic = finalTopic,
+                    cumulativeCount = newCumulativeCount,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else existing.targetCount,
+                    totalDurationSeconds = existing.totalDurationSeconds + duration,
+                    lastPracticedIso = todayIso,
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            } else {
+                ProclamationTopicEntity(
+                    id = UUID.randomUUID().toString(),
+                    userId = user.id,
+                    topic = finalTopic,
+                    cumulativeCount = newCumulativeCount,
+                    targetCount = if (_targetCount.value > 0) _targetCount.value else 100,
+                    totalDurationSeconds = duration,
+                    lastPracticedIso = todayIso,
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis()
+                )
+            }
+            accountabilityRepository.saveProclamationTopic(topicToSave)
+
+            // 2. Create entry for accountability logs/reports
             val entry = AccountabilityEntryEntity(
                 id = UUID.randomUUID().toString(),
                 userId = user.id,
@@ -250,40 +313,51 @@ class ProclamationViewModel(
                 timezoneId = java.util.TimeZone.getDefault().id,
                 durationSeconds = duration,
                 proclamationTopic = finalTopic,
-                proclamationCount = proclamationsToLog,
+                proclamationCount = effectiveProclamations,
                 proclamationTarget = if (_targetCount.value > 0) _targetCount.value else 100,
                 notes = sessionNote,
                 reflection = _reflection.value
             )
-            // saveEntry atomically saves the session and updates the topic's cumulative count
             accountabilityRepository.saveEntry(entry)
 
-            val freshTopic = accountabilityRepository.getProclamationTopics(user.id).find {
-                it.topic.trim().equals(finalTopic, ignoreCase = true)
-            }
-            val finalCumulative = freshTopic?.cumulativeCount ?: (starting + proclamationsToLog)
-
-            val notifMessage = if (isResumed && starting > 0) {
-                "Proclaimed '$finalTopic': reached $finalCumulative total (+$sessionProclamations today, ${duration / 60}m). Victory in Jesus!"
-            } else {
-                "Proclaimed '$finalTopic' $finalCumulative times (${duration / 60}m). Victory in Jesus!"
-            }
+            val notifMessage = "Proclaimed '$finalTopic': reached $newCumulativeCount total (+$effectiveProclamations, ${duration / 60}m). Victory in Jesus!"
             accountabilityRepository.logNotification(
                 context = context,
                 title = "Proclamation & Importunity Logged",
                 message = notifMessage
             )
 
-            // Reset active session state
-            _counter.value = 0
-            _startingCount.value = 0
-            _isResumedSession.value = false
+            // Retain updated topic state so returning or staying on screen preserves the new cumulative count
+            _selectedTopic.value = topicToSave
+            _counter.value = newCumulativeCount
+            _startingCount.value = newCumulativeCount
+            _isResumedSession.value = true
             _elapsedSeconds.value = 0L
             _notes.value = ""
             _reflection.value = ""
-            _selectedTopic.value = null
 
             onSuccess()
+        }
+    }
+
+    fun editTopic(topic: ProclamationTopicEntity, newTopicTitle: String, newTargetCount: Int, newCumulativeCount: Int) {
+        viewModelScope.launch {
+            val trimmed = newTopicTitle.trim().ifBlank { topic.topic }
+            val updated = topic.copy(
+                topic = trimmed,
+                targetCount = newTargetCount.coerceAtLeast(1),
+                cumulativeCount = newCumulativeCount.coerceAtLeast(0),
+                updatedAtMs = System.currentTimeMillis()
+            )
+            accountabilityRepository.saveProclamationTopic(updated)
+            if (_selectedTopic.value?.id == topic.id) {
+                _selectedTopic.value = updated
+                _topicText.value = updated.topic
+                _targetCount.value = updated.targetCount
+                _counter.value = updated.cumulativeCount
+                _startingCount.value = updated.cumulativeCount
+                _isResumedSession.value = updated.cumulativeCount > 0
+            }
         }
     }
 
@@ -291,7 +365,17 @@ class ProclamationViewModel(
         viewModelScope.launch {
             accountabilityRepository.deleteProclamationTopic(topic)
             if (_selectedTopic.value?.id == topic.id) {
-                _selectedTopic.value = null
+                val remaining = topicsFlow.value.filter { it.id != topic.id }
+                if (remaining.isNotEmpty()) {
+                    selectTopic(remaining.first(), resumeCount = true)
+                } else {
+                    _selectedTopic.value = null
+                    _topicText.value = "Jesus Christ is Lord"
+                    _counter.value = 0
+                    _startingCount.value = 0
+                    _isResumedSession.value = false
+                    _elapsedSeconds.value = 0L
+                }
             }
         }
     }
