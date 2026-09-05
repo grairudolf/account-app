@@ -2,125 +2,63 @@ package com.example.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.SelfImprovement
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material.icons.filled.NoFood
-import androidx.compose.material.icons.filled.LibraryBooks
-import androidx.compose.material.icons.filled.BookmarkAdded
-import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.Landscape
-import androidx.compose.material.icons.filled.VolunteerActivism
-import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.GroupAdd
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.TipsAndUpdates
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import com.example.core.localization.FrenchStrings
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.localization.AppStrings
+import com.example.core.localization.FrenchStrings
 import com.example.core.util.HapticHelper
+import com.example.data.local.entities.GoalEntity
 import com.example.domain.models.PredefinedDomains
+import com.example.ui.components.AppDatePickerDialog
+import com.example.ui.components.AppTimePickerDialog
+import com.example.ui.components.FastingCalendarPicker
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.GoalWithProgress
-import com.example.ui.components.AppTimePickerDialog
-import com.example.ui.components.AppDatePickerDialog
-import com.example.ui.components.FastingCalendarPicker
 import java.time.LocalDate
-import com.example.data.local.entities.GoalEntity
 
-private val FlameOrange = Color(0xFFE65100)
-private val AmberGold = Color(0xFFFFB300)
-
-enum class SpiritualGoalStatus(
-    val englishTitle: String,
-    val frenchTitle: String,
-    val englishQuote: String,
-    val frenchQuote: String,
-    val iconEmoji: String
+enum class GoalProgressTier(
+    val englishLabel: String,
+    val frenchLabel: String,
+    val icon: ImageVector
 ) {
-    VICTORIOUS(
-        "Victorious in Grace",
-        "Couronne de Victoire",
-        "“I have finished the race, I have kept the faith.” (2 Tim 4:7)",
-        "« J'ai combattu le bon combat, j'ai achevé la course. » (2 Tim 4:7)",
-        "👑"
-    ),
-    PRESSING_IN(
-        "Pressing Towards the Mark",
-        "Élan Ardent • Tout près du but",
-        "“Almost there! Press toward the mark for the prize!” (Phil 3:14)",
-        "« Courage ! Cours vers le but pour remporter le prix ! » (Phil 3:14)",
-        "🔥"
-    ),
-    HOLY_MOMENTUM(
-        "In Holy Momentum",
-        "En Plein Élan Spirituel",
-        "“Walking faithfully in the Spirit with sacred diligence.” (Gal 5:25)",
-        "« Marchons selon l'Esprit avec constance et zèle. » (Gal 5:25)",
-        "🕊️"
-    ),
-    KINDLE_FIRE(
-        "Kindle the Sacred Fire",
-        "Ranimer la Flamme",
-        "“Fan into flame the gift of God within you!” (2 Tim 1:6)",
-        "« Ranime la flamme du don de Dieu qui est en toi ! » (2 Tim 1:6)",
-        "⚡"
-    )
+    COMPLETED("Achieved", "Accompli", Icons.Default.CheckCircle),
+    NEAR_TARGET("Pressing Forward", "En Plein Élan", Icons.Default.TrendingUp),
+    IN_PROGRESS("In Progress", "En Cours", Icons.Default.DirectionsRun),
+    STARTING("Beginning", "Au Début", Icons.Default.Flag)
 }
 
-fun getSpiritualStatus(progress: Double, target: Double): SpiritualGoalStatus {
-    if (target <= 0.0) return SpiritualGoalStatus.KINDLE_FIRE
+fun getGoalProgressTier(progress: Double, target: Double): GoalProgressTier {
+    if (target <= 0.0) return GoalProgressTier.STARTING
     val pct = (progress / target) * 100.0
     return when {
-        pct >= 100.0 -> SpiritualGoalStatus.VICTORIOUS
-        pct >= 80.0 -> SpiritualGoalStatus.PRESSING_IN
-        pct >= 40.0 -> SpiritualGoalStatus.HOLY_MOMENTUM
-        else -> SpiritualGoalStatus.KINDLE_FIRE
+        pct >= 100.0 -> GoalProgressTier.COMPLETED
+        pct >= 80.0 -> GoalProgressTier.NEAR_TARGET
+        pct >= 30.0 -> GoalProgressTier.IN_PROGRESS
+        else -> GoalProgressTier.STARTING
     }
 }
 
@@ -133,6 +71,13 @@ data class SpiritualGoalQuote(
 )
 
 val SpiritualGoalsQuotes = listOf(
+    SpiritualGoalQuote(
+        "The winner has a clear cut goal and he works at it night and day. The loser gives himself to everything and finally nothing. Are you a winner or loser?",
+        "Le gagnant a un but précis et il y travaille jour et nuit. Le perdant s'adonne à tout et finalement à rien. Es-tu un gagnant ou un perdant ?",
+        "Zacharias Tanee Fomum",
+        "Zacharias Tanee Fomum",
+        "How to Succeed in the Christian Life"
+    ),
     SpiritualGoalQuote(
         "The spiritual man is a disciplined man. Spiritual discipline is the key to spiritual power and divine victory.",
         "L'homme spirituel est un homme discipliné. La discipline spirituelle est la clé de la puissance et de la victoire divine.",
@@ -185,51 +130,51 @@ fun GoalsScreen(
     val context = LocalContext.current
     val isFr = strings is FrenchStrings
     var showAddGoalDialog by remember { mutableStateOf(false) }
-    var selectedStatusFilter by remember { mutableStateOf<SpiritualGoalStatus?>(null) }
+    var selectedTierFilter by remember { mutableStateOf<GoalProgressTier?>(null) }
     var currentQuoteIndex by remember { mutableIntStateOf(0) }
 
     val activeQuote = SpiritualGoalsQuotes[currentQuoteIndex % SpiritualGoalsQuotes.size]
 
-    // Status counts
-    val victoriousCount = goalsWithProgress.count { getSpiritualStatus(it.currentProgress, it.goal.targetValue) == SpiritualGoalStatus.VICTORIOUS }
-    val pressingInCount = goalsWithProgress.count { getSpiritualStatus(it.currentProgress, it.goal.targetValue) == SpiritualGoalStatus.PRESSING_IN }
-    val holyMomentumCount = goalsWithProgress.count { getSpiritualStatus(it.currentProgress, it.goal.targetValue) == SpiritualGoalStatus.HOLY_MOMENTUM }
-    val kindleFireCount = goalsWithProgress.count { getSpiritualStatus(it.currentProgress, it.goal.targetValue) == SpiritualGoalStatus.KINDLE_FIRE }
+    val completedCount = goalsWithProgress.count { getGoalProgressTier(it.currentProgress, it.goal.targetValue) == GoalProgressTier.COMPLETED }
+    val nearTargetCount = goalsWithProgress.count { getGoalProgressTier(it.currentProgress, it.goal.targetValue) == GoalProgressTier.NEAR_TARGET }
+    val inProgressCount = goalsWithProgress.count { getGoalProgressTier(it.currentProgress, it.goal.targetValue) == GoalProgressTier.IN_PROGRESS }
+    val startingCount = goalsWithProgress.count { getGoalProgressTier(it.currentProgress, it.goal.targetValue) == GoalProgressTier.STARTING }
 
-    val filteredByStatus = if (selectedStatusFilter == null) {
+    val filteredGoals = if (selectedTierFilter == null) {
         goalsWithProgress
     } else {
-        goalsWithProgress.filter { getSpiritualStatus(it.currentProgress, it.goal.targetValue) == selectedStatusFilter }
+        goalsWithProgress.filter { getGoalProgressTier(it.currentProgress, it.goal.targetValue) == selectedTierFilter }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            drawCircle(
-                color = AccentPurple.copy(alpha = 0.05f),
-                radius = w * 0.55f,
-                center = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.2f)
-            )
-            drawCircle(
-                color = PrimaryBlue.copy(alpha = 0.04f),
-                radius = w * 0.5f,
-                center = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.8f)
-            )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    HapticHelper.vibrateClick(context)
+                    showAddGoalDialog = true
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.testTag("add_goal_fab")
+            ) {
+                Icon(Icons.Default.Add, contentDescription = strings.addGoal)
+            }
         }
-
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 1. Spiritual Wisdom Inspiration Card (ZTF & Biblical Disciplines)
+            // 1. Clean Scriptural Inspiration Banner
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
@@ -244,16 +189,16 @@ fun GoalsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Default.FormatQuote,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -262,7 +207,6 @@ fun GoalsScreen(
                             text = if (isFr) activeQuote.quoteFr else activeQuote.quoteEn,
                             style = MaterialTheme.typography.bodySmall,
                             fontStyle = FontStyle.Italic,
-                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 18.sp
                         )
@@ -280,8 +224,8 @@ fun GoalsScreen(
                             )
                             Icon(
                                 Icons.Default.Refresh,
-                                contentDescription = "Next Word",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                contentDescription = "Next Quote",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -291,101 +235,7 @@ fun GoalsScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 2. Spiritual Status Filter Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // All Chip
-                val allSelected = selectedStatusFilter == null
-                FilterChip(
-                    selected = allSelected,
-                    onClick = {
-                        HapticHelper.vibrateClick(context)
-                        selectedStatusFilter = null
-                    },
-                    label = { Text(if (isFr) "Tous (${goalsWithProgress.size})" else "All (${goalsWithProgress.size})", fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.testTag("filter_status_all")
-                )
-
-                // Pressing In (Close to target!) Chip
-                val pressingSelected = selectedStatusFilter == SpiritualGoalStatus.PRESSING_IN
-                FilterChip(
-                    selected = pressingSelected,
-                    onClick = {
-                        HapticHelper.vibrateClick(context)
-                        selectedStatusFilter = if (pressingSelected) null else SpiritualGoalStatus.PRESSING_IN
-                    },
-                    leadingIcon = { Text("🔥", fontSize = 13.sp) },
-                    label = { Text(if (isFr) "Tout près ($pressingInCount)" else "Pressing In ($pressingInCount)", fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = FlameOrange,
-                        selectedLabelColor = Color.White
-                    ),
-                    modifier = Modifier.testTag("filter_status_pressing")
-                )
-
-                // Victorious (Achieved) Chip
-                val victoriousSelected = selectedStatusFilter == SpiritualGoalStatus.VICTORIOUS
-                FilterChip(
-                    selected = victoriousSelected,
-                    onClick = {
-                        HapticHelper.vibrateClick(context)
-                        selectedStatusFilter = if (victoriousSelected) null else SpiritualGoalStatus.VICTORIOUS
-                    },
-                    leadingIcon = { Text("👑", fontSize = 13.sp) },
-                    label = { Text(if (isFr) "Couronne ($victoriousCount)" else "Victorious ($victoriousCount)", fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = AmberGold,
-                        selectedLabelColor = Color.Black
-                    ),
-                    modifier = Modifier.testTag("filter_status_victorious")
-                )
-
-                // In Holy Momentum Chip
-                val momentumSelected = selectedStatusFilter == SpiritualGoalStatus.HOLY_MOMENTUM
-                FilterChip(
-                    selected = momentumSelected,
-                    onClick = {
-                        HapticHelper.vibrateClick(context)
-                        selectedStatusFilter = if (momentumSelected) null else SpiritualGoalStatus.HOLY_MOMENTUM
-                    },
-                    leadingIcon = { Text("🕊️", fontSize = 13.sp) },
-                    label = { Text(if (isFr) "En marche ($holyMomentumCount)" else "Momentum ($holyMomentumCount)", fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = PrimaryBlue,
-                        selectedLabelColor = Color.White
-                    ),
-                    modifier = Modifier.testTag("filter_status_momentum")
-                )
-
-                // Kindle Fire Chip
-                val kindleSelected = selectedStatusFilter == SpiritualGoalStatus.KINDLE_FIRE
-                FilterChip(
-                    selected = kindleSelected,
-                    onClick = {
-                        HapticHelper.vibrateClick(context)
-                        selectedStatusFilter = if (kindleSelected) null else SpiritualGoalStatus.KINDLE_FIRE
-                    },
-                    leadingIcon = { Text("⚡", fontSize = 13.sp) },
-                    label = { Text(if (isFr) "Ranimer ($kindleFireCount)" else "Kindle Fire ($kindleFireCount)", fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onSecondary
-                    ),
-                    modifier = Modifier.testTag("filter_status_kindle")
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // 3. Frequency Selector Filter Chips
+            // 2. Frequency Selector Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -400,79 +250,65 @@ fun GoalsScreen(
                     "YEARLY" to strings.yearly
                 ).forEach { (freqKey, freqLabel) ->
                     val selected = selectedFrequency == freqKey
-                    val containerBg = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    val borderStroke = if (selected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = containerBg,
-                        border = borderStroke,
-                        modifier = Modifier
-                            .clickable {
-                                HapticHelper.vibrateClick(context)
-                                onFrequencySelected(freqKey)
-                            }
-                            .testTag("filter_freq_$freqKey")
-                    ) {
-                        Text(
-                            text = freqLabel.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = contentColor,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                    FilterChip(
+                        selected = selected,
+                        onClick = {
+                            HapticHelper.vibrateClick(context)
+                            onFrequencySelected(freqKey)
+                        },
+                        label = {
+                            Text(
+                                text = freqLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("filter_freq_$freqKey")
+                    )
                 }
             }
 
-            // 4. Overview Progress Summary Banner
+            // 3. Clean Progress Overview Card
             if (goalsWithProgress.isNotEmpty()) {
                 val totalCount = goalsWithProgress.size
-                val overallPct = if (totalCount > 0) ((victoriousCount.toFloat() / totalCount) * 100).toInt() else 0
+                val overallPct = if (totalCount > 0) ((completedCount.toFloat() / totalCount) * 100).toInt() else 0
                 val animatedOverallProgress by animateFloatAsState(
-                    targetValue = (victoriousCount.toFloat() / totalCount.coerceAtLeast(1)).coerceIn(0f, 1f),
-                    animationSpec = tween(800, easing = FastOutSlowInEasing),
+                    targetValue = (completedCount.toFloat() / totalCount.coerceAtLeast(1)).coerceIn(0f, 1f),
+                    animationSpec = tween(600, easing = FastOutSlowInEasing),
                     label = "overall_progress_bar"
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = if (victoriousCount == totalCount && totalCount > 0) "👑" else if (pressingInCount > 0) "🔥" else "🕊️",
-                                    fontSize = 18.sp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (isFr) "$victoriousCount sur $totalCount accomplis ($overallPct%)" else "$victoriousCount of $totalCount Goals Completed ($overallPct%)",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            if (pressingInCount > 0) {
+                            Text(
+                                text = if (isFr) "$completedCount sur $totalCount accomplis ($overallPct%)" else "$completedCount of $totalCount Completed ($overallPct%)",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (nearTargetCount > 0) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = FlameOrange.copy(alpha = 0.2f),
-                                    border = BorderStroke(1.dp, FlameOrange.copy(alpha = 0.4f))
+                                    color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
-                                        text = if (isFr) "$pressingInCount tout près" else "$pressingInCount close",
+                                        text = if (isFr) "$nearTargetCount en élan" else "$nearTargetCount close",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = FlameOrange,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
@@ -485,57 +321,103 @@ fun GoalsScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(CircleShape),
-                            color = if (victoriousCount == totalCount) AmberGold else MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 5. Header Title & Add FAB
+            // 4. Clean Tier Filter Chips
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column {
-                    Text(
-                        text = strings.spiritualGoals,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (isFr) "Consécration & Progrès Spirituel" else "Consecration & Spiritual Progress",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                FloatingActionButton(
+                // All
+                FilterChip(
+                    selected = selectedTierFilter == null,
                     onClick = {
                         HapticHelper.vibrateClick(context)
-                        showAddGoalDialog = true
+                        selectedTierFilter = null
                     },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .size(42.dp)
-                        .testTag("add_goal_fab")
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = strings.addGoal)
-                }
+                    label = { Text(if (isFr) "Tous (${goalsWithProgress.size})" else "All (${goalsWithProgress.size})") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("filter_status_all")
+                )
+
+                // Completed
+                FilterChip(
+                    selected = selectedTierFilter == GoalProgressTier.COMPLETED,
+                    onClick = {
+                        HapticHelper.vibrateClick(context)
+                        selectedTierFilter = if (selectedTierFilter == GoalProgressTier.COMPLETED) null else GoalProgressTier.COMPLETED
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(if (isFr) "Accomplis ($completedCount)" else "Achieved ($completedCount)") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("filter_status_victorious")
+                )
+
+                // Near Target
+                FilterChip(
+                    selected = selectedTierFilter == GoalProgressTier.NEAR_TARGET,
+                    onClick = {
+                        HapticHelper.vibrateClick(context)
+                        selectedTierFilter = if (selectedTierFilter == GoalProgressTier.NEAR_TARGET) null else GoalProgressTier.NEAR_TARGET
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.TrendingUp, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(if (isFr) "En élan ($nearTargetCount)" else "Pressing ($nearTargetCount)") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("filter_status_pressing")
+                )
+
+                // In Progress
+                FilterChip(
+                    selected = selectedTierFilter == GoalProgressTier.IN_PROGRESS,
+                    onClick = {
+                        HapticHelper.vibrateClick(context)
+                        selectedTierFilter = if (selectedTierFilter == GoalProgressTier.IN_PROGRESS) null else GoalProgressTier.IN_PROGRESS
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.DirectionsRun, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(if (isFr) "En cours ($inProgressCount)" else "In Progress ($inProgressCount)") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("filter_status_momentum")
+                )
+
+                // Starting
+                FilterChip(
+                    selected = selectedTierFilter == GoalProgressTier.STARTING,
+                    onClick = {
+                        HapticHelper.vibrateClick(context)
+                        selectedTierFilter = if (selectedTierFilter == GoalProgressTier.STARTING) null else GoalProgressTier.STARTING
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Flag, contentDescription = null, modifier = Modifier.size(14.dp))
+                    },
+                    label = { Text(if (isFr) "Départ ($startingCount)" else "Starting ($startingCount)") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("filter_status_kindle")
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 6. Goals List
-            if (filteredByStatus.isEmpty()) {
+            // 5. Goals List
+            if (filteredGoals.isEmpty()) {
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, DividerColor),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -543,13 +425,15 @@ fun GoalsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = if (selectedStatusFilter != null) "🕊️" else "🎯",
-                            fontSize = 32.sp
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
                         )
                         Text(
-                            text = if (selectedStatusFilter != null) {
-                                if (isFr) "Aucun objectif dans cette catégorie spirituelle." else "No goals in this spiritual status category."
+                            text = if (selectedTierFilter != null) {
+                                if (isFr) "Aucun objectif dans cette catégorie." else "No goals in this filter category."
                             } else {
                                 strings.noGoalsFound
                             },
@@ -557,8 +441,8 @@ fun GoalsScreen(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (selectedStatusFilter != null) {
-                            TextButton(onClick = { selectedStatusFilter = null }) {
+                        if (selectedTierFilter != null) {
+                            TextButton(onClick = { selectedTierFilter = null }) {
                                 Text(if (isFr) "Afficher tous les objectifs" else "Show All Goals")
                             }
                         }
@@ -570,9 +454,9 @@ fun GoalsScreen(
                         .fillMaxWidth()
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 28.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    items(filteredByStatus, key = { it.goal.id }) { goalItem ->
+                    items(filteredGoals, key = { it.goal.id }) { goalItem ->
                         GoalCard(
                             goalItem = goalItem,
                             strings = strings,
@@ -582,15 +466,6 @@ fun GoalsScreen(
                             },
                             onToggleReminder = { goal, enabled ->
                                 onToggleReminder(goal, enabled)
-                            },
-                            onQuickIncrement = {
-                                HapticHelper.vibrateSuccess(context)
-                                onQuickIncrementGoal?.invoke(goalItem.goal)
-                                android.widget.Toast.makeText(
-                                    context,
-                                    if (isFr) "Gloire à Dieu ! Progrès enregistré pour « ${goalItem.goal.title} »" else "Glory to God! Progress recorded for '${goalItem.goal.title}'",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
                             },
                             onNavigateToDomain = {
                                 onNavigateToDomain?.invoke(goalItem.goal.domainId)
@@ -607,7 +482,7 @@ fun GoalsScreen(
             strings = strings,
             onDismiss = { showAddGoalDialog = false },
             onConfirm = { domainId, title, target, unit, freq, fastingType, periodDays, isReminder, reminderTime ->
-                onAddGoal("guest_user", domainId, title, target, unit, freq, java.time.LocalDate.now().toString(), fastingType, periodDays, isReminder, reminderTime)
+                onAddGoal("guest_user", domainId, title, target, unit, freq, LocalDate.now().toString(), fastingType, periodDays, isReminder, reminderTime)
                 showAddGoalDialog = false
             }
         )
@@ -620,42 +495,18 @@ fun GoalCard(
     strings: AppStrings,
     onDelete: () -> Unit,
     onToggleReminder: (GoalEntity, Boolean) -> Unit,
-    onQuickIncrement: () -> Unit = {},
     onNavigateToDomain: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val isFr = strings is FrenchStrings
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
-    val status = getSpiritualStatus(goalItem.currentProgress, goalItem.goal.targetValue)
-    val isVictorious = status == SpiritualGoalStatus.VICTORIOUS
-    val isPressingIn = status == SpiritualGoalStatus.PRESSING_IN
+    val tier = getGoalProgressTier(goalItem.currentProgress, goalItem.goal.targetValue)
+    val isCompleted = tier == GoalProgressTier.COMPLETED
 
-    // Animated Breathing / Pulse for Pressing In (Close to target!)
-    val infiniteTransition = rememberInfiniteTransition(label = "goal_card_transition")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = if (isPressingIn) 1.06f else 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = if (isPressingIn) 0.85f else 0.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glow_alpha"
-    )
-
-    // Animated Progress
     val animatedProgressFraction by animateFloatAsState(
         targetValue = (goalItem.progressPercentage / 100f).coerceIn(0f, 1f),
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = tween(500, easing = FastOutSlowInEasing),
         label = "goal_card_progress"
     )
 
@@ -687,18 +538,14 @@ fun GoalCard(
         String.format(java.util.Locale.US, "%.1f", goalItem.goal.targetValue)
     }
 
-    val cardBorder = when (status) {
-        SpiritualGoalStatus.VICTORIOUS -> BorderStroke(1.5.dp, AmberGold.copy(alpha = 0.8f))
-        SpiritualGoalStatus.PRESSING_IN -> BorderStroke(1.5.dp, FlameOrange.copy(alpha = glowAlpha))
-        SpiritualGoalStatus.HOLY_MOMENTUM -> BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f))
-        SpiritualGoalStatus.KINDLE_FIRE -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-    }
-
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = cardBorder,
-        shadowElevation = if (isVictorious || isPressingIn) 2.dp else 1.dp,
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(
+            1.dp,
+            if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .testTag("goal_card_${goalItem.goal.id}")
@@ -707,7 +554,7 @@ fun GoalCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header Row: Domain Icon + Goal Title + Delete Icon
+            // Header Row: Domain Icon + Goal Title + Link to Domain + Delete
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -715,31 +562,21 @@ fun GoalCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(
-                                when (status) {
-                                    SpiritualGoalStatus.VICTORIOUS -> AmberGold.copy(alpha = 0.2f)
-                                    SpiritualGoalStatus.PRESSING_IN -> FlameOrange.copy(alpha = 0.2f)
-                                    else -> MaterialTheme.colorScheme.primaryContainer
-                                }
-                            ),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = domainIcon,
                             contentDescription = null,
-                            tint = when (status) {
-                                SpiritualGoalStatus.VICTORIOUS -> AmberGold
-                                SpiritualGoalStatus.PRESSING_IN -> FlameOrange
-                                else -> MaterialTheme.colorScheme.primary
-                            },
-                            modifier = Modifier.size(22.dp)
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
@@ -749,21 +586,43 @@ fun GoalCard(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        // Clickable Domain Link Chip
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.padding(top = 2.dp)
                         ) {
-                            Text(
-                                text = strings.getDomainTitleById(goalItem.goal.domainId),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.clickable { onNavigateToDomain() }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = strings.getDomainTitleById(goalItem.goal.domainId),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.OpenInNew,
+                                        contentDescription = "Open Domain",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                }
+                            }
+
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
@@ -782,98 +641,14 @@ fun GoalCard(
 
                 IconButton(
                     onClick = { showDeleteConfirmDialog = true },
-                    modifier = Modifier.testTag("delete_goal_${goalItem.goal.id}")
+                    modifier = Modifier.size(32.dp).testTag("delete_goal_${goalItem.goal.id}")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = strings.delete,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(18.dp)
                     )
-                }
-            }
-
-            // Spiritual Status Badge Banner
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = when (status) {
-                    SpiritualGoalStatus.VICTORIOUS -> AmberGold.copy(alpha = 0.18f)
-                    SpiritualGoalStatus.PRESSING_IN -> FlameOrange.copy(alpha = 0.18f)
-                    SpiritualGoalStatus.HOLY_MOMENTUM -> PrimaryBlue.copy(alpha = 0.12f)
-                    SpiritualGoalStatus.KINDLE_FIRE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                },
-                border = BorderStroke(
-                    1.dp,
-                    when (status) {
-                        SpiritualGoalStatus.VICTORIOUS -> AmberGold.copy(alpha = 0.4f)
-                        SpiritualGoalStatus.PRESSING_IN -> FlameOrange.copy(alpha = 0.4f)
-                        SpiritualGoalStatus.HOLY_MOMENTUM -> PrimaryBlue.copy(alpha = 0.3f)
-                        SpiritualGoalStatus.KINDLE_FIRE -> Color.Transparent
-                    }
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = status.iconEmoji,
-                            fontSize = 16.sp,
-                            modifier = if (isPressingIn) Modifier.scale(pulseScale) else Modifier
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = if (isFr) status.frenchTitle else status.englishTitle,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = when (status) {
-                                    SpiritualGoalStatus.VICTORIOUS -> AmberGold
-                                    SpiritualGoalStatus.PRESSING_IN -> FlameOrange
-                                    SpiritualGoalStatus.HOLY_MOMENTUM -> PrimaryBlue
-                                    SpiritualGoalStatus.KINDLE_FIRE -> MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                            Text(
-                                text = if (isFr) status.frenchQuote else status.englishQuote,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Progress % Badge
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = when (status) {
-                            SpiritualGoalStatus.VICTORIOUS -> AmberGold
-                            SpiritualGoalStatus.PRESSING_IN -> FlameOrange
-                            SpiritualGoalStatus.HOLY_MOMENTUM -> PrimaryBlue
-                            SpiritualGoalStatus.KINDLE_FIRE -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ) {
-                        Text(
-                            text = "${goalItem.progressPercentage}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = when (status) {
-                                SpiritualGoalStatus.VICTORIOUS -> Color.Black
-                                SpiritualGoalStatus.PRESSING_IN -> Color.White
-                                SpiritualGoalStatus.HOLY_MOMENTUM -> Color.White
-                                SpiritualGoalStatus.KINDLE_FIRE -> MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
                 }
             }
 
@@ -883,37 +658,41 @@ fun GoalCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "$progressFormatted / $targetFormatted ${goalItem.goal.unit}",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (goalItem.goal.domainId == "fasting" && goalItem.goal.fastingType.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isCompleted) StatusSuccess.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
+                    ) {
                         Text(
-                            text = "Type: ${goalItem.goal.fastingType.lowercase().replaceFirstChar { it.uppercase() }} Fast",
+                            text = "${goalItem.progressPercentage}%",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 2.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCompleted) StatusSuccess else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
 
                 if (goalItem.goal.isDailyReminderEnabled) {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(12.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
@@ -922,19 +701,19 @@ fun GoalCard(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             IconButton(
                                 onClick = {
                                     HapticHelper.vibrateClick(context)
                                     onToggleReminder(goalItem.goal, false)
                                 },
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Close,
                                     contentDescription = "Turn off reminder",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(12.dp)
+                                    modifier = Modifier.size(11.dp)
                                 )
                             }
                         }
@@ -942,37 +721,16 @@ fun GoalCard(
                 }
             }
 
-            // Animated Linear Progress with Milestone Markers
-            Column(modifier = Modifier.fillMaxWidth()) {
-                LinearProgressIndicator(
-                    progress = { animatedProgressFraction },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp)
-                        .clip(CircleShape),
-                    color = when (status) {
-                        SpiritualGoalStatus.VICTORIOUS -> AmberGold
-                        SpiritualGoalStatus.PRESSING_IN -> FlameOrange
-                        SpiritualGoalStatus.HOLY_MOMENTUM -> PrimaryBlue
-                        SpiritualGoalStatus.KINDLE_FIRE -> MaterialTheme.colorScheme.primary
-                    },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-
-                // Milestone indicators (25%, 50%, 75%, 100%)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 3.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("0%", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    Text("25%", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    Text("50%", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    Text("75%", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    Text("100% 👑", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = if (isVictorious) AmberGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontWeight = if (isVictorious) FontWeight.Bold else FontWeight.Normal)
-                }
-            }
+            // Progress Bar
+            LinearProgressIndicator(
+                progress = { animatedProgressFraction },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .clip(CircleShape),
+                color = if (isCompleted) StatusSuccess else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
 
             // Comparison Summary Note
             val diff = goalItem.goal.targetValue - goalItem.currentProgress
@@ -982,7 +740,7 @@ fun GoalCard(
                 if (excess > 0) {
                     String.format(strings.goalAchievedExceeded, excessFormatted, goalItem.goal.unit)
                 } else {
-                    if (isFr) "Gloire à Dieu ! Objectif pleinement accompli !" else "Glory to God! Target fully fulfilled!"
+                    if (isFr) "Objectif pleinement accompli !" else "Target fulfilled!"
                 }
             } else {
                 val remainingFormatted = if (diff % 1.0 == 0.0) diff.toInt().toString() else String.format(java.util.Locale.US, "%.1f", diff)
@@ -995,67 +753,36 @@ fun GoalCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // 7. Interactive Action Row: Quick Increment & Open Domain
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Domain Navigation Button
+            OutlinedButton(
+                onClick = onNavigateToDomain,
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(38.dp)
+                    .testTag("open_domain_${goalItem.goal.id}")
             ) {
-                Button(
-                    onClick = onQuickIncrement,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = when (status) {
-                            SpiritualGoalStatus.PRESSING_IN -> FlameOrange
-                            SpiritualGoalStatus.VICTORIOUS -> AmberGold
-                            else -> MaterialTheme.colorScheme.primary
-                        },
-                        contentColor = when (status) {
-                            SpiritualGoalStatus.VICTORIOUS -> Color.Black
-                            else -> Color.White
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .testTag("quick_increment_${goalItem.goal.id}")
-                ) {
-                    Icon(
-                        if (isVictorious) Icons.Default.CheckCircle else if (isPressingIn) Icons.Default.Whatshot else Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isVictorious) {
-                            if (isFr) "+1 Élan de Grâce" else "+1 Grace Step"
-                        } else if (isPressingIn) {
-                            if (isFr) "+1 Courir vers le but" else "+1 Press In"
-                        } else {
-                            if (isFr) "+1 Progrès" else "+1 Step"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = onNavigateToDomain,
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier
-                        .height(38.dp)
-                        .testTag("open_domain_${goalItem.goal.id}")
-                ) {
-                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (isFr) "Détails" else "Domain",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Category,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isFr) "Ouvrir ${strings.getDomainTitleById(goalItem.goal.domainId)}" else "Open ${strings.getDomainTitleById(goalItem.goal.domainId)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
@@ -1065,7 +792,7 @@ fun GoalCard(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
             title = { Text(strings.delete, fontWeight = FontWeight.Bold) },
-            text = { Text("Are you sure you want to delete this goal and its associated reminders?") },
+            text = { Text(if (isFr) "Voulez-vous supprimer cet objectif et ses rappels ?" else "Are you sure you want to delete this goal and its reminders?") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -1203,6 +930,7 @@ fun AddGoalDialog(
     onDismiss: () -> Unit,
     onConfirm: (domainId: String, title: String, target: Double, unit: String, freq: String, fastingType: String, periodDays: Int, isReminder: Boolean, reminderTime: String) -> Unit
 ) {
+    val isFr = strings is FrenchStrings
     val allDomains = remember { PredefinedDomains.ALL }
     var selectedDomain by remember { mutableStateOf("bible_reading") }
 
@@ -1219,7 +947,7 @@ fun AddGoalDialog(
     var periodDaysInput by remember { mutableStateOf("3") }
     var isReminderEnabled by remember { mutableStateOf(false) }
     var reminderScheduleType by remember { mutableStateOf("DAILY") }
-    var reminderDateIso by remember { mutableStateOf(java.time.LocalDate.now().plusDays(1).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)) }
+    var reminderDateIso by remember { mutableStateOf(LocalDate.now().plusDays(1).toString()) }
     var reminderTimeIso by remember { mutableStateOf("08:00") }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -1281,10 +1009,10 @@ fun AddGoalDialog(
                     }
                 }
 
-                // 2. Domain-Specific Goal Presets (Clean Dropdown + Quick Chips)
+                // 2. Goal Presets
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = if (strings is FrenchStrings) "Type et Objectif Clé" else "Goal Type & Focus",
+                        text = if (strings is FrenchStrings) "Modèle d'objectif" else "Preset Goal",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1334,10 +1062,10 @@ fun AddGoalDialog(
                         }
                     }
 
-                    // Quick-select chips
+                    // Quick Presets Chips
                     val quickPresets = remember(currentPresets) {
                         val list = currentPresets.take(3).toMutableList()
-                        val customP = currentPresets.find { it.title.startsWith("Custom") }
+                        val customP = currentPresets.find { it.title.startsWith("Custom") || it.title.startsWith("Objectif") }
                         if (customP != null && !list.contains(customP)) {
                             list.add(customP)
                         }
@@ -1365,23 +1093,12 @@ fun AddGoalDialog(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    labelColor = MaterialTheme.colorScheme.onSurface,
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = isSelected,
-                                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                                )
+                                shape = RoundedCornerShape(8.dp)
                             )
                         }
                     }
 
-                    if (selectedPresetTitle.startsWith("Custom")) {
+                    if (selectedPresetTitle.startsWith("Custom") || selectedPresetTitle.contains("personnalisé", ignoreCase = true)) {
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = customTitle,
@@ -1415,9 +1132,9 @@ fun AddGoalDialog(
                     HorizontalDivider()
                 }
 
-                // 4. Target Value and Unit Dropdowns
+                // 4. Target Value and Unit
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Target & Metric", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Text(if (strings is FrenchStrings) "Cible et Unité" else "Target & Metric", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = target,
@@ -1459,7 +1176,7 @@ fun AddGoalDialog(
                     }
                 }
 
-                // 5. Target Period / Frequency (Includes YEARLY)
+                // 5. Target Period / Frequency
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(strings.targetPeriod, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                     FlowRow(
@@ -1484,18 +1201,7 @@ fun AddGoalDialog(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    labelColor = MaterialTheme.colorScheme.onSurface,
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = isSelected,
-                                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                                )
+                                shape = RoundedCornerShape(8.dp)
                             )
                         }
                     }
@@ -1503,7 +1209,7 @@ fun AddGoalDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
 
-                // 6. Flexible Goal Reminder Setting
+                // 6. Reminder Setting
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1513,8 +1219,8 @@ fun AddGoalDialog(
                         Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text("Enable Goal Reminder", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                            Text("Stay consistent towards this target", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (isFr) "Activer le rappel" else "Enable Reminder", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text(if (isFr) "Pour la constance spirituelle" else "Stay consistent towards this target", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     Switch(
@@ -1525,7 +1231,7 @@ fun AddGoalDialog(
 
                 if (isReminderEnabled) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Reminder Cadence", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Text(if (isFr) "Fréquence du rappel" else "Reminder Cadence", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -1533,7 +1239,7 @@ fun AddGoalDialog(
                         ) {
                             listOf(
                                 "DAILY" to strings.daily,
-                                "SPECIFIC_DATE" to (if (strings is FrenchStrings) "Date spécifique" else "Specific Date"),
+                                "SPECIFIC_DATE" to (if (isFr) "Date spécifique" else "Specific Date"),
                                 "WEEKLY" to strings.weekly,
                                 "MONTHLY" to strings.monthly
                             ).forEach { (schedKey, schedLabel) ->
@@ -1548,18 +1254,7 @@ fun AddGoalDialog(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         )
                                     },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                        labelColor = MaterialTheme.colorScheme.onSurface,
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                    ),
-                                    border = FilterChipDefaults.filterChipBorder(
-                                        enabled = true,
-                                        selected = isSelected,
-                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                        selectedBorderColor = MaterialTheme.colorScheme.primary
-                                    )
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                             }
                         }
@@ -1570,7 +1265,7 @@ fun AddGoalDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Reminder Date:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                Text(if (isFr) "Date du rappel :" else "Reminder Date:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                                 OutlinedButton(
                                     onClick = { showDatePicker = true },
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -1587,7 +1282,7 @@ fun AddGoalDialog(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Reminder Time:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                            Text(if (isFr) "Heure du rappel :" else "Reminder Time:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
                             OutlinedButton(
                                 onClick = { showTimePicker = true },
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -1603,7 +1298,7 @@ fun AddGoalDialog(
             Button(
                 onClick = {
                     val tVal = target.toDoubleOrNull() ?: 1.0
-                    val finalTitle = if (selectedPresetTitle.startsWith("Custom")) {
+                    val finalTitle = if (selectedPresetTitle.startsWith("Custom") || selectedPresetTitle.contains("personnalisé", ignoreCase = true)) {
                         customTitle.ifBlank { "${strings.getDomainTitleById(selectedDomain)} Goal" }
                     } else {
                         selectedPresetTitle
@@ -1616,7 +1311,7 @@ fun AddGoalDialog(
                     }
                     onConfirm(selectedDomain, finalTitle, tVal, selectedUnit, frequency, fastingType, periodDays, isReminderEnabled, finalReminderTime)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.testTag("confirm_add_goal_button")
             ) {
@@ -1633,7 +1328,7 @@ fun AddGoalDialog(
     if (showDatePicker) {
         AppDatePickerDialog(
             initialDateIso = reminderDateIso,
-            maxDateIso = java.time.LocalDate.now().plusYears(2).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+            maxDateIso = LocalDate.now().plusYears(2).toString(),
             onDateSelected = { date ->
                 reminderDateIso = date
                 showDatePicker = false
