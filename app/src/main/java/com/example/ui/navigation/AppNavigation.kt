@@ -378,13 +378,16 @@ fun MainApp() {
                             2 -> {
                                 val goalsWithProgress by goalsViewModel.goalsWithProgressFlow.collectAsStateWithLifecycle()
                                 val selectedGoalFreq by goalsViewModel.selectedFrequency.collectAsStateWithLifecycle()
+                                val frequencyCounts by goalsViewModel.frequencyCountsFlow.collectAsStateWithLifecycle()
                                 GoalsScreen(
                                     strings = strings,
                                     goalsWithProgress = goalsWithProgress,
                                     selectedFrequency = selectedGoalFreq,
+                                    frequencyCounts = frequencyCounts,
                                     onFrequencySelected = { goalsViewModel.onFrequencySelected(it) },
                                     onAddGoal = { uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime ->
-                                        goalsViewModel.addGoal(uId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime, context)
+                                        val actualUserId = if (uId.isNotBlank() && uId != "guest_user") uId else (currentUser?.id ?: "guest_user")
+                                        goalsViewModel.addGoal(actualUserId, dId, title, target, unit, freq, startDate, fastingType, periodDays, isReminder, reminderTime, context)
                                     },
                                     onDeleteGoal = { goalsViewModel.deleteGoal(it, context) },
                                     onToggleReminder = { goal, enabled ->

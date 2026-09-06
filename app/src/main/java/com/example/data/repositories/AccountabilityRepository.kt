@@ -284,23 +284,8 @@ class AccountabilityRepository(
                                 FirestoreSyncManager.syncProclamationTopic(context, updated)
                             }
                         }
-                    } else if (totalCount > 0) {
-                        val newTopic = ProclamationTopicEntity(
-                            id = UUID.randomUUID().toString(),
-                            userId = if (userId.isNotBlank()) userId else "guest_user",
-                            topic = canonicalTopic,
-                            cumulativeCount = totalCount,
-                            targetCount = maxTarget,
-                            totalDurationSeconds = totalDuration,
-                            lastPracticedIso = latestIso,
-                            createdAtMs = System.currentTimeMillis(),
-                            updatedAtMs = System.currentTimeMillis()
-                        )
-                        proclamationTopicDao.insertOrUpdateTopic(newTopic)
-                        if (context != null && newTopic.userId.isNotBlank() && newTopic.userId != "guest_user") {
-                            FirestoreSyncManager.syncProclamationTopic(context, newTopic)
-                        }
                     }
+                    // Deleted topics are NOT recreated
                 }
             }
         } catch (e: Exception) {

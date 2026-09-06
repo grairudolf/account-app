@@ -63,7 +63,6 @@ class ProclamationViewModel(
     init {
         viewModelScope.launch {
             val user = userRepository.getOrCreateGuestUser()
-            accountabilityRepository.reconcileProclamationTopics(user.id)
             val allTopics = accountabilityRepository.getProclamationTopics(user.id)
             if (allTopics.isNotEmpty() && _selectedTopic.value == null) {
                 val latest = allTopics.maxByOrNull { it.updatedAtMs } ?: allTopics.first()

@@ -13,16 +13,14 @@ class GoalsViewModel(
     private val accountabilityRepository: AccountabilityRepository
 ) : ViewModel() {
 
-    private val _selectedFrequency = MutableStateFlow("ALL") // ALL, DAILY, WEEKLY, MONTHLY
+    private val _selectedFrequency = MutableStateFlow("ALL") // ALL, DAILY, WEEKLY, MONTHLY, YEARLY
     val selectedFrequency: StateFlow<String> = _selectedFrequency.asStateFlow()
 
-    val goalsWithProgressFlow: StateFlow<List<GoalWithProgress>> = combine(
+    val allGoalsWithProgressFlow: StateFlow<List<GoalWithProgress>> = combine(
         accountabilityRepository.allGoalsFlow,
-        accountabilityRepository.allEntriesFlow,
-        _selectedFrequency
-    ) { goals, entries, freq ->
-        val filteredGoals = if (freq == "ALL") goals else goals.filter { it.frequency.equals(freq, ignoreCase = true) }
-        filteredGoals.map { goal ->
+        accountabilityRepository.allEntriesFlow
+    ) { goals, entries ->
+        goals.map { goal ->
             val progress = accountabilityRepository.calculateGoalProgress(goal, entries)
             val pct = if (goal.targetValue > 0) {
                 ((progress / goal.targetValue) * 100).toInt().coerceIn(0, 100)
@@ -30,6 +28,24 @@ class GoalsViewModel(
             GoalWithProgress(goal, progress, pct)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val goalsWithProgressFlow: StateFlow<List<GoalWithProgress>> = combine(
+        allGoalsWithProgressFlow,
+        _selectedFrequency
+    ) { allWithProgress, freq ->
+        if (freq == "ALL") allWithProgress
+        else allWithProgress.filter { it.goal.frequency.equals(freq, ignoreCase = true) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val frequencyCountsFlow: StateFlow<Map<String, Int>> = allGoalsWithProgressFlow.map { list ->
+        mapOf(
+            "ALL" to list.size,
+            "DAILY" to list.count { it.goal.frequency.equals("DAILY", ignoreCase = true) },
+            "WEEKLY" to list.count { it.goal.frequency.equals("WEEKLY", ignoreCase = true) },
+            "MONTHLY" to list.count { it.goal.frequency.equals("MONTHLY", ignoreCase = true) },
+            "YEARLY" to list.count { it.goal.frequency.equals("YEARLY", ignoreCase = true) || it.goal.frequency.equals("ANNUAL", ignoreCase = true) }
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun onFrequencySelected(frequency: String) {
         _selectedFrequency.value = frequency
@@ -66,6 +82,11 @@ class GoalsViewModel(
                 reminderTimeIso = reminderTimeIso
             )
             accountabilityRepository.saveGoal(goal)
+
+            // Ensure the newly added goal is immediately visible to the user
+            if (_selectedFrequency.value != "ALL" && !_selectedFrequency.value.equals(frequency, ignoreCase = true)) {
+                _selectedFrequency.value = "ALL"
+            }
 
             if (isDailyReminderEnabled) {
                 val timeParts = reminderTimeIso.split(":")

@@ -120,6 +120,7 @@ fun GoalsScreen(
     strings: AppStrings,
     goalsWithProgress: List<GoalWithProgress>,
     selectedFrequency: String,
+    frequencyCounts: Map<String, Int> = emptyMap(),
     onFrequencySelected: (String) -> Unit,
     onAddGoal: (userId: String, domainId: String, title: String, target: Double, unit: String, freq: String, startDate: String, fastingType: String, periodDays: Int, isDailyReminderEnabled: Boolean, reminderTimeIso: String) -> Unit,
     onDeleteGoal: (String) -> Unit,
@@ -249,6 +250,7 @@ fun GoalsScreen(
                     "MONTHLY" to strings.monthly,
                     "YEARLY" to strings.yearly
                 ).forEach { (freqKey, freqLabel) ->
+                    val count = frequencyCounts[freqKey] ?: (if (freqKey == "ALL") goalsWithProgress.size else goalsWithProgress.count { it.goal.frequency.equals(freqKey, ignoreCase = true) })
                     val selected = selectedFrequency == freqKey
                     FilterChip(
                         selected = selected,
@@ -258,7 +260,7 @@ fun GoalsScreen(
                         },
                         label = {
                             Text(
-                                text = freqLabel,
+                                text = "$freqLabel ($count)",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -414,6 +416,7 @@ fun GoalsScreen(
 
             // 5. Goals List
             if (filteredGoals.isEmpty()) {
+                val totalAllGoals = frequencyCounts["ALL"] ?: goalsWithProgress.size
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -428,12 +431,14 @@ fun GoalsScreen(
                         Icon(
                             imageVector = Icons.Default.Flag,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(32.dp)
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
                         )
                         Text(
                             text = if (selectedTierFilter != null) {
-                                if (isFr) "Aucun objectif dans cette catégorie." else "No goals in this filter category."
+                                if (isFr) "Aucun objectif dans cette catégorie de progression." else "No goals matching this status filter."
+                            } else if (selectedFrequency != "ALL" && totalAllGoals > 0) {
+                                if (isFr) "Aucun objectif pour cette période ($totalAllGoals au total dans les autres périodes)." else "No goals found in this period ($totalAllGoals total goals exist)."
                             } else {
                                 strings.noGoalsFound
                             },
@@ -443,7 +448,23 @@ fun GoalsScreen(
                         )
                         if (selectedTierFilter != null) {
                             TextButton(onClick = { selectedTierFilter = null }) {
+                                Text(if (isFr) "Effacer le filtre de statut" else "Clear Status Filter")
+                            }
+                        } else if (selectedFrequency != "ALL" && totalAllGoals > 0) {
+                            Button(
+                                onClick = { onFrequencySelected("ALL") },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
                                 Text(if (isFr) "Afficher tous les objectifs" else "Show All Goals")
+                            }
+                        } else {
+                            Button(
+                                onClick = { showAddGoalDialog = true },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(strings.addGoal)
                             }
                         }
                     }
@@ -482,6 +503,7 @@ fun GoalsScreen(
             strings = strings,
             onDismiss = { showAddGoalDialog = false },
             onConfirm = { domainId, title, target, unit, freq, fastingType, periodDays, isReminder, reminderTime ->
+                selectedTierFilter = null
                 onAddGoal("guest_user", domainId, title, target, unit, freq, LocalDate.now().toString(), fastingType, periodDays, isReminder, reminderTime)
                 showAddGoalDialog = false
             }
