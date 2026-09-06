@@ -674,41 +674,12 @@ fun DashboardScreen(
                             .padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Top Header Row with PROMINENT Daily Word of Encouragement Badge & Action Buttons
+                        // Top Header Action Row (Refresh & Share Actions cleanly aligned)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Highlighting Pill for Daily Word of Encouragement
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = BrandDarkNavy.copy(alpha = 0.92f),
-                                border = BorderStroke(1.5.dp, BrandBrightYellow),
-                                shadowElevation = 2.dp
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = BrandBrightYellow,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Text(
-                                        text = strings.propheticMessages3bTitle.uppercase(),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Black,
-                                        color = BrandBrightYellow,
-                                        letterSpacing = 0.8.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-
                             // Cycle / Next Quote & Share Actions
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
