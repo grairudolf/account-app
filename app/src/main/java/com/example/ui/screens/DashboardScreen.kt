@@ -631,6 +631,7 @@ fun DashboardScreen(
             val currentBgRes = currentQuote.bgDrawableRes
 
             Surface(
+                onClick = { manualQuoteOffset++ },
                 shape = RoundedCornerShape(24.dp),
                 color = SurfaceDark,
                 border = BorderStroke(1.dp, BrandSlateBlue.copy(alpha = 0.45f)),
@@ -673,13 +674,13 @@ fun DashboardScreen(
                             .padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Top Header Row with PROMINENT 3B Messages Badge & Action Buttons
+                        // Top Header Row with PROMINENT Daily Word of Encouragement Badge & Action Buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Highlighting Pill for 3B Prophetic Messages
+                            // Highlighting Pill for Daily Word of Encouragement
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
                                 color = BrandDarkNavy.copy(alpha = 0.92f),
@@ -687,7 +688,7 @@ fun DashboardScreen(
                                 shadowElevation = 2.dp
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
@@ -760,43 +761,6 @@ fun DashboardScreen(
                                         )
                                     }
                                 }
-                            }
-                        }
-
-                        // Specific Prophecy Origin & Spiritual Theme Sub-badges
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF0F172A).copy(alpha = 0.90f),
-                                border = BorderStroke(1.dp, Color(0xFF94A3B8).copy(alpha = 0.5f))
-                            ) {
-                                Text(
-                                    text = currentQuote.getProphecySource(isFrench),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                                    maxLines = 1
-                                )
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = BrandDarkNavy.copy(alpha = 0.90f),
-                                border = BorderStroke(1.dp, BrandWarmGold.copy(alpha = 0.7f))
-                            ) {
-                                Text(
-                                    text = currentQuote.getThemeTag(isFrench),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = BrandBrightYellow,
-                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                                    maxLines = 1
-                                )
                             }
                         }
 

@@ -19,7 +19,7 @@ object QuoteImageSharer {
 
     /**
      * Shares a complete PropheticQuote with matched background image,
-     * highlighting the 3B Prophetic Messages and book citation prominently.
+     * highlighting the Daily Word of Encouragement and book citation prominently.
      */
     fun sharePropheticQuote(
         context: Context,
@@ -29,7 +29,7 @@ object QuoteImageSharer {
         shareQuoteImage(
             context = context,
             quoteText = quote.getText(isFrench),
-            title = if (isFrench) "LES MESSAGES PROPHÉTIQUES 3B" else "THE 3B PROPHETIC MESSAGES",
+            title = if (isFrench) "PAROLE D'ENCOURAGEMENT" else "DAILY WORD OF ENCOURAGEMENT",
             prophecySource = quote.getProphecySource(isFrench),
             themeTag = quote.getThemeTag(isFrench),
             bookCitation = quote.getBookCitation(isFrench),
@@ -40,16 +40,16 @@ object QuoteImageSharer {
 
     /**
      * Programmatically renders the devotional quote onto an inspirational canvas graphic,
-     * with the 3B Prophetic Messages prominently highlighted, and launches the native OS share sheet.
+     * with the author and book citation prominently highlighted, and launches the native OS share sheet.
      */
     fun shareQuoteImage(
         context: Context,
         quoteText: String,
-        title: String = "THE 3B PROPHETIC MESSAGES",
-        prophecySource: String = "The Bertoua Message",
-        themeTag: String = "FREEDOM FROM ALL SIN",
-        bookCitation: String = "Practical Helps For Overcomers (Book 26)",
-        author: String = "Pr. Zacharias Tanee Fomum",
+        title: String = "DAILY WORD OF ENCOURAGEMENT",
+        prophecySource: String = "",
+        themeTag: String = "",
+        bookCitation: String = "The Way of Victorious Praying",
+        author: String = "Prof. Zacharias Tanee Fomum",
         bgResId: Int? = null
     ) {
         var bitmap: Bitmap? = null
@@ -164,53 +164,13 @@ object QuoteImageSharer {
                 letterSpacing = 0.12f
                 textAlign = Paint.Align.CENTER
             }
-            val formattedTitle = if (title.contains("3B", ignoreCase = true)) {
-                title.uppercase()
-            } else {
-                "✦ THE 3B PROPHETIC MESSAGES ✦"
-            }
+            val formattedTitle = title.uppercase()
             val displayHeader = if (formattedTitle.startsWith("✦")) formattedTitle else "✦  $formattedTitle  ✦"
             canvas.drawText(displayHeader, width / 2f, badgeTop + 42f, badgeTextPaint)
 
-            // 4b. Unified Secondary Pill: Source + Theme Tag (Clean and organized)
-            val subPillText = if (themeTag.isNotBlank() && !themeTag.equals(prophecySource, ignoreCase = true)) {
-                "${prophecySource.uppercase()}  •  ${themeTag.uppercase()}"
-            } else {
-                prophecySource.uppercase()
-            }
-            val subPillWidth = 640f
-            val subPillHeight = 44f
-            val subPillLeft = (width - subPillWidth) / 2f
-            val subPillTop = badgeTop + badgeHeight + 14f
-            val subPillRect = RectF(subPillLeft, subPillTop, subPillLeft + subPillWidth, subPillTop + subPillHeight)
-
-            val subPillBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1E293B")
-                alpha = 230
-                style = Paint.Style.FILL
-            }
-            canvas.drawRoundRect(subPillRect, 22f, 22f, subPillBgPaint)
-
-            val subPillStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#94A3B8")
-                alpha = 130
-                style = Paint.Style.STROKE
-                strokeWidth = 1.5f
-            }
-            canvas.drawRoundRect(subPillRect, 22f, 22f, subPillStrokePaint)
-
-            val subPillTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#E2E8F0")
-                textSize = 19f
-                typeface = montserratSemiBold
-                letterSpacing = 0.06f
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawText(subPillText, width / 2f, subPillTop + 29f, subPillTextPaint)
-
             // 5. Translucent Frosted Glass Card for Quote Readability
             val cardLeft = 60f
-            val cardTop = subPillTop + subPillHeight + 24f
+            val cardTop = badgeTop + badgeHeight + 28f
             val cardRight = width - 60f
             val cardBottom = height - 175f
             val cardRect = RectF(cardLeft, cardTop, cardRight, cardBottom)

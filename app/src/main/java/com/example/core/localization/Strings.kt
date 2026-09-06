@@ -1158,34 +1158,52 @@ object EnglishStrings : AppStrings {
     override val shareSummary = "Share Summary"
     override val copyLink = "Copy Link"
 
-    override val dailyWordTitle = "Daily Word of Encouragement (3B Messages)"
-    override val propheticMessages3bTitle = "The 3B Prophetic Messages"
-    override val practicalHelpsForOvercomers = "Practical Helps For Overcomers • Book 26"
-    override val shareQuoteCard = "Share 3B Prophecy Graphic"
+    override val dailyWordTitle = "Daily Word of Encouragement"
+    override val propheticMessages3bTitle = "Daily Word of Encouragement"
+    override val practicalHelpsForOvercomers = "Prof. Zacharias Tanee Fomum"
+    override val shareQuoteCard = "Share Daily Word Graphic"
     override val nextQuote = "Next Quote"
     override val dailyQuotes = listOf(
-        "Return to your first love for the Lord Jesus Christ. This return includes freedom from all sin, freedom from love of self, freedom from love of the world, greed, laziness, and goal-lessness. — The Bertoua Message (Z.T. Fomum)",
-        "Son, write on your heart that what a person is before God is of far greater importance than what he does. Seek to be filled with the Holy Spirit in all fullness. — The Beijing Prophecy (Z.T. Fomum)",
-        "The power released in prayer and fasting depends primarily on who is praying and fasting, and only secondarily on the type and duration of the fast. — The Beijing Prophecy (Z.T. Fomum)",
-        "I withdraw the youth’s guide and replace it with the guide for mature pilgrims: The Bible, The Cross, and The Holy Spirit. — The Beijing Prophecy (Z.T. Fomum)",
-        "In the New Order that begins now, you shall depend exclusively on Me and on My power for the advance of Our Work. — The Beijing Prophecy (Z.T. Fomum)",
-        "It is first of all My Work. It is secondarily Our Work. Because its success depends primarily on Me, it shall succeed. — The Beijing Prophecy (Z.T. Fomum)",
-        "Heaven and earth shall pass away but My word shall stand and My word shall fill the earth. The Logos of God is the Logos of God. — The Beijing Prophecy (Z.T. Fomum)",
-        "Daniel lived in the presence of God. He knew the burden of God and bore the burden of God. Daniel and God were one. — The Beijing Prophecy (Z.T. Fomum)",
-        "God has only one thing on His heart and that thing is that all His children should abandon all carnality and be clothed with His spirituality. — The Beijing Prophecy (Z.T. Fomum)",
-        "The eternal impact of each act is dependent on who is carrying out the act. Write on your heart that what you are is determinant. — The Beijing Prophecy (Z.T. Fomum)",
-        "You chose to obey Me at the cost of the work. You chose to obey Me at the cost of your life. You chose My will above everything else. — The Beijing Prophecy (Z.T. Fomum)",
-        "Faithfulness in becoming and being a disciple includes praying alone, daily dynamic encounters with God (DDEWG), Bible reading, Christian literature, retreats, fasting, and soul-winning. — The Bertoua Message (Z.T. Fomum)",
-        "Live your life for the exclusive glory of the Lord Jesus Christ in all things, serving Him in the domain of His call on your life and living in the centre of His will. — The Bertoua Message (Z.T. Fomum)",
-        "Uproot all falsehood, divided heart, self-centeredness, debts, greed, laziness, and goal-lessness from your life. This is the pathway to revival. — The Bertoua Message (Z.T. Fomum)",
-        "There will be revival! There will be revival!! There will be revival!!! When God answers, the community will be radically committed to soul-winning. — The Bertoua Message (Z.T. Fomum)",
-        "My children will be back to Me. They will ardently seek Me, love Me, and serve Me. Multitudes will beg to serve Me and give to Me. — The Congo Brazzaville Message (Z.T. Fomum)",
-        "My children will love My Word, read it with great appetite, believe it, and put it into practice with joy. — The Congo Brazzaville Message (Z.T. Fomum)",
-        "My children will come back to prayer. They will come to the place of prayer hours before the official time and continue to pray long after. — The Congo Brazzaville Message (Z.T. Fomum)",
-        "There will be prayer in pairs, in small groups, in big groups, in great masses: prayers of confession and prayers of proclamation. — The Congo Brazzaville Message (Z.T. Fomum)",
-        "Spend maximum time in My presence so that I can appear to you, minister to you, receive ministry from you, and reveal to you the blueprint of heaven. — The Congo Brazzaville Message (Z.T. Fomum)",
-        "During Daily Dynamic Encounters with God (DDEWG), read God's Word, meditate on it, listen to His voice, record what He speaks, and pray it through. Oh, that I would have more of God! — Pr. Zacharias Tanee Fomum",
-        "Prayer is the most important work that can be done for God and for man. When a Spirit-filled believer prays in total surrender, heaven moves! — Pr. Zacharias Tanee Fomum"
+        "“The primary essence of prayer is communion with God.” — Prof. Zacharias Tanee Fomum, The Way of Victorious Praying",
+        "“There is only one reason why people don’t spend time with God. It’s not the shortage of time. It is a shortage of the hunger for God.” — Prof. Zacharias Tanee Fomum, The Complete Works on Leadership, Volume 4",
+        "“We cannot really come after Him unless we definitely part with all the sin that is in our lives.” — Prof. Zacharias Tanee Fomum, Discipleship at Any Cost",
+        "“Leading someone to Christ is the art of turning someone who is following himself into someone who follows the Lord Jesus.” — Prof. Zacharias Tanee Fomum, The School of Soul Winners and Soul Winning",
+        "“Fasting is the activity of a man possessed by something that God must do.” — Prof. Zacharias Tanee Fomum, From His Lips on Fasting",
+        "“The leader is the person who spends the most time in prayer.” — Prof. Zacharias Tanee Fomum, The Way of Victorious Praying",
+        "“Daily Bible study and prayer (the Quiet Time) is indispensable in maintaining the sanctified life.” — Prof. Zacharias Tanee Fomum, The Way of Sanctification",
+        "“The Ministry of Praise and Thanksgiving is the flowing forth of gratitude through the lips to the Lord God.” — Prof. Zacharias Tanee Fomum, The Ministry of Praise and Thanksgiving",
+        "“Fifteen minutes is a lot of time! A lot can happen in fifteen minutes.” — Prof. Zacharias Tanee Fomum, Fifteen Minute Prayer Retreats",
+        "“Holiness is not just the absence of sin. It includes conformity to God.” — Prof. Zacharias Tanee Fomum, The Way of Sanctification",
+        "“Those who spend time increasingly in prayer grow in spiritual power.” — Prof. Zacharias Tanee Fomum, The Way of Victorious Praying",
+        "“The disciple makes Jesus his all and forsakes everything that may stand in the way of his fellowship with Christ.” — Prof. Zacharias Tanee Fomum, Discipleship at Any Cost",
+        "“The one and only reason why the Lord Jesus did not take me to heaven the day I believed was that I should stay here on earth, win the lost to Him and make disciples of all nations.” — Prof. Zacharias Tanee Fomum, Soul-Winning, Volume One",
+        "“The church is a company of people who give and give and give.” — Prof. Zacharias Tanee Fomum, Making Spiritual Progress, Volume One",
+        "“Prayer centred on God will lead to a walk centred on God, and this will lead to a work centred on God.” — Prof. Zacharias Tanee Fomum, The Centrality of Prayer",
+        "“We are permanently in the holy of holies. Be careful about what you are thinking, saying or doing.” — Prof. Zacharias Tanee Fomum, Knowing and Serving God, Volume Two",
+        "“Fasting is a spiritual ministry.” — Prof. Zacharias Tanee Fomum, From His Lips on Fasting",
+        "“If you want to be a leader someday, those are the basic things of the Christian life. Excel in them.” — Prof. Zacharias Tanee Fomum, The Complete Works on Leadership, Volume 4",
+        "“Prayer is the overflow of a life; prayer is the overflow of communion with God.” — Prof. Zacharias Tanee Fomum, Prayer and a Walk with God",
+        "“Commit yourself to becoming a real disciple. Follow that rugged way. Follow its austere demands.” — Prof. Zacharias Tanee Fomum, The Making of Disciples",
+        "“The Holy Spirit must possess me entirely if I am to be entirely pleasing to God in all things, at all times and for all time.” — Prof. Zacharias Tanee Fomum, Soul-Winning, Volume One",
+        "“By having four fifteen-minute retreats a day, one has actually spent one hour before God.” — Prof. Zacharias Tanee Fomum, Fifteen Minute Prayer Retreats",
+        "“There is only one use for money: to be invested into the making of disciples.” — Prof. Zacharias Tanee Fomum, The Facets of His Ministry",
+        "“Without communion with God, everything done for the Lord is falsehood.” — Prof. Zacharias Tanee Fomum, The Centrality of Prayer",
+        "“Such a one has Christ for his all in all and desires nothing outside of Him.” — Prof. Zacharias Tanee Fomum, Discipleship at Any Cost",
+        "“Fasting time is harvest time.” — Prof. Zacharias Tanee Fomum, The Facets of His Ministry",
+        "“If you are a young believer, set your mind to be a leader someday and put in everything to grow rapidly and become a leader.” — Prof. Zacharias Tanee Fomum, Laws of Spiritual Leadership",
+        "“The time he spent seeking God slowly transformed him into a man who hungered and thirsted for God.” — Prof. Zacharias Tanee Fomum, Daily Dynamic Encounters With God",
+        "“A sense of the holiness of God must come upon the saints.” — Prof. Zacharias Tanee Fomum, Knowing and Serving God, Volume Two",
+        "“Commit yourself to making disciples as the Lord commanded.” — Prof. Zacharias Tanee Fomum, The Making of Disciples",
+        "“Praise and Thanksgiving involve the flowing forth in gratitude through the lips to God for His Person in the past, in the present and in the future.” — Prof. Zacharias Tanee Fomum, The Ministry of Praise and Thanksgiving",
+        "“All work that is not prayed through adequately, several times over, is an activity of the flesh. It will not last.” — Prof. Zacharias Tanee Fomum, The Way of Victorious Praying",
+        "“When we come to the Lord Jesus Christ, we come to pour our all to Him.” — Prof. Zacharias Tanee Fomum, Making Spiritual Progress, Volume One",
+        "“You can withdraw constantly, consistently, and conspicuously every day on short and long retreats for spiritual progress.” — Prof. Zacharias Tanee Fomum, Retreats for Spiritual Progress",
+        "“Money is not to be used to make one more comfortable, but to produce disciples and disciple-makers.” — Prof. Zacharias Tanee Fomum, The Facets of His Ministry",
+        "“Prayer is communion with God; it is the overflow of intimacy with God.” — Prof. Zacharias Tanee Fomum, Prayer and a Walk with God",
+        "“Becoming a disciple and remaining one will cost us the giving up of all sin.” — Prof. Zacharias Tanee Fomum, Discipleship at Any Cost",
+        "“God cannot bless someone who cannot put his all into it.” — Prof. Zacharias Tanee Fomum, The Facets of His Ministry",
+        "“We shall have to teach people how to have Daily Dynamic Encounters with God, how to make disciples, and how to be accountable.” — Prof. Zacharias Tanee Fomum, On Our Vision",
+        "“The minimum condition for satisfying God’s heart is a man’s all surrendered irrevocably and irreversibly to the Lord God Almighty.” — Prof. Zacharias Tanee Fomum, Soul-Winning"
     )
 
     override val searchResultsFor = "Search Results for “%s”"
@@ -1773,34 +1791,52 @@ object FrenchStrings : AppStrings {
     override val shareSummary = "Partager le Résumé"
     override val copyLink = "Copier le Lien"
 
-    override val dailyWordTitle = "Parole d'Encouragement Quotidienne (Messages 3B)"
-    override val propheticMessages3bTitle = "Les Messages Prophétiques 3B"
-    override val practicalHelpsForOvercomers = "Aides Pratiques Pour Vainqueurs • Livre 26"
-    override val shareQuoteCard = "Partager l'Image Prophétique 3B"
+    override val dailyWordTitle = "Parole d'Encouragement"
+    override val propheticMessages3bTitle = "Parole d'Encouragement"
+    override val practicalHelpsForOvercomers = "Pr. Zacharias Tanee Fomum"
+    override val shareQuoteCard = "Partager l'Image d'Encouragement"
     override val nextQuote = "Citation Suivante"
     override val dailyQuotes = listOf(
-        "Retourne à ton premier amour pour le Seigneur Jésus-Christ. Ce retour inclut la libération de tout péché, de l'amour de soi, de l'amour du monde, de la cupidité, de la paresse et du manque de buts. — Le Message de Bertoua (Z.T. Fomum)",
-        "Mon fils, écris sur ton cœur que ce qu'une personne est devant Dieu est de bien plus grande importance que ce qu'elle fait. Cherche à être rempli du Saint-Esprit en toute plénitude. — La Prophétie de Pékin (Z.T. Fomum)",
-        "La puissance libérée dans le jeûne et la prière dépend principalement de qui prie et jeûne, et secondairement du type et de la durée du jeûne. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Je retire le guide de la jeunesse et le remplace par le guide des pèlerins mûrs : la Bible, la Croix et le Saint-Esprit. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Dans le Nouvel Ordre qui commence maintenant, tu dépendras exclusivement de Moi et de Ma puissance pour l'avancement de Notre Œuvre. — La Prophétie de Pékin (Z.T. Fomum)",
-        "C'est d'abord Mon Œuvre. C'est secondairement Notre Œuvre. Parce que son succès dépend d'abord de Moi, elle réussira. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Le ciel et la terre passeront, mais Ma parole subsistera et remplira la terre. Le Logos de Dieu est le Logos de Dieu. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Daniel vivait dans la présence de Dieu. Il connaissait le fardeau de Dieu et portait le fardeau de Dieu. Daniel et Dieu ne faisaient qu'un. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Dieu n'a qu'une seule chose sur Son cœur : que tous Ses enfants abandonnent toute carnalité et soient revêtus de Sa spiritualité. — La Prophétie de Pékin (Z.T. Fomum)",
-        "L'impact éternel de chaque acte dépend de celui qui l'accomplit. Écris sur ton cœur que ce que tu es est déterminant. — La Prophétie de Pékin (Z.T. Fomum)",
-        "Tu as choisi de M'obéir au prix de l'œuvre et de ta propre vie. Tu as choisi Ma volonté au-dessus de tout le reste. — La Prophétie de Pékin (Z.T. Fomum)",
-        "La fidélité à devenir et rester un disciple inclut la prière seul, la rencontre dynamique quotidienne avec Dieu (RDQD), la lecture biblique, la littérature chrétienne, les retraites, le jeûne et le gagnagisme d'âmes. — Le Message de Bertoua (Z.T. Fomum)",
-        "Vis ta vie pour la gloire exclusive du Seigneur Jésus-Christ en toutes choses, en Le servant dans le domaine de Son appel sur ta vie et au centre de Sa volonté. — Le Message de Bertoua (Z.T. Fomum)",
-        "Déracine de ta vie tout mensonge, cœur partagé, égocentrisme, dettes, cupidité, paresse et absence de buts. C'est le chemin du réveil. — Le Message de Bertoua (Z.T. Fomum)",
-        "Il y aura un réveil ! Il y aura un réveil !! Il y aura un réveil !!! Lorsque Dieu répondra, la communauté sera radicalement engagée dans le gagnagisme d'âmes. — Le Message de Bertoua (Z.T. Fomum)",
-        "Mes enfants reviendront à Moi. Ils Me chercheront ardemment, M'aimeront et Me serviront. Des multitudes supplieront de Me servir et de Me donner. — Le Message de Brazzaville (Z.T. Fomum)",
-        "Mes enfants aimeront Ma Parole, la liront avec un grand appétit, la croiront et la mettront en pratique avec joie. — Le Message de Brazzaville (Z.T. Fomum)",
-        "Mes enfants reviendront à la prière. Ils viendront sur les lieux de prière des heures avant l'heure officielle et continueront à prier longtemps après. — Le Message de Brazzaville (Z.T. Fomum)",
-        "Il y aura de la prière par deux, en petits groupes, en grands groupes, en grandes masses : des prières de confession et de proclamation. — Le Message de Brazzaville (Z.T. Fomum)",
-        "Passe un temps maximal dans Ma présence afin que Je puisse t'apparaître, te secourir, recevoir ton ministère et te révéler le plan du ciel. — Le Message de Brazzaville (Z.T. Fomum)",
-        "Pendant la Rencontre Dynamique Quotidienne avec Dieu (RDQD), lis la Parole, médite-la, écoute Sa voix, note ce Qu'Il dit, et prie. Oh, que j'aie plus de Dieu ! — Pr. Zacharias Tanee Fomum",
-        "La prière est le travail le plus important qui puisse être fait pour Dieu et pour l'homme. Quand un croyant rempli de l'Esprit prie dans un abandon total, le ciel se meut ! — Pr. Zacharias Tanee Fomum"
+        "« L'essence première de la prière est la communion avec Dieu. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Prière Victorieuse",
+        "« Il n'y a qu'une seule raison pour laquelle les gens ne passent pas de temps avec Dieu : ce n'est pas le manque de temps, c'est le manque de faim de Dieu. » — Pr. Zacharias Tanee Fomum, Traité sur le Leadership, Volume 4",
+        "« Nous ne pouvons véritablement Le suivre que si nous nous séparons définitivement de tout le péché dans notre vie. » — Pr. Zacharias Tanee Fomum, Le Disciple à Tout Prix",
+        "« Amener quelqu'un à Christ est l'art de transformer quelqu'un qui se suit lui-même en quelqu'un qui suit le Seigneur Jésus. » — Pr. Zacharias Tanee Fomum, L'École des Gagneurs d'Âmes et le Gagnagisme d'Âmes",
+        "« Le jeûne est l'activité d'un homme possédé par quelque chose que Dieu doit accomplir. » — Pr. Zacharias Tanee Fomum, De Ses Lèvres sur le Jeûne",
+        "« Le leader est la personne qui passe le plus de temps dans la prière. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Prière Victorieuse",
+        "« L'étude quotidienne de la Bible et la prière (le Culte Personnel) sont indispensables pour maintenir une vie sanctifiée. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Sanctification",
+        "« Le Ministère de Louange et d'Action de Grâces est l'effusion de gratitude à travers les lèvres envers le Seigneur Dieu. » — Pr. Zacharias Tanee Fomum, Le Ministère de Louange et d'Action de Grâces",
+        "« Quinze minutes, c'est beaucoup de temps ! Beaucoup de choses peuvent se passer en quinze minutes. » — Pr. Zacharias Tanee Fomum, Les Retraites de Prière de Quinze Minutes",
+        "« La sainteté n'est pas seulement l'absence de péché. Elle inclut la conformité à Dieu. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Sanctification",
+        "« Ceux qui passent de plus en plus de temps dans la prière croissent en puissance spirituelle. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Prière Victorieuse",
+        "« Le disciple fait de Jésus son tout et renonce à tout ce qui pourrait faire obstacle à sa communion avec Christ. » — Pr. Zacharias Tanee Fomum, Le Disciple à Tout Prix",
+        "« La seule et unique raison pour laquelle le Seigneur Jésus ne m'a pas enlevé au ciel le jour où j'ai cru est que je devais rester sur terre pour Lui gagner les perdus et faire des disciples de toutes les nations. » — Pr. Zacharias Tanee Fomum, Le Gagnagisme d'Âmes, Volume 1",
+        "« L'Église est une compagnie de personnes qui donnent, donnent et donnent encore. » — Pr. Zacharias Tanee Fomum, Faire du Progrès Spirituel, Volume 1",
+        "« Une prière centrée sur Dieu conduira à une marche centrée sur Dieu, et cela conduira à une œuvre centrée sur Dieu. » — Pr. Zacharias Tanee Fomum, La Centralité de la Prière",
+        "« Nous sommes en permanence dans le saint des saints. Fais attention à ce que tu penses, dis ou fais. » — Pr. Zacharias Tanee Fomum, Connaître et Servir Dieu, Volume 2",
+        "« Le jeûne est un ministère spirituel. » — Pr. Zacharias Tanee Fomum, De Ses Lèvres sur le Jeûne",
+        "« Si tu veux être un leader un jour, voici les éléments fondamentaux de la vie chrétienne. Excelle en eux. » — Pr. Zacharias Tanee Fomum, Traité sur le Leadership, Volume 4",
+        "« La prière est le débordement d'une vie ; la prière est le débordement de la communion avec Dieu. » — Pr. Zacharias Tanee Fomum, La Prière et la Marche avec Dieu",
+        "« Engage-toi à devenir un vrai disciple. Suis cette voie rude. Suis ses exigences austères. » — Pr. Zacharias Tanee Fomum, La Formation des Disciples",
+        "« Le Saint-Esprit doit me posséder entièrement si je veux être entièrement agréable à Dieu en toutes choses, en tout temps et pour toujours. » — Pr. Zacharias Tanee Fomum, Le Gagnagisme d'Âmes, Volume 1",
+        "« En ayant quatre retraites de quinze minutes par jour, on a en réalité passé une heure devant Dieu. » — Pr. Zacharias Tanee Fomum, Les Retraites de Prière de Quinze Minutes",
+        "« Il n'y a qu'un seul usage de l'argent : être investi dans la formation des disciples. » — Pr. Zacharias Tanee Fomum, Les Facettes de Son Ministère",
+        "« Sans communion avec Dieu, tout ce qui est fait pour le Seigneur n'est que fausseté. » — Pr. Zacharias Tanee Fomum, La Centralité de la Prière",
+        "« Une telle personne a Christ pour son tout en tout et ne désire rien en dehors de Lui. » — Pr. Zacharias Tanee Fomum, Le Disciple à Tout Prix",
+        "« Le temps du jeûne est le temps de la moisson. » — Pr. Zacharias Tanee Fomum, Les Facettes de Son Ministère",
+        "« Si tu es un jeune croyant, prends la résolution d'être un leader un jour et investis tout pour croître rapidement et le devenir. » — Pr. Zacharias Tanee Fomum, Les Lois du Leadership Spirituel",
+        "« Le temps qu'il passait à chercher Dieu le transformait lentement en un homme qui avait faim et soif de Dieu. » — Pr. Zacharias Tanee Fomum, Rendez-vous Quotidiens avec Dieu",
+        "« Un sentiment de la sainteté de Dieu doit saisir les saints. » — Pr. Zacharias Tanee Fomum, Connaître et Servir Dieu, Volume 2",
+        "« Engage-toi à faire des disciples comme le Seigneur l'a ordonné. » — Pr. Zacharias Tanee Fomum, La Formation des Disciples",
+        "« La louange et l'action de grâces impliquent de déborder de gratitude par les lèvres envers Dieu pour Sa Personne dans le passé, le présent et l'avenir. » — Pr. Zacharias Tanee Fomum, Le Ministère de Louange et d'Action de Grâces",
+        "« Tout travail qui n'a pas été prié de manière adéquate, et ce à plusieurs reprises, est une activité de la chair. Il ne durera pas. » — Pr. Zacharias Tanee Fomum, Le Chemin de la Prière Victorieuse",
+        "« Lorsque nous venons au Seigneur Jésus-Christ, nous venons pour répandre notre tout devant Lui. » — Pr. Zacharias Tanee Fomum, Faire du Progrès Spirituel, Volume 1",
+        "« Tu peux te retirer constamment, fidèlement et visiblement chaque jour pour des retraites courtes et longues pour le progrès spirituel. » — Pr. Zacharias Tanee Fomum, Des Retraites Pour le Progrès Spirituel",
+        "« L'argent ne doit pas être utilisé pour se rendre plus confortable, mais pour produire des disciples et des faiseurs de disciples. » — Pr. Zacharias Tanee Fomum, Les Facettes de Son Ministère",
+        "« La prière est communion avec Dieu ; elle est le débordement de l'intimité avec Dieu. » — Pr. Zacharias Tanee Fomum, La Prière et la Marche avec Dieu",
+        "« Devenir un disciple et le demeurer nous coûtera l'abandon de tout péché. » — Pr. Zacharias Tanee Fomum, Le Disciple à Tout Prix",
+        "« Dieu ne peut bénir quelqu'un qui ne met pas son tout dans l'œuvre. » — Pr. Zacharias Tanee Fomum, Les Facettes de Son Ministère",
+        "« Nous devrons enseigner aux gens comment avoir des Rendez-vous Quotidiens avec Dieu, comment faire des disciples et comment rendre compte. » — Pr. Zacharias Tanee Fomum, Sur Notre Vision",
+        "« La condition minimale pour satisfaire le cœur de Dieu est que l'homme Lui abandonne tout, de manière irrévocable et irréversible, au Seigneur Dieu Tout-Puissant. » — Pr. Zacharias Tanee Fomum, Le Gagnagisme d'Âmes"
     )
 
     override val searchResultsFor = "Résultats de recherche pour « %s »"
